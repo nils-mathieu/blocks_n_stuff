@@ -1,0 +1,12 @@
+[package]
+name = "blocks_n_stuff"
+version = "0.1.0"
+edition = "2021"
+authors = ["Nils Mathieu <contact@nils-mathieu.fr>"]
+description = "A Minecraft-inspired game to showcase my graphics programming skills."
+repository = "https://github.com/nils-mathieu/blocks_n_stuff"
+license = "MIT"
+publish = false
+
+[dependencies]
+winit = "0.29"
