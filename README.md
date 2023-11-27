@@ -7,7 +7,11 @@ programming.
 
 ## Technologies
 
-This project uses the following technologies:
+This project is written in Rust, because I absolutely love the language. It's fast and allows
+me to write safe abstractions over fast unsafe code. I know Hypixel Studios uses C++ for their
+engine, but I'd rather use Rust :P.
+
+This project uses the following thrid-party libraries:
 
 - `wgpu`, a cross-platform abstraction over Vulkan, Metal, DX12, OpenGL and WebGPU. I would've
   liked to use Vulkan directly, but that would make the project unusable on web, which I really
