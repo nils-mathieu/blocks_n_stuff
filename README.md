@@ -32,7 +32,6 @@ Here is a list of the things I want to implement:
   - [ ] Physics system.
   - [ ] Player movement.
   - [ ] Mining, placing blocks.
-  - [ ] Inventory.
 - [ ] Advanced graphics.
   - [ ] Dynamic lighting.
   - [ ] Shadows.
