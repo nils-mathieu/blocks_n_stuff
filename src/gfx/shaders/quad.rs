@@ -149,13 +149,21 @@ pub fn create(
         label: Some("Quad Pipeline"),
         layout: Some(&pipeline_layout),
         vertex: wgpu::VertexState {
-            buffers: &[],
+            buffers: &[wgpu::VertexBufferLayout {
+                array_stride: std::mem::size_of::<QuadInstance>() as wgpu::BufferAddress,
+                attributes: &[wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Uint32,
+                    offset: 0,
+                    shader_location: 0,
+                }],
+                step_mode: wgpu::VertexStepMode::Instance,
+            }],
             entry_point: "vs_main",
             module: &shader_module,
         },
         primitive: wgpu::PrimitiveState {
             conservative: false,
-            cull_mode: None,
+            cull_mode: Some(wgpu::Face::Back),
             polygon_mode: wgpu::PolygonMode::Fill,
             front_face: wgpu::FrontFace::Cw,
             topology: wgpu::PrimitiveTopology::TriangleStrip,

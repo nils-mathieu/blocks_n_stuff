@@ -13,7 +13,7 @@ pub use surface::Surface;
 
 pub mod render_data;
 
-use self::helpers::{UniformBuffer, UniformBufferLayout};
+use self::helpers::{UniformBuffer, UniformBufferLayout, VertexBuffer};
 use self::render_data::{FrameUniforms, RenderData};
 
 /// The renderer is responsible for using the GPU to render things on a render target.
@@ -49,6 +49,11 @@ impl Renderer {
         self.frame_uniform_layout.instanciate(&self.gpu.device)
     }
 
+    /// Creates a new [`VertexBuffer`] that can store instances of `T`.
+    pub fn create_vertex_buffer<T>(&self, capacity: wgpu::BufferAddress) -> VertexBuffer<T> {
+        VertexBuffer::new(self.gpu.clone(), capacity)
+    }
+
     /// Renders a frame to the provided target.
     pub fn render(&self, target: &wgpu::TextureView, render_data: &RenderData) {
         // Start recording the commands.
@@ -71,8 +76,9 @@ impl Renderer {
             });
 
             rp.set_bind_group(0, render_data.frame_uniforms.bind_group(), &[]);
+            rp.set_vertex_buffer(0, render_data.quads.slice());
             rp.set_pipeline(&self.quad_pipeline);
-            rp.draw(0..4, 0..1);
+            rp.draw(0..4, 0..render_data.quads.len() as u32);
         }
 
         self.gpu.queue.submit(Some(encoder.finish()));

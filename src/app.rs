@@ -7,7 +7,9 @@ use winit::event_loop::EventLoopWindowTarget;
 use winit::keyboard::KeyCode;
 use winit::window::{Fullscreen, Window};
 
-use crate::gfx::render_data::{FrameUniforms, RenderData, UniformBuffer};
+use crate::gfx::render_data::{
+    FrameUniforms, QuadInstance, RenderData, UniformBuffer, VertexBuffer,
+};
 use crate::gfx::{Gpu, Renderer, Surface};
 use crate::window::UserEvent;
 
@@ -27,6 +29,8 @@ pub struct App {
 
     /// The uniform buffer that stores the frame-specific data.
     frame_uniforms: UniformBuffer<FrameUniforms>,
+    /// The quads to draw.
+    quads: VertexBuffer<QuadInstance>,
 
     /// The current state of the camera.
     camera: Camera,
@@ -39,6 +43,16 @@ impl App {
         let surface = Surface::new(gpu.clone(), window.clone());
         let renderer = Renderer::new(gpu.clone(), surface.format());
         let frame_uniforms = renderer.create_frame_uniform_buffer();
+        let mut quads = renderer.create_vertex_buffer(16);
+
+        quads.write(&[
+            QuadInstance::X,
+            QuadInstance::NEG_X,
+            QuadInstance::Y,
+            QuadInstance::NEG_Y,
+            QuadInstance::Z,
+            QuadInstance::NEG_Z,
+        ]);
 
         Self {
             window,
@@ -46,6 +60,7 @@ impl App {
             renderer,
             frame_uniforms,
             camera: Camera::default(),
+            quads,
         }
     }
 
@@ -84,7 +99,7 @@ impl App {
     }
 
     /// Renders a frame to the window.
-    pub fn render(&self) {
+    pub fn render(&mut self) {
         // Write the frame-specific data to the uniform buffer.
         self.frame_uniforms.write(&FrameUniforms {
             camera: self.camera.matrix(),
@@ -92,6 +107,7 @@ impl App {
 
         let render_data = RenderData {
             frame_uniforms: &self.frame_uniforms,
+            quads: &self.quads,
         };
 
         self.renderer.render_to_surface(&self.surface, &render_data);

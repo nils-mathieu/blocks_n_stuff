@@ -1,7 +1,8 @@
 use bytemuck::{Pod, Zeroable};
 use glam::Mat4;
 
-pub use super::helpers::UniformBuffer;
+pub use super::helpers::{UniformBuffer, VertexBuffer};
+pub use super::shaders::quad::QuadInstance;
 
 /// The uniforms that are modified every frame.
 ///
@@ -20,4 +21,6 @@ pub struct FrameUniforms {
 pub struct RenderData<'a> {
     /// The uniforms that are supposed to be overwritten every frame.
     pub frame_uniforms: &'a UniformBuffer<FrameUniforms>,
+    /// A collection of quads to draw.
+    pub quads: &'a VertexBuffer<QuadInstance>,
 }
