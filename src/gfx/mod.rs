@@ -1,103 +1,68 @@
 //! This module defines everything that's needed to draw stuff on the screen.
 
+mod shaders;
+
+mod gpu;
 use std::sync::Arc;
 
-use pollster::FutureExt;
-use winit::window::Window;
+pub use gpu::Gpu;
 
-use self::quad_pipeline::QuadPipeline;
+mod surface;
+pub use surface::Surface;
 
-mod quad_pipeline;
-
-/// Keeps traks of the state required to draw stuff on the screen.
-///
-/// This includes the an open connection with the GPU, as well as shaders and other resources.
+/// The renderer is responsible for using the GPU to render things on a render target.
 pub struct Renderer {
-    /// An open connection with the selected GPU device.
-    device: wgpu::Device,
-    /// The queue that's used to submit commands to the GPU.
-    queue: wgpu::Queue,
-    /// The surface on which the renderer is drawing.
-    surface: wgpu::Surface<'static>,
-    /// The current configuration of the surface/swapchain.
-    surface_config: wgpu::SurfaceConfiguration,
+    /// The GPU that's used to perform the work.
+    gpu: Arc<Gpu>,
 
-    /// The pipeline responsible for rendering axis-aligned quads in the world.
-    quad_pipeline: QuadPipeline,
+    /// See [`shaders::quad::create`].
+    quad_pipeline: wgpu::RenderPipeline,
 }
 
 impl Renderer {
-    /// Creates a new [`Renderer`] for the provided window.
-    pub fn new(window: Arc<Window>) -> Self {
-        let surface_size = window.inner_size();
-        let instance = wgpu::Instance::new(Default::default());
-        let surface = instance
-            .create_surface(window)
-            .expect("failed to create a surface from the created window");
-        let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
-                compatible_surface: Some(&surface),
-                force_fallback_adapter: false,
-            })
-            .block_on()
-            .expect("failed to find a suitable GPU adapter");
-        let (device, queue) = adapter
-            .request_device(&Default::default(), None)
-            .block_on()
-            .expect("failed to establish a connection with the selected GPU device");
-        let surface_config = surface
-            .get_default_config(&adapter, surface_size.width, surface_size.height)
-            .expect("the selected GPU adapter is not compatible with the provided surface");
-        surface.configure(&device, &surface_config);
-
-        let quad_pipeline = QuadPipeline::new(&device, surface_config.format);
-
+    /// Creates a new [`Renderer`] instance.
+    pub fn new(gpu: Arc<Gpu>, output_format: wgpu::TextureFormat) -> Self {
         Self {
-            surface_config,
-            surface,
-            device,
-            queue,
-            quad_pipeline,
+            quad_pipeline: shaders::quad::create(&gpu.device, output_format),
+
+            gpu,
         }
     }
 
-    /// Notifies the [`Renderer`] that the size of the window on which it is drawing has changed.
-    pub fn notify_resized(&mut self, width: u32, height: u32) {
-        self.surface_config.width = width;
-        self.surface_config.height = height;
-        self.surface.configure(&self.device, &self.surface_config);
-    }
-
-    /// Acquires the next available image from the underlying swapchain.
-    ///
-    /// If the image is not ready yet, this function will block until it is.
-    pub fn render_next_image(&mut self) {
-        let texture = self
-            .surface
-            .get_current_texture()
-            .expect("failed to acquire the next image from the swapchain");
-        let output_view = texture.texture.create_view(&Default::default());
-
-        let mut command_encoder = self.device.create_command_encoder(&Default::default());
+    /// Renders a frame to the provided target.
+    pub fn render(&self, target: &wgpu::TextureView) {
+        let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
 
         {
-            let mut rp = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: wgpu::StoreOp::Store,
-                    },
-                    resolve_target: None,
-                    view: &output_view,
-                })],
+            let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                color_attachments: &[
+                    // The main output attachment.
+                    Some(wgpu::RenderPassColorAttachment {
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                            store: wgpu::StoreOp::Store,
+                        },
+                        resolve_target: None,
+                        view: target,
+                    }),
+                ],
                 ..Default::default()
             });
 
-            self.quad_pipeline.render(&mut rp);
+            rp.set_pipeline(&self.quad_pipeline);
+            rp.draw(0..4, 0..1);
         }
 
-        self.queue.submit(Some(command_encoder.finish()));
+        self.gpu.queue.submit(Some(encoder.finish()));
+    }
+
+    /// A convenience function that renders a frame to the provided surface.
+    pub fn render_to_surface(&self, surface: &Surface) {
+        let texture = surface.acquire_next_image();
+        let view = texture
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+        self.render(&view);
         texture.present();
     }
 }

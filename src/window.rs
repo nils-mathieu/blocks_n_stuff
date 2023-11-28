@@ -6,7 +6,7 @@ use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::keyboard::KeyCode;
 use winit::window::{Fullscreen, Window, WindowBuilder};
 
-use crate::gfx::Renderer;
+use crate::gfx::{Gpu, Renderer, Surface};
 
 /// The type of the user events dispatched through the event loop.
 ///
@@ -24,16 +24,19 @@ enum UserEvent {}
 pub fn run() {
     let event_loop = create_event_loop();
     let window = create_window(&event_loop);
-    let mut renderer = Renderer::new(window.clone());
 
-    renderer.render_next_image();
+    let gpu = Gpu::new();
+    let mut surface = Surface::new(gpu.clone(), window.clone());
+    let renderer = Renderer::new(gpu, surface.format());
+
+    renderer.render_to_surface(&surface);
     window.set_visible(true);
 
     event_loop
         .run(move |event, target| match event {
             Event::AboutToWait => {
                 // This is where the main application logic should run.
-                renderer.render_next_image();
+                renderer.render_to_surface(&surface);
             }
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => target.exit(),
@@ -57,8 +60,8 @@ pub fn run() {
                 }
                 WindowEvent::Resized(new_size) => {
                     // Update the renderer target size.
-                    renderer.notify_resized(new_size.width, new_size.height);
-                    renderer.render_next_image();
+                    surface.notify_resized(new_size.width, new_size.height);
+                    renderer.render_to_surface(&surface);
                 }
                 _ => (),
             },
