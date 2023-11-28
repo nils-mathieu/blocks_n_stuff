@@ -3,15 +3,22 @@
 /// # Color attachments
 ///
 /// This pipeline uses a single output color attachment. Its format must be of `output_format`.
-pub fn create(device: &wgpu::Device, output_format: wgpu::TextureFormat) -> wgpu::RenderPipeline {
+pub fn create(
+    device: &wgpu::Device,
+    instant_uniforms: &wgpu::BindGroupLayout,
+    output_format: wgpu::TextureFormat,
+) -> wgpu::RenderPipeline {
     let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("Quad Pipeline Shader Module"),
         source: wgpu::ShaderSource::Wgsl(include_str!("quad.wgsl").into()),
     });
 
+    // When multiple pipeline work on the same thing (i.e. custom geometry needing the same
+    // uniforms), we'll probably benefit from using the same pipeline layout every time.
+    // We can call that a "pipeline group"?
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("Quad Pipeline Layout"),
-        bind_group_layouts: &[],
+        bind_group_layouts: &[&instant_uniforms],
         push_constant_ranges: &[],
     });
 
@@ -25,9 +32,9 @@ pub fn create(device: &wgpu::Device, output_format: wgpu::TextureFormat) -> wgpu
         },
         primitive: wgpu::PrimitiveState {
             conservative: false,
-            cull_mode: Some(wgpu::Face::Back),
+            cull_mode: None,
             polygon_mode: wgpu::PolygonMode::Fill,
-            front_face: wgpu::FrontFace::Ccw,
+            front_face: wgpu::FrontFace::Cw,
             topology: wgpu::PrimitiveTopology::TriangleStrip,
             strip_index_format: None,
             unclipped_depth: false,

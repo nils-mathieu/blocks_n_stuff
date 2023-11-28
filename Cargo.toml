@@ -10,10 +10,11 @@ publish = false
 
 [dependencies]
 winit = "0.29"
-wgpu = { path = "../wgpu/wgpu" } # TODO: use crates.io when wgpu finally uses raw-window-handle v0.6
+wgpu = { path = "../wgpu/wgpu" }                     # TODO: use crates.io when wgpu finally uses raw-window-handle v0.6
 pollster = "0.3"
-glam = "0.24"
+glam = { version = "0.24", features = ["bytemuck"] }
 bitflags = "2"
+bytemuck = { version = "1", features = ["derive"] }
 
 [target.'cfg(target_os = "windows")'.dependencies.windows-sys]
 version = "0.52"

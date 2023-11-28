@@ -1,10 +1,13 @@
 use std::sync::Arc;
 
+use glam::{Mat4, Quat, Vec2, Vec3};
+
 use winit::event::KeyEvent;
 use winit::event_loop::EventLoopWindowTarget;
 use winit::keyboard::KeyCode;
 use winit::window::{Fullscreen, Window};
 
+use crate::gfx::render_data::{InstantUniforms, RenderData};
 use crate::gfx::{Gpu, Renderer, Surface};
 use crate::window::UserEvent;
 
@@ -21,8 +24,9 @@ pub struct App {
     surface: Surface,
     /// The renderer contains the resources required to render things using GPU resources.
     renderer: Renderer,
-    /// An open connection with the Graphics Processing Unit that has been selected for use.
-    gpu: Arc<Gpu>,
+
+    /// The current state of the camera.
+    camera: Camera,
 }
 
 impl App {
@@ -36,7 +40,7 @@ impl App {
             window,
             surface,
             renderer,
-            gpu,
+            camera: Camera::default(),
         }
     }
 
@@ -49,10 +53,11 @@ impl App {
     /// changed.
     pub fn notify_resized(&mut self, _target: &Ctx, width: u32, height: u32) {
         self.surface.notify_resized(width, height);
+        self.camera.notify_resized(width, height);
     }
 
     /// Notifies the application that a keyboard event has been received.
-    pub fn notify_keyboard(&mut self, target: &Ctx, event: KeyEvent) {
+    pub fn notify_keyboard(&mut self, target: &Ctx, event: &KeyEvent) {
         // TODO: remove this when a menu is implemented to exit the application.
         // The key to open the menu will probably be Escape key anyway so I won't
         // miss this.
@@ -69,13 +74,136 @@ impl App {
                     .then_some(Fullscreen::Borderless(None)),
             );
         }
+
+        self.camera.notify_keyboard(event);
     }
 
     /// Renders a frame to the window.
     pub fn render(&self) {
-        self.renderer.render_to_surface(&self.surface);
+        let render_data = RenderData {
+            instant_uniforms: InstantUniforms {
+                camera: self.camera.matrix(),
+            },
+        };
+
+        self.renderer.render_to_surface(&self.surface, &render_data);
     }
 
     /// Advances the state of the application by one tick.
-    pub fn tick(&mut self, _target: &Ctx) {}
+    pub fn tick(&mut self, _target: &Ctx, dt: f32) {
+        self.camera.tick(dt);
+    }
+}
+
+/// Stores the state of the camera.
+#[derive(Default)]
+pub struct Camera {
+    /// Whether the user is currently pressing the "forward" key.
+    pressing_forward: bool,
+    /// Whether the user is currently pressing the "backward" key.
+    pressing_backward: bool,
+    /// Whether the user is currently pressing the "left" key.
+    pressing_left: bool,
+    /// Whether the user is currently pressing the "right" key.
+    pressing_right: bool,
+    /// Whether the user is currently pressing the "fly up" key.
+    pressing_fly_up: bool,
+    /// Whether the user is currently pressing the "fly down" key.
+    pressing_fly_down: bool,
+    /// The current movement input of the camera.
+    ///
+    /// The X component represents the horizontal movement, and the Y component represents the
+    /// forward movement.
+    movement_input: Vec2,
+    /// The vertical movement input.
+    vertical_movement_input: f32,
+    /// The position of the camera in world-space coordinates.
+    position: Vec3,
+    /// The yaw of the camera, in radians.
+    yaw: f32,
+    /// The pitch of the camera, in radians.
+    pitch: f32,
+    /// The aspect ratio of the output display.
+    aspect_ratio: f32,
+}
+
+impl Camera {
+    /// The speed at which the camera moves, in units per second.
+    pub const SPEED: f32 = 0.1;
+    /// The speed at which the camera flies up/down.
+    pub const FLY_SPEED: f32 = 0.1;
+    /// The vertical field of view of the camera, in degrees.
+    pub const FOV_Y: f32 = 90.0;
+
+    /// Notifies the camera that the size of the output display has changed.
+    pub fn notify_resized(&mut self, width: u32, height: u32) {
+        self.aspect_ratio = width as f32 / height as f32;
+    }
+
+    /// Notifies the camera that a keyboard event has been received.
+    pub fn notify_keyboard(&mut self, event: &KeyEvent) {
+        if event.physical_key == KeyCode::KeyW {
+            self.pressing_forward = event.state.is_pressed();
+        } else if event.physical_key == KeyCode::KeyS {
+            self.pressing_backward = event.state.is_pressed();
+        } else if event.physical_key == KeyCode::KeyA {
+            self.pressing_left = event.state.is_pressed();
+        } else if event.physical_key == KeyCode::KeyD {
+            self.pressing_right = event.state.is_pressed();
+        } else if event.physical_key == KeyCode::Space {
+            self.pressing_fly_up = event.state.is_pressed();
+        } else if event.physical_key == KeyCode::ShiftLeft {
+            self.pressing_fly_down = event.state.is_pressed();
+        }
+
+        self.movement_input = Vec2::ZERO;
+        if self.pressing_forward {
+            self.movement_input.y += 1.0;
+        }
+        if self.pressing_backward {
+            self.movement_input.y -= 1.0;
+        }
+        if self.pressing_left {
+            self.movement_input.x -= 1.0;
+        }
+        if self.pressing_right {
+            self.movement_input.x += 1.0;
+        }
+        self.movement_input = self.movement_input.normalize_or_zero();
+
+        self.vertical_movement_input = 0.0;
+        if self.pressing_fly_up {
+            self.vertical_movement_input += 1.0;
+        }
+        if self.pressing_fly_down {
+            self.vertical_movement_input -= 1.0;
+        }
+    }
+
+    /// Updates the state of the camera.
+    pub fn tick(&mut self, dt: f32) {
+        self.position += Quat::from_rotation_y(self.yaw)
+            * Vec3::new(self.movement_input.x, 0.0, self.movement_input.y)
+            * Self::SPEED
+            * dt;
+
+        self.position.y += self.vertical_movement_input * Self::FLY_SPEED * dt;
+    }
+
+    /// Computes the rotation of the camera.
+    pub fn rotation(&self) -> Quat {
+        Quat::from_rotation_x(self.pitch) * Quat::from_rotation_y(self.yaw)
+    }
+
+    /// Computes the forward vector of the camera.
+    pub fn forward(&self) -> Vec3 {
+        self.rotation() * Vec3::Z
+    }
+
+    /// Computes the matrix that transforms world-space coordinates into clip-space coordinates.
+    pub fn matrix(&self) -> Mat4 {
+        let perspective = Mat4::perspective_lh(Self::FOV_Y, self.aspect_ratio, 0.1, 100.0);
+        let view = Mat4::look_to_lh(self.position, self.forward(), Vec3::Y);
+        perspective * view
+    }
 }

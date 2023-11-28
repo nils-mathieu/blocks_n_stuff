@@ -17,6 +17,7 @@ pub struct Gpu {
 }
 
 impl Gpu {
+    /// Creates a new [`Gpu`] instance.
     pub fn new() -> Arc<Self> {
         let instance = wgpu::Instance::new(Default::default());
         let adapter = instance

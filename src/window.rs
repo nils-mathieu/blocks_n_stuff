@@ -31,8 +31,15 @@ pub fn run() {
     event_loop
         .run(move |event, target| match event {
             Event::AboutToWait => {
+                // TODO: properly compute the delta time.
+                // Note that this must take in account that sometimes the `AboutToWait` event is
+                // never fired. Maybe simply giving an upper bound to the delta time is enough?
+                // The rule is pretty simple: the user must not see things accelerate. Only slow
+                // down in the worst case.
+                let dt = 1.0;
+
                 // This is where the main application logic should run.
-                app.tick(target);
+                app.tick(target, dt);
                 app.render();
             }
             Event::WindowEvent { event, .. } => match event {
@@ -40,7 +47,7 @@ pub fn run() {
                     app.notify_close_requested(target);
                 }
                 WindowEvent::KeyboardInput { event, .. } => {
-                    app.notify_keyboard(target, event);
+                    app.notify_keyboard(target, &event);
                 }
                 WindowEvent::Resized(s) => {
                     app.notify_resized(target, s.width, s.height);
