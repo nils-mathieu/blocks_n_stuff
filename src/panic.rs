@@ -1,0 +1,77 @@
+use std::panic::PanicInfo;
+
+/// Displays a message box to the user with the provided message.
+///
+/// If the current platform does not support message boxes, this function does nothing.
+#[allow(unused_variables)]
+#[cfg(not(debug_assertions))]
+fn display_message_box(message: &str) {
+    #[cfg(target_os = "windows")]
+    {
+        // TODO:
+        //  It might be cool to use the HWND of the window we opened to display the message box.
+        //  It's kinda tricky because the panic handler is not defined at all at the same place.
+        //  Maybe global storage? But that would require to clean it up properly when the window
+        //  is later destroyed. One alternative would be to install yet another custom panic
+        //  handler *after* the window is created, but that would prevent us to display errors
+        //  properly if the window creation fails.
+
+        use windows_sys::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR};
+
+        let text = message.encode_utf16().chain(Some(0)).collect::<Vec<_>>();
+
+        // The error is ignored. If we can't event display a message box, there's nothing more we
+        // can do.
+        let _ = unsafe {
+            MessageBoxW(
+                0,
+                text.as_ptr(),
+                windows_sys::w!("Unexpected panic :("),
+                MB_ICONERROR,
+            )
+        };
+    }
+}
+
+/// The custom panic hook.
+///
+/// This panic hook is responsible for printing the panic message to the console, as well as opening
+/// a window on platform that support it.
+fn custom_panic_hook(info: &PanicInfo) {
+    // Get the panic message out of the payload.
+    let mut message = info
+        .payload()
+        .downcast_ref::<&str>()
+        .copied()
+        .or_else(|| info.payload().downcast_ref::<String>().map(String::as_str))
+        .unwrap_or("no further information")
+        .to_owned();
+
+    if let Some(location) = info.location() {
+        use std::fmt::Write;
+
+        let _ = write!(
+            message,
+            " (at {}:{}:{})",
+            location.file(),
+            location.line(),
+            location.column()
+        );
+    }
+
+    // Display the message to the user using the console.
+    {
+        use std::io::Write;
+        let _ = writeln!(std::io::stderr(), "\x1B[1;31mpanic\x1B[0m: {message}");
+    }
+
+    // Display the message to the user using a message box.
+    // Only do that in release though, because it's a bit annoying when debugging.
+    #[cfg(not(debug_assertions))]
+    display_message_box(&message);
+}
+
+/// Installs the custom panic hook.
+pub fn install_custom_panic_hook() {
+    std::panic::set_hook(Box::new(custom_panic_hook));
+}

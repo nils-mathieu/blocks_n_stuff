@@ -123,6 +123,7 @@ dependencies = [
 name = "blocks_n_stuff"
 version = "0.1.0"
 dependencies = [
+ "windows-sys 0.48.0",
  "winit",
 ]
 
