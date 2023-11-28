@@ -43,16 +43,26 @@ impl App {
         let surface = Surface::new(gpu.clone(), window.clone());
         let renderer = Renderer::new(gpu.clone(), surface.format());
         let frame_uniforms = renderer.create_frame_uniform_buffer();
-        let mut quads = renderer.create_vertex_buffer(16);
 
-        quads.write(&[
-            QuadInstance::X,
-            QuadInstance::NEG_X,
-            QuadInstance::Y,
-            QuadInstance::NEG_Y,
-            QuadInstance::Z,
-            QuadInstance::NEG_Z,
-        ]);
+        let mut quads_buf = Vec::new();
+        for x in 0..31 {
+            for z in 0..31 {
+                let pos =
+                    QuadInstance::from_x(x) | QuadInstance::from_y(0) | QuadInstance::from_z(z);
+
+                quads_buf.extend_from_slice(&[
+                    pos | QuadInstance::X,
+                    pos | QuadInstance::NEG_X,
+                    pos | QuadInstance::Y,
+                    pos | QuadInstance::NEG_Y,
+                    pos | QuadInstance::Z,
+                    pos | QuadInstance::NEG_Z,
+                ]);
+            }
+        }
+
+        let mut quads = renderer.create_vertex_buffer(quads_buf.len() as _);
+        quads.write(&quads_buf);
 
         Self {
             window,
