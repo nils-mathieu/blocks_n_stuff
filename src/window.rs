@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
 use winit::dpi::PhysicalSize;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::keyboard::KeyCode;
-use winit::window::{Window, WindowBuilder};
+use winit::window::{Fullscreen, Window, WindowBuilder};
 
 /// The type of the user events dispatched through the event loop.
 ///
@@ -21,7 +23,6 @@ pub fn run() {
     let event_loop = create_event_loop();
     let window = create_window(&event_loop);
 
-    // TODO: tick the application once to render a frame, and only then make the window visible.
     window.set_visible(true);
 
     event_loop
@@ -37,6 +38,16 @@ pub fn run() {
                     // miss this.
                     if event.state.is_pressed() && event.physical_key == KeyCode::Escape {
                         target.exit();
+                    }
+
+                    // Toggle fullscreen with F11.
+                    if event.state.is_pressed() && event.physical_key == KeyCode::F11 {
+                        window.set_fullscreen(
+                            window
+                                .fullscreen()
+                                .is_none()
+                                .then_some(Fullscreen::Borderless(None)),
+                        );
                     }
                 }
                 _ => (),
@@ -75,11 +86,12 @@ fn create_event_loop() -> EventLoop<UserEvent> {
 /// # Panics
 ///
 /// This function panics if the window cannot be created.
-fn create_window(event_loop: &EventLoop<UserEvent>) -> Window {
+fn create_window(event_loop: &EventLoop<UserEvent>) -> Arc<Window> {
     WindowBuilder::new()
         .with_title("Blocks 'n Stuff")
         .with_min_inner_size(PhysicalSize::new(300, 300))
         .with_visible(false)
         .build(event_loop)
         .expect("failed to create the `winit` window")
+        .into()
 }
