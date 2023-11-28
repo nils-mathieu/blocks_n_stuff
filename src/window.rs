@@ -3,15 +3,14 @@ use std::sync::Arc;
 use winit::dpi::PhysicalSize;
 use winit::event::{Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
-use winit::keyboard::KeyCode;
-use winit::window::{Fullscreen, Window, WindowBuilder};
+use winit::window::{Window, WindowBuilder};
 
-use crate::gfx::{Gpu, Renderer, Surface};
+use crate::app::App;
 
 /// The type of the user events dispatched through the event loop.
 ///
 /// Right now, no custom events are used.
-enum UserEvent {}
+pub enum UserEvent {}
 
 /// This function is responsible for creating a window, as well as dispatching the events it
 /// receives from the underlying platform to the application state.
@@ -24,44 +23,28 @@ enum UserEvent {}
 pub fn run() {
     let event_loop = create_event_loop();
     let window = create_window(&event_loop);
+    let mut app = App::new(window.clone());
 
-    let gpu = Gpu::new();
-    let mut surface = Surface::new(gpu.clone(), window.clone());
-    let renderer = Renderer::new(gpu, surface.format());
-
-    renderer.render_to_surface(&surface);
+    app.render();
     window.set_visible(true);
 
     event_loop
         .run(move |event, target| match event {
             Event::AboutToWait => {
                 // This is where the main application logic should run.
-                renderer.render_to_surface(&surface);
+                app.tick();
+                app.render();
             }
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => target.exit(),
                 WindowEvent::KeyboardInput { event, .. } => {
-                    // TODO: remove this when a menu is implemented to exit the application.
-                    // The key to open the menu will probably be Escape key anyway so I won't
-                    // miss this.
-                    if event.state.is_pressed() && event.physical_key == KeyCode::Escape {
-                        target.exit();
-                    }
-
-                    // Toggle fullscreen with F11.
-                    if event.state.is_pressed() && event.physical_key == KeyCode::F11 {
-                        window.set_fullscreen(
-                            window
-                                .fullscreen()
-                                .is_none()
-                                .then_some(Fullscreen::Borderless(None)),
-                        );
-                    }
+                    app.notify_keyboard(target, event);
                 }
                 WindowEvent::Resized(new_size) => {
-                    // Update the renderer target size.
-                    surface.notify_resized(new_size.width, new_size.height);
-                    renderer.render_to_surface(&surface);
+                    app.notify_resized(new_size.width, new_size.height);
+                }
+                WindowEvent::RedrawRequested => {
+                    app.render();
                 }
                 _ => (),
             },
