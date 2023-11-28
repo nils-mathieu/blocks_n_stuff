@@ -40,9 +40,14 @@ impl App {
         }
     }
 
+    /// Notifies the application that the window has been requested to close.
+    pub fn notify_close_requested(&mut self, target: &Ctx) {
+        target.exit();
+    }
+
     /// Notifies the application that the size of the window on which it is drawing stuff has
     /// changed.
-    pub fn notify_resized(&mut self, width: u32, height: u32) {
+    pub fn notify_resized(&mut self, _target: &Ctx, width: u32, height: u32) {
         self.surface.notify_resized(width, height);
     }
 
@@ -72,5 +77,5 @@ impl App {
     }
 
     /// Advances the state of the application by one tick.
-    pub fn tick(&mut self) {}
+    pub fn tick(&mut self, _target: &Ctx) {}
 }

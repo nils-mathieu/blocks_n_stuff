@@ -44,6 +44,12 @@ impl Surface {
     pub fn notify_resized(&mut self, width: u32, height: u32) {
         self.surface_config.width = width;
         self.surface_config.height = height;
+
+        // Don't actually reconfigure the surface if the size is 0.
+        if self.surface_config.width == 0 || self.surface_config.height == 0 {
+            return;
+        }
+
         self.surface
             .configure(&self.gpu.device, &self.surface_config);
     }
@@ -51,9 +57,21 @@ impl Surface {
     /// Acquires the next available image from the underlying swapchain.
     ///
     /// If the image is not ready yet, this function will block until it is.
-    pub fn acquire_next_image(&self) -> wgpu::SurfaceTexture {
-        self.surface
-            .get_current_texture()
-            .expect("failed to acquire the next image from the swapchain")
+    ///
+    /// # Errors
+    ///
+    /// This function may return [`None`] in either of two cases:
+    ///
+    /// 1. The image could not be aquired after a timeout.
+    ///
+    /// 2. The surface is outdated. This usually occurs because the window has been minimized and
+    ///    doing about anything with it would be invalid.
+    pub fn acquire_next_image(&self) -> Option<wgpu::SurfaceTexture> {
+        match self.surface.get_current_texture() {
+            Ok(texture) => Some(texture),
+            Err(wgpu::SurfaceError::Outdated) => None,
+            Err(wgpu::SurfaceError::Timeout) => None,
+            Err(e) => panic!("failed to acquire next image from the surface: {e}"),
+        }
     }
 }

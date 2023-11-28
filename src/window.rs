@@ -32,16 +32,18 @@ pub fn run() {
         .run(move |event, target| match event {
             Event::AboutToWait => {
                 // This is where the main application logic should run.
-                app.tick();
+                app.tick(target);
                 app.render();
             }
             Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => target.exit(),
+                WindowEvent::CloseRequested => {
+                    app.notify_close_requested(target);
+                }
                 WindowEvent::KeyboardInput { event, .. } => {
                     app.notify_keyboard(target, event);
                 }
-                WindowEvent::Resized(new_size) => {
-                    app.notify_resized(new_size.width, new_size.height);
+                WindowEvent::Resized(s) => {
+                    app.notify_resized(target, s.width, s.height);
                 }
                 WindowEvent::RedrawRequested => {
                     app.render();

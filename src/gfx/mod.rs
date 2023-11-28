@@ -58,7 +58,10 @@ impl Renderer {
 
     /// A convenience function that renders a frame to the provided surface.
     pub fn render_to_surface(&self, surface: &Surface) {
-        let texture = surface.acquire_next_image();
+        let Some(texture) = surface.acquire_next_image() else {
+            return;
+        };
+
         let view = texture
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
