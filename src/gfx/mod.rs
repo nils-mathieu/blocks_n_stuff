@@ -5,6 +5,10 @@ use std::sync::Arc;
 use pollster::FutureExt;
 use winit::window::Window;
 
+use self::quad_pipeline::QuadPipeline;
+
+mod quad_pipeline;
+
 /// Keeps traks of the state required to draw stuff on the screen.
 ///
 /// This includes the an open connection with the GPU, as well as shaders and other resources.
@@ -17,6 +21,9 @@ pub struct Renderer {
     surface: wgpu::Surface<'static>,
     /// The current configuration of the surface/swapchain.
     surface_config: wgpu::SurfaceConfiguration,
+
+    /// The pipeline responsible for rendering axis-aligned quads in the world.
+    quad_pipeline: QuadPipeline,
 }
 
 impl Renderer {
@@ -44,11 +51,14 @@ impl Renderer {
             .expect("the selected GPU adapter is not compatible with the provided surface");
         surface.configure(&device, &surface_config);
 
+        let quad_pipeline = QuadPipeline::new(&device, surface_config.format);
+
         Self {
             surface_config,
             surface,
             device,
             queue,
+            quad_pipeline,
         }
     }
 
@@ -72,7 +82,7 @@ impl Renderer {
         let mut command_encoder = self.device.create_command_encoder(&Default::default());
 
         {
-            let _rp = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut rp = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -83,6 +93,8 @@ impl Renderer {
                 })],
                 ..Default::default()
             });
+
+            self.quad_pipeline.render(&mut rp);
         }
 
         self.queue.submit(Some(command_encoder.finish()));
