@@ -13,8 +13,8 @@ pub use surface::Surface;
 
 pub mod render_data;
 
-use self::helpers::UniformBuffer;
-use self::render_data::{InstantUniforms, RenderData};
+use self::helpers::{UniformBuffer, UniformBufferLayout};
+use self::render_data::{FrameUniforms, RenderData};
 
 /// The renderer is responsible for using the GPU to render things on a render target.
 pub struct Renderer {
@@ -24,33 +24,33 @@ pub struct Renderer {
     /// See [`shaders::quad::create`].
     quad_pipeline: wgpu::RenderPipeline,
 
-    /// The uniforms that are shared across a single frame.
-    instant_uniforms: UniformBuffer,
+    /// The uniform buffer layout that's used to describe the uniform buffers that are supposed
+    /// to change on every single frame.
+    frame_uniform_layout: UniformBufferLayout<FrameUniforms>,
 }
 
 impl Renderer {
     /// Creates a new [`Renderer`] instance.
     pub fn new(gpu: Arc<Gpu>, output_format: wgpu::TextureFormat) -> Self {
-        let instant_uniforms =
-            UniformBuffer::new_for::<InstantUniforms>(&gpu.device, wgpu::ShaderStages::VERTEX);
+        let frame_uniform_layout =
+            UniformBufferLayout::new(gpu.clone(), wgpu::ShaderStages::VERTEX);
 
         Self {
-            quad_pipeline: shaders::quad::create(
-                &gpu.device,
-                instant_uniforms.layout(),
-                output_format,
-            ),
-            instant_uniforms,
+            quad_pipeline: shaders::quad::create(&gpu.device, &frame_uniform_layout, output_format),
+
+            frame_uniform_layout,
+
             gpu,
         }
     }
 
+    /// Creates a new [`UniformBuffer`] that follows the layout of the frame uniform layout.
+    pub fn create_frame_uniform_buffer(&self) -> UniformBuffer<FrameUniforms> {
+        self.frame_uniform_layout.instanciate(&self.gpu.device)
+    }
+
     /// Renders a frame to the provided target.
     pub fn render(&self, target: &wgpu::TextureView, render_data: &RenderData) {
-        // Write the render data to the uniform buffer.
-        self.instant_uniforms
-            .write(&self.gpu.queue, &render_data.instant_uniforms);
-
         // Start recording the commands.
         let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
 
@@ -70,7 +70,7 @@ impl Renderer {
                 ..Default::default()
             });
 
-            rp.set_bind_group(0, self.instant_uniforms.bind_group(), &[]);
+            rp.set_bind_group(0, render_data.frame_uniforms.bind_group(), &[]);
             rp.set_pipeline(&self.quad_pipeline);
             rp.draw(0..4, 0..1);
         }

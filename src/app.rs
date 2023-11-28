@@ -7,7 +7,7 @@ use winit::event_loop::EventLoopWindowTarget;
 use winit::keyboard::KeyCode;
 use winit::window::{Fullscreen, Window};
 
-use crate::gfx::render_data::{InstantUniforms, RenderData};
+use crate::gfx::render_data::{FrameUniforms, RenderData, UniformBuffer};
 use crate::gfx::{Gpu, Renderer, Surface};
 use crate::window::UserEvent;
 
@@ -25,6 +25,9 @@ pub struct App {
     /// The renderer contains the resources required to render things using GPU resources.
     renderer: Renderer,
 
+    /// The uniform buffer that stores the frame-specific data.
+    frame_uniforms: UniformBuffer<FrameUniforms>,
+
     /// The current state of the camera.
     camera: Camera,
 }
@@ -35,11 +38,13 @@ impl App {
         let gpu = Gpu::new();
         let surface = Surface::new(gpu.clone(), window.clone());
         let renderer = Renderer::new(gpu.clone(), surface.format());
+        let frame_uniforms = renderer.create_frame_uniform_buffer();
 
         Self {
             window,
             surface,
             renderer,
+            frame_uniforms,
             camera: Camera::default(),
         }
     }
@@ -80,10 +85,13 @@ impl App {
 
     /// Renders a frame to the window.
     pub fn render(&self) {
+        // Write the frame-specific data to the uniform buffer.
+        self.frame_uniforms.write(&FrameUniforms {
+            camera: self.camera.matrix(),
+        });
+
         let render_data = RenderData {
-            instant_uniforms: InstantUniforms {
-                camera: self.camera.matrix(),
-            },
+            frame_uniforms: &self.frame_uniforms,
         };
 
         self.renderer.render_to_surface(&self.surface, &render_data);

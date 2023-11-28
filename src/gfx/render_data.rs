@@ -1,12 +1,14 @@
 use bytemuck::{Pod, Zeroable};
 use glam::Mat4;
 
+pub use super::helpers::UniformBuffer;
+
 /// The uniforms that are modified every frame.
 ///
 /// This includes the camera matrix, among other things.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Zeroable, Pod)]
-pub struct InstantUniforms {
+pub struct FrameUniforms {
     /// The camera matrix, responsible for transforming world-space coordinates into clip-space
     /// coordinates.
     ///
@@ -15,7 +17,7 @@ pub struct InstantUniforms {
 }
 
 /// Contains all the state that needs to be drawn to the screen.
-pub struct RenderData {
-    /// The uniforms that are shared across a single frame.
-    pub instant_uniforms: InstantUniforms,
+pub struct RenderData<'a> {
+    /// The uniforms that are supposed to be overwritten every frame.
+    pub frame_uniforms: &'a UniformBuffer<FrameUniforms>,
 }
