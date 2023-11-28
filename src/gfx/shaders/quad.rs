@@ -179,7 +179,13 @@ pub fn create(
                 write_mask: wgpu::ColorWrites::ALL,
             })],
         }),
-        depth_stencil: None,
+        depth_stencil: Some(wgpu::DepthStencilState {
+            bias: wgpu::DepthBiasState::default(),
+            depth_compare: wgpu::CompareFunction::LessEqual,
+            depth_write_enabled: true,
+            format: wgpu::TextureFormat::Depth32Float,
+            stencil: wgpu::StencilState::default(),
+        }),
         multisample: wgpu::MultisampleState {
             alpha_to_coverage_enabled: false,
             count: 1,

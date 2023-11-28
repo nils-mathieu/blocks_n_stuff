@@ -27,18 +27,27 @@ pub struct Renderer {
     /// The uniform buffer layout that's used to describe the uniform buffers that are supposed
     /// to change on every single frame.
     frame_uniform_layout: UniformBufferLayout<FrameUniforms>,
+
+    /// A full view into the depth buffer.
+    depth_buffer_view: wgpu::TextureView,
 }
 
 impl Renderer {
     /// Creates a new [`Renderer`] instance.
-    pub fn new(gpu: Arc<Gpu>, output_format: wgpu::TextureFormat) -> Self {
+    pub fn new(for_surface: &Surface) -> Self {
+        let gpu = for_surface.gpu().clone();
+        let (width, height) = for_surface.size();
+        let format = for_surface.format();
+
         let frame_uniform_layout =
             UniformBufferLayout::new(gpu.clone(), wgpu::ShaderStages::VERTEX);
 
         Self {
-            quad_pipeline: shaders::quad::create(&gpu.device, &frame_uniform_layout, output_format),
+            quad_pipeline: shaders::quad::create(&gpu.device, &frame_uniform_layout, format),
 
             frame_uniform_layout,
+
+            depth_buffer_view: create_depth_buffer(&gpu, width, height),
 
             gpu,
         }
@@ -55,6 +64,11 @@ impl Renderer {
         self.frame_uniform_layout.instanciate(&self.gpu.device)
     }
 
+    /// Notifies the renderer that the size of the window on which it is drawing has changed.
+    pub fn notify_resized(&mut self, width: u32, height: u32) {
+        self.depth_buffer_view = create_depth_buffer(&self.gpu, width, height);
+    }
+
     /// Renders a frame to the provided target.
     pub fn render(&self, target: &wgpu::TextureView, render_data: &RenderData) {
         // Start recording the commands.
@@ -62,6 +76,7 @@ impl Renderer {
 
         {
             let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Main Render Pass"),
                 color_attachments: &[
                     // The main output attachment.
                     Some(wgpu::RenderPassColorAttachment {
@@ -73,6 +88,14 @@ impl Renderer {
                         view: target,
                     }),
                 ],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.depth_buffer_view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                }),
                 ..Default::default()
             });
 
@@ -97,4 +120,24 @@ impl Renderer {
         self.render(&view, render_data);
         texture.present();
     }
+}
+
+/// Creates a depth buffer that can be used to render 3D scenes.
+fn create_depth_buffer(gpu: &Gpu, width: u32, height: u32) -> wgpu::TextureView {
+    let depth_buffer = gpu.device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("Depth Buffer"),
+        size: wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Depth32Float,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        view_formats: &[],
+    });
+
+    depth_buffer.create_view(&wgpu::TextureViewDescriptor::default())
 }

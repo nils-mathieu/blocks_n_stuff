@@ -34,10 +34,22 @@ impl Surface {
         }
     }
 
+    /// Returns the current size of the surface.
+    #[inline]
+    pub fn size(&self) -> (u32, u32) {
+        (self.surface_config.width, self.surface_config.height)
+    }
+
     /// The format of the surface.
     #[inline]
     pub fn format(&self) -> wgpu::TextureFormat {
         self.surface_config.format
+    }
+
+    /// Returns the [`Gpu`] instance that was used to create this [`Surface`].
+    #[inline]
+    pub fn gpu(&self) -> &Arc<Gpu> {
+        &self.gpu
     }
 
     /// Notifies the [`Renderer`] that the size of the window on which it is drawing has changed.

@@ -41,7 +41,7 @@ impl App {
     pub fn new(window: Arc<Window>) -> Self {
         let gpu = Gpu::new();
         let surface = Surface::new(gpu.clone(), window.clone());
-        let renderer = Renderer::new(gpu.clone(), surface.format());
+        let renderer = Renderer::new(&surface);
         let frame_uniforms = renderer.create_frame_uniform_buffer();
 
         let mut quads_buf = Vec::new();
@@ -89,6 +89,7 @@ impl App {
     /// changed.
     pub fn notify_resized(&mut self, _target: &Ctx, width: u32, height: u32) {
         self.surface.notify_resized(width, height);
+        self.renderer.notify_resized(width, height);
         self.camera.notify_resized(width, height);
     }
 
