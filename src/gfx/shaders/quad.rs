@@ -1,8 +1,9 @@
 use bitflags::bitflags;
 use bytemuck::{Pod, Zeroable};
 
-use crate::gfx::helpers::UniformBufferLayout;
-use crate::gfx::render_data::FrameUniforms;
+use crate::gfx::Gpu;
+
+use super::RenderResources;
 
 bitflags! {
     /// Some flags that are stored in a [`QuadInstance`] to describe it.
@@ -126,71 +127,69 @@ unsafe impl Pod for QuadInstance {}
 /// # Color attachments
 ///
 /// This pipeline uses a single output color attachment. Its format must be of `output_format`.
+///
+/// # Layout
+///
+/// The layout of this pipeline is the [`RenderResources::world_pipeline_layout`] layout.
 pub fn create(
-    device: &wgpu::Device,
-    frame_uniforms: &UniformBufferLayout<FrameUniforms>,
+    gpu: &Gpu,
+    resources: &RenderResources,
     output_format: wgpu::TextureFormat,
 ) -> wgpu::RenderPipeline {
-    let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("Quad Pipeline Shader Module"),
-        source: wgpu::ShaderSource::Wgsl(include_str!("quad.wgsl").into()),
-    });
+    let shader_module = gpu
+        .device
+        .create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Quad Pipeline Shader Module"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("quad.wgsl").into()),
+        });
 
-    // When multiple pipeline work on the same thing (i.e. custom geometry needing the same
-    // uniforms), we'll probably benefit from using the same pipeline layout every time.
-    // We can call that a "pipeline group"?
-    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: Some("Quad Pipeline Layout"),
-        bind_group_layouts: &[frame_uniforms.layout()],
-        push_constant_ranges: &[],
-    });
-
-    device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some("Quad Pipeline"),
-        layout: Some(&pipeline_layout),
-        vertex: wgpu::VertexState {
-            buffers: &[wgpu::VertexBufferLayout {
-                array_stride: std::mem::size_of::<QuadInstance>() as wgpu::BufferAddress,
-                attributes: &[wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Uint32,
-                    offset: 0,
-                    shader_location: 0,
+    gpu.device
+        .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Quad Pipeline"),
+            layout: Some(&resources.world_pipeline_layout),
+            vertex: wgpu::VertexState {
+                buffers: &[wgpu::VertexBufferLayout {
+                    array_stride: std::mem::size_of::<QuadInstance>() as wgpu::BufferAddress,
+                    attributes: &[wgpu::VertexAttribute {
+                        format: wgpu::VertexFormat::Uint32,
+                        offset: 0,
+                        shader_location: 0,
+                    }],
+                    step_mode: wgpu::VertexStepMode::Instance,
                 }],
-                step_mode: wgpu::VertexStepMode::Instance,
-            }],
-            entry_point: "vs_main",
-            module: &shader_module,
-        },
-        primitive: wgpu::PrimitiveState {
-            conservative: false,
-            cull_mode: Some(wgpu::Face::Back),
-            polygon_mode: wgpu::PolygonMode::Fill,
-            front_face: wgpu::FrontFace::Cw,
-            topology: wgpu::PrimitiveTopology::TriangleStrip,
-            strip_index_format: None,
-            unclipped_depth: false,
-        },
-        fragment: Some(wgpu::FragmentState {
-            entry_point: "fs_main",
-            module: &shader_module,
-            targets: &[Some(wgpu::ColorTargetState {
-                blend: Some(wgpu::BlendState::REPLACE),
-                format: output_format,
-                write_mask: wgpu::ColorWrites::ALL,
-            })],
-        }),
-        depth_stencil: Some(wgpu::DepthStencilState {
-            bias: wgpu::DepthBiasState::default(),
-            depth_compare: wgpu::CompareFunction::LessEqual,
-            depth_write_enabled: true,
-            format: wgpu::TextureFormat::Depth32Float,
-            stencil: wgpu::StencilState::default(),
-        }),
-        multisample: wgpu::MultisampleState {
-            alpha_to_coverage_enabled: false,
-            count: 1,
-            mask: !0,
-        },
-        multiview: None,
-    })
+                entry_point: "vs_main",
+                module: &shader_module,
+            },
+            primitive: wgpu::PrimitiveState {
+                conservative: false,
+                cull_mode: Some(wgpu::Face::Back),
+                polygon_mode: wgpu::PolygonMode::Fill,
+                front_face: wgpu::FrontFace::Cw,
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
+                strip_index_format: None,
+                unclipped_depth: false,
+            },
+            fragment: Some(wgpu::FragmentState {
+                entry_point: "fs_main",
+                module: &shader_module,
+                targets: &[Some(wgpu::ColorTargetState {
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    format: output_format,
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            depth_stencil: Some(wgpu::DepthStencilState {
+                bias: wgpu::DepthBiasState::default(),
+                depth_compare: wgpu::CompareFunction::LessEqual,
+                depth_write_enabled: true,
+                format: wgpu::TextureFormat::Depth32Float,
+                stencil: wgpu::StencilState::default(),
+            }),
+            multisample: wgpu::MultisampleState {
+                alpha_to_coverage_enabled: false,
+                count: 1,
+                mask: !0,
+            },
+            multiview: None,
+        })
 }

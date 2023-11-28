@@ -8,8 +8,6 @@ use crate::gfx::Gpu;
 /// A wrapper around a [`wgpu::BindGroupLayout`] that includes a single entry that is suitable
 /// for a uniform buffer containing an instance of `T`.
 pub struct UniformBufferLayout<T: ?Sized> {
-    /// The GPU that owns the bind group layout.
-    gpu: Arc<Gpu>,
     /// The layout of the bind group.
     layout: wgpu::BindGroupLayout,
     /// The type that's expected to be stored in the uniform buffer.
@@ -18,7 +16,7 @@ pub struct UniformBufferLayout<T: ?Sized> {
 
 impl<T> UniformBufferLayout<T> {
     /// Creates a new [`UniformBufferLayout`] instance.
-    pub fn new(gpu: Arc<Gpu>, visibility: wgpu::ShaderStages) -> Self {
+    pub fn new(gpu: &Gpu, visibility: wgpu::ShaderStages) -> Self {
         Self {
             layout: create_uniform_group_layout(
                 &gpu.device,
@@ -27,7 +25,6 @@ impl<T> UniformBufferLayout<T> {
                 wgpu::BufferSize::new(std::mem::size_of::<T>() as _)
                     .expect("can't create a UniformBufferLayout for a zero-sized type"),
             ),
-            gpu,
             _marker: PhantomData,
         }
     }
@@ -39,9 +36,9 @@ impl<T> UniformBufferLayout<T> {
     }
 
     /// Instanciate a [`UniformBuffer`] that follows the layout of this [`UniformBufferLayout`].
-    pub fn instanciate(&self, device: &wgpu::Device) -> UniformBuffer<T> {
+    pub fn instanciate(&self, gpu: Arc<Gpu>) -> UniformBuffer<T> {
         let (buffer, bind_group) = create_uniform_buffer(
-            device,
+            &gpu.device,
             std::any::type_name::<T>(),
             wgpu::BufferSize::new(std::mem::size_of::<T>() as _)
                 .expect("can't create a UniformBufferLayout for a zero-sized type"),
@@ -49,7 +46,7 @@ impl<T> UniformBufferLayout<T> {
         );
 
         UniformBuffer {
-            gpu: self.gpu.clone(),
+            gpu,
             _marker: PhantomData,
             bind_group,
             buffer,

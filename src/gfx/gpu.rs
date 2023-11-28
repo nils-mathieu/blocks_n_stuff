@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use pollster::FutureExt;
+use winit::window::Window;
 
 /// Represents an open connection with a Graphics Processing Unit.
 pub struct Gpu {
@@ -18,12 +19,15 @@ pub struct Gpu {
 
 impl Gpu {
     /// Creates a new [`Gpu`] instance.
-    pub fn new() -> Arc<Self> {
+    pub fn new(window: Arc<Window>) -> (Arc<Self>, wgpu::Surface<'static>) {
         let instance = wgpu::Instance::new(Default::default());
+        let surface = instance
+            .create_surface(window)
+            .expect("failed to create a surface for the provided window");
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
-                compatible_surface: None,
+                compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             })
             .block_on()
@@ -33,11 +37,14 @@ impl Gpu {
             .block_on()
             .expect("failed to establish a connection with the selected GPU device");
 
-        Arc::new(Self {
-            instance,
-            adapter,
-            device,
-            queue,
-        })
+        (
+            Arc::new(Self {
+                instance,
+                adapter,
+                device,
+                queue,
+            }),
+            surface,
+        )
     }
 }

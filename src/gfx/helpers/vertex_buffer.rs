@@ -25,7 +25,7 @@ impl<T> VertexBuffer<T> {
     /// Creates a new [`VertexBuffer`] instance.
     pub fn new(gpu: Arc<Gpu>, capacity: wgpu::BufferAddress) -> Self {
         let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Vertex Buffer"),
+            label: Some(std::any::type_name::<T>()),
             size: capacity * std::mem::size_of::<T>() as wgpu::BufferAddress,
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
@@ -62,7 +62,7 @@ impl<T> VertexBuffer<T> {
         // If the buffer is not large enough, resize it.
         if data_len > self.cap {
             self.buffer = self.gpu.device.create_buffer(&wgpu::BufferDescriptor {
-                label: Some("Vertex Buffer"),
+                label: Some(std::any::type_name::<T>()),
                 size: self.cap * std::mem::size_of::<T>() as wgpu::BufferAddress,
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,

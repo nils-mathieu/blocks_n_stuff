@@ -10,7 +10,7 @@ use winit::window::{CursorGrabMode, Fullscreen, Window};
 use crate::gfx::render_data::{
     FrameUniforms, QuadInstance, RenderData, UniformBuffer, VertexBuffer,
 };
-use crate::gfx::{Gpu, Renderer, Surface};
+use crate::gfx::Renderer;
 use crate::window::UserEvent;
 
 /// The context passed to the functions of [`App`] to control the event loop.
@@ -22,8 +22,6 @@ pub struct App {
     ///
     /// This can be used to control it.
     window: Arc<Window>,
-    /// The surface is responsible for presenting rendered frames to the window.
-    surface: Surface,
     /// The renderer contains the resources required to render things using GPU resources.
     renderer: Renderer,
 
@@ -39,9 +37,7 @@ pub struct App {
 impl App {
     /// Creates a new [`App`] instance.
     pub fn new(window: Arc<Window>) -> Self {
-        let gpu = Gpu::new();
-        let surface = Surface::new(gpu.clone(), window.clone());
-        let renderer = Renderer::new(&surface);
+        let renderer = Renderer::new(window.clone());
         let frame_uniforms = renderer.create_frame_uniform_buffer();
 
         let mut quads_buf = Vec::new();
@@ -72,7 +68,6 @@ impl App {
 
         Self {
             window,
-            surface,
             renderer,
             frame_uniforms,
             camera: Camera::default(),
@@ -88,7 +83,6 @@ impl App {
     /// Notifies the application that the size of the window on which it is drawing stuff has
     /// changed.
     pub fn notify_resized(&mut self, _target: &Ctx, width: u32, height: u32) {
-        self.surface.notify_resized(width, height);
         self.renderer.notify_resized(width, height);
         self.camera.notify_resized(width, height);
     }
@@ -135,7 +129,7 @@ impl App {
             quads: &self.quads,
         };
 
-        self.renderer.render_to_surface(&self.surface, &render_data);
+        self.renderer.render(&render_data);
     }
 
     /// Advances the state of the application by one tick.

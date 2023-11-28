@@ -2,54 +2,50 @@
 
 use std::sync::Arc;
 
+use winit::window::Window;
+
 mod helpers;
+mod render_graph;
 mod shaders;
 
 mod gpu;
 pub use gpu::Gpu;
 
-mod surface;
-pub use surface::Surface;
-
 pub mod render_data;
 
-use self::helpers::{UniformBuffer, UniformBufferLayout};
+use self::helpers::UniformBuffer;
 use self::render_data::{FrameUniforms, RenderData};
+use self::render_graph::RenderGraph;
+use self::shaders::RenderResources;
 
 /// The renderer is responsible for using the GPU to render things on a render target.
 pub struct Renderer {
-    /// The GPU that's used to perform the work.
     gpu: Arc<Gpu>,
-
-    /// See [`shaders::quad::create`].
-    quad_pipeline: wgpu::RenderPipeline,
-
-    /// The uniform buffer layout that's used to describe the uniform buffers that are supposed
-    /// to change on every single frame.
-    frame_uniform_layout: UniformBufferLayout<FrameUniforms>,
-
-    /// A full view into the depth buffer.
-    depth_buffer_view: wgpu::TextureView,
+    surface: wgpu::Surface<'static>,
+    config: wgpu::SurfaceConfiguration,
+    resources: RenderResources,
+    graph: RenderGraph,
 }
 
 impl Renderer {
     /// Creates a new [`Renderer`] instance.
-    pub fn new(for_surface: &Surface) -> Self {
-        let gpu = for_surface.gpu().clone();
-        let (width, height) = for_surface.size();
-        let format = for_surface.format();
+    pub fn new(window: Arc<Window>) -> Self {
+        let (width, height) = window.inner_size().into();
 
-        let frame_uniform_layout =
-            UniformBufferLayout::new(gpu.clone(), wgpu::ShaderStages::VERTEX);
+        let (gpu, surface) = Gpu::new(window);
+        let config = surface
+            .get_default_config(&gpu.adapter, width, height)
+            .unwrap();
+        surface.configure(&gpu.device, &config);
+        let resources = RenderResources::new(&gpu);
+        let graph = RenderGraph::new(&gpu, &resources, &config);
 
         Self {
-            quad_pipeline: shaders::quad::create(&gpu.device, &frame_uniform_layout, format),
-
-            frame_uniform_layout,
-
-            depth_buffer_view: create_depth_buffer(&gpu, width, height),
-
             gpu,
+            surface,
+            config,
+            resources,
+            graph,
         }
     }
 
@@ -61,83 +57,28 @@ impl Renderer {
 
     /// Creates a new [`UniformBuffer`] that follows the layout of the frame uniform layout.
     pub fn create_frame_uniform_buffer(&self) -> UniformBuffer<FrameUniforms> {
-        self.frame_uniform_layout.instanciate(&self.gpu.device)
+        self.resources.frame_uniforms.instanciate(self.gpu.clone())
     }
 
     /// Notifies the renderer that the size of the window on which it is drawing has changed.
     pub fn notify_resized(&mut self, width: u32, height: u32) {
-        self.depth_buffer_view = create_depth_buffer(&self.gpu, width, height);
+        self.config.width = width;
+        self.config.height = height;
+        self.surface.configure(&self.gpu.device, &self.config);
+        self.graph.notify_resized(&self.gpu, width, height);
     }
 
-    /// Renders a frame to the provided target.
-    pub fn render(&self, target: &wgpu::TextureView, render_data: &RenderData) {
-        // Start recording the commands.
-        let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
-
-        {
-            let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Main Render Pass"),
-                color_attachments: &[
-                    // The main output attachment.
-                    Some(wgpu::RenderPassColorAttachment {
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                            store: wgpu::StoreOp::Store,
-                        },
-                        resolve_target: None,
-                        view: target,
-                    }),
-                ],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &self.depth_buffer_view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: wgpu::StoreOp::Store,
-                    }),
-                    stencil_ops: None,
-                }),
-                ..Default::default()
-            });
-
-            rp.set_bind_group(0, render_data.frame_uniforms.bind_group(), &[]);
-            rp.set_vertex_buffer(0, render_data.quads.slice());
-            rp.set_pipeline(&self.quad_pipeline);
-            rp.draw(0..4, 0..render_data.quads.len() as u32);
-        }
-
-        self.gpu.queue.submit(Some(encoder.finish()));
-    }
-
-    /// A convenience function that renders a frame to the provided surface.
-    pub fn render_to_surface(&self, surface: &Surface, render_data: &RenderData) {
-        let Some(texture) = surface.acquire_next_image() else {
-            return;
+    /// Renders a new frame on the target surface.
+    pub fn render(&mut self, render_data: &RenderData) {
+        let frame = match self.surface.get_current_texture() {
+            Ok(frame) => frame,
+            Err(wgpu::SurfaceError::Outdated | wgpu::SurfaceError::Timeout) => return,
+            Err(e) => panic!("failed to acquire next surface texture: {e}"),
         };
 
-        let view = texture
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-        self.render(&view, render_data);
-        texture.present();
+        let view = frame.texture.create_view(&Default::default());
+        self.graph.render_on(&self.gpu, render_data, &view);
+
+        frame.present();
     }
-}
-
-/// Creates a depth buffer that can be used to render 3D scenes.
-fn create_depth_buffer(gpu: &Gpu, width: u32, height: u32) -> wgpu::TextureView {
-    let depth_buffer = gpu.device.create_texture(&wgpu::TextureDescriptor {
-        label: Some("Depth Buffer"),
-        size: wgpu::Extent3d {
-            width,
-            height,
-            depth_or_array_layers: 1,
-        },
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Depth32Float,
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        view_formats: &[],
-    });
-
-    depth_buffer.create_view(&wgpu::TextureViewDescriptor::default())
 }
