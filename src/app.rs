@@ -61,7 +61,7 @@ impl App {
             }
         }
 
-        let mut quads = renderer.create_vertex_buffer(quads_buf.len() as _);
+        let mut quads = VertexBuffer::new(renderer.gpu().clone(), quads_buf.len() as _);
         quads.write(&quads_buf);
 
         window
@@ -184,6 +184,8 @@ impl Camera {
     pub const FOV_Y: f32 = 60.0;
     /// The sensitivity of the mouse.
     pub const MOUSE_SENSITIVITY: f32 = 0.002;
+    /// The maximum pitch value of the camera.
+    pub const MAX_PITCH: f32 = std::f32::consts::FRAC_PI_2 - 0.01;
 
     /// Notifies the camera that the size of the output display has changed.
     pub fn notify_resized(&mut self, width: u32, height: u32) {
@@ -234,10 +236,7 @@ impl Camera {
     pub fn notify_mouse_moved(&mut self, dx: f64, dy: f64) {
         self.yaw += dx as f32 * Self::MOUSE_SENSITIVITY;
         self.pitch += dy as f32 * Self::MOUSE_SENSITIVITY;
-        self.pitch = self.pitch.clamp(
-            -std::f32::consts::FRAC_PI_2 + 0.01,
-            std::f32::consts::FRAC_PI_2 - 0.01,
-        );
+        self.pitch = self.pitch.clamp(-Self::MAX_PITCH, Self::MAX_PITCH);
     }
 
     /// Updates the state of the camera.

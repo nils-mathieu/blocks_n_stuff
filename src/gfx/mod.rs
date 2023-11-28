@@ -13,7 +13,7 @@ pub use surface::Surface;
 
 pub mod render_data;
 
-use self::helpers::{UniformBuffer, UniformBufferLayout, VertexBuffer};
+use self::helpers::{UniformBuffer, UniformBufferLayout};
 use self::render_data::{FrameUniforms, RenderData};
 
 /// The renderer is responsible for using the GPU to render things on a render target.
@@ -44,14 +44,15 @@ impl Renderer {
         }
     }
 
+    /// Returns the [`Gpu`] instance that was used to create this [`Renderer`].
+    #[inline]
+    pub fn gpu(&self) -> &Arc<Gpu> {
+        &self.gpu
+    }
+
     /// Creates a new [`UniformBuffer`] that follows the layout of the frame uniform layout.
     pub fn create_frame_uniform_buffer(&self) -> UniformBuffer<FrameUniforms> {
         self.frame_uniform_layout.instanciate(&self.gpu.device)
-    }
-
-    /// Creates a new [`VertexBuffer`] that can store instances of `T`.
-    pub fn create_vertex_buffer<T>(&self, capacity: wgpu::BufferAddress) -> VertexBuffer<T> {
-        VertexBuffer::new(self.gpu.clone(), capacity)
     }
 
     /// Renders a frame to the provided target.
