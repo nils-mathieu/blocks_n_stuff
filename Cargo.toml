@@ -10,7 +10,9 @@ publish = false
 
 [dependencies]
 winit = "0.29"
+wgpu = { path = "../wgpu/wgpu" } # TODO: use crates.io when wgpu finally uses raw-window-handle v0.6
+pollster = "0.3"
 
 [target.'cfg(target_os = "windows")'.dependencies.windows-sys]
-version = "0.48"                # `winit` uses windows-sys 0.48 for some reason
+version = "0.52"
 features = ["Win32_Foundation"]

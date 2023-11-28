@@ -1,3 +1,4 @@
+mod gfx;
 mod panic;
 mod window;
 
