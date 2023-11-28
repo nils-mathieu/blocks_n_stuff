@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use winit::dpi::PhysicalSize;
-use winit::event::{Event, WindowEvent};
+use winit::event::{DeviceEvent, Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Window, WindowBuilder};
 
@@ -20,6 +20,7 @@ pub enum UserEvent {}
 /// This function panics if it fails to initialize the window or the event loop. Additionally, if
 /// an error occurs while running the event loop, the function panics even if an exit code is
 /// requested.
+#[allow(clippy::collapsible_match, clippy::single_match)]
 pub fn run() {
     let event_loop = create_event_loop();
     let window = create_window(&event_loop);
@@ -54,6 +55,12 @@ pub fn run() {
                 }
                 WindowEvent::RedrawRequested => {
                     app.render();
+                }
+                _ => (),
+            },
+            Event::DeviceEvent { event, .. } => match event {
+                DeviceEvent::MouseMotion { delta: (dx, dy) } => {
+                    app.notify_mouse_moved(target, dx, dy);
                 }
                 _ => (),
             },
@@ -95,6 +102,7 @@ fn create_window(event_loop: &EventLoop<UserEvent>) -> Arc<Window> {
     WindowBuilder::new()
         .with_title("Blocks 'n Stuff")
         .with_min_inner_size(PhysicalSize::new(300, 300))
+        .with_inner_size(PhysicalSize::new(1280, 720))
         .with_visible(false)
         .build(event_loop)
         .expect("failed to create the `winit` window")

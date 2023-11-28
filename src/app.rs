@@ -5,7 +5,7 @@ use glam::{Mat4, Quat, Vec2, Vec3};
 use winit::event::KeyEvent;
 use winit::event_loop::EventLoopWindowTarget;
 use winit::keyboard::KeyCode;
-use winit::window::{Fullscreen, Window};
+use winit::window::{CursorGrabMode, Fullscreen, Window};
 
 use crate::gfx::render_data::{
     FrameUniforms, QuadInstance, RenderData, UniformBuffer, VertexBuffer,
@@ -64,6 +64,12 @@ impl App {
         let mut quads = renderer.create_vertex_buffer(quads_buf.len() as _);
         quads.write(&quads_buf);
 
+        window
+            .set_cursor_grab(CursorGrabMode::Confined)
+            .or_else(|_| window.set_cursor_grab(CursorGrabMode::Locked))
+            .expect("failed to grab the mouse cursor");
+        window.set_cursor_visible(false);
+
         Self {
             window,
             surface,
@@ -106,6 +112,14 @@ impl App {
         }
 
         self.camera.notify_keyboard(event);
+    }
+
+    /// Notifies the application that the mouse has moved.
+    ///
+    /// Note that the provided coordinates are not in pixels, but instead are an arbitrary
+    /// value relative to the last reported mouse position.
+    pub fn notify_mouse_moved(&mut self, _taget: &Ctx, dx: f64, dy: f64) {
+        self.camera.notify_mouse_moved(dx, dy);
     }
 
     /// Renders a frame to the window.
@@ -167,7 +181,9 @@ impl Camera {
     /// The speed at which the camera flies up/down.
     pub const FLY_SPEED: f32 = 0.1;
     /// The vertical field of view of the camera, in degrees.
-    pub const FOV_Y: f32 = 90.0;
+    pub const FOV_Y: f32 = 60.0;
+    /// The sensitivity of the mouse.
+    pub const MOUSE_SENSITIVITY: f32 = 0.002;
 
     /// Notifies the camera that the size of the output display has changed.
     pub fn notify_resized(&mut self, width: u32, height: u32) {
@@ -214,6 +230,16 @@ impl Camera {
         }
     }
 
+    /// Notifies the camera that the mouse has moved.
+    pub fn notify_mouse_moved(&mut self, dx: f64, dy: f64) {
+        self.yaw += dx as f32 * Self::MOUSE_SENSITIVITY;
+        self.pitch += dy as f32 * Self::MOUSE_SENSITIVITY;
+        self.pitch = self.pitch.clamp(
+            -std::f32::consts::FRAC_PI_2 + 0.01,
+            std::f32::consts::FRAC_PI_2 - 0.01,
+        );
+    }
+
     /// Updates the state of the camera.
     pub fn tick(&mut self, dt: f32) {
         self.position += Quat::from_rotation_y(self.yaw)
@@ -226,7 +252,7 @@ impl Camera {
 
     /// Computes the rotation of the camera.
     pub fn rotation(&self) -> Quat {
-        Quat::from_rotation_x(self.pitch) * Quat::from_rotation_y(self.yaw)
+        Quat::from_rotation_y(self.yaw) * Quat::from_rotation_x(self.pitch)
     }
 
     /// Computes the forward vector of the camera.
@@ -236,7 +262,8 @@ impl Camera {
 
     /// Computes the matrix that transforms world-space coordinates into clip-space coordinates.
     pub fn matrix(&self) -> Mat4 {
-        let perspective = Mat4::perspective_lh(Self::FOV_Y, self.aspect_ratio, 0.1, 100.0);
+        let perspective =
+            Mat4::perspective_lh(Self::FOV_Y.to_radians(), self.aspect_ratio, 0.1, 100.0);
         let view = Mat4::look_to_lh(self.position, self.forward(), Vec3::Y);
         perspective * view
     }
