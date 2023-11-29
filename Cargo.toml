@@ -33,6 +33,8 @@ bytemuck = { version = "1", features = [
 ] }
 rustc-hash = "1"
 hashbrown = "0.14"
+parking_lot = "0.12"
+bitflags = "2"
 
 [target.'cfg(target_os = "windows")'.dependencies.windows-sys]
 version = "0.52"

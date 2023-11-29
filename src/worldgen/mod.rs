@@ -5,6 +5,7 @@ use bns_core::{BlockId, Chunk, LocalPos};
 use crate::world::{ChunkPos, WorldGenerator};
 
 /// The standard [`WorldGenerator`] implementation.
+#[derive(Debug, Clone)]
 pub struct StandardWorldGenerator {}
 
 impl StandardWorldGenerator {

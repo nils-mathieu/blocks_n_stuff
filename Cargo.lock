@@ -198,12 +198,14 @@ dependencies = [
 name = "blocks_n_stuff"
 version = "0.1.0"
 dependencies = [
+ "bitflags 2.4.1",
  "bns-core",
  "bns-image",
  "bns-render",
  "bytemuck",
  "glam",
  "hashbrown",
+ "parking_lot",
  "rustc-hash",
  "windows-sys 0.52.0",
  "winit",

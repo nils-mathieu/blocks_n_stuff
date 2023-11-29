@@ -43,13 +43,16 @@ impl ChunkGeometry {
         Self { quads: None }
     }
 
-    /// Builds the geometry of a chunk.
-    pub fn build(&mut self, neighborhood: ChunkNeighborhood, context: &mut ChunkBuildContext) {
+    /// BUilds the geometry of this chunk based on its content.
+    ///
+    /// Note that the neighboring chunks are *not* taken into account for culling, and the outer
+    /// faces of the chunk are never built.
+    pub fn build_inner(&mut self, data: &Chunk, context: &mut ChunkBuildContext) {
         context.reset();
 
         // TODO: actually perform some culling.
         for local_pos in LocalPos::iter_all() {
-            match neighborhood.this.get_block(local_pos).info().appearance {
+            match data.get_block(local_pos).info().appearance {
                 BlockAppearance::Invisible => (),
                 BlockAppearance::Regular { top, bottom, side } => {
                     context.quads.extend_from_slice(&[
@@ -86,22 +89,4 @@ impl ChunkGeometry {
                 .replace(&context.quads);
         }
     }
-}
-
-/// The neighborhood of a chunk.
-pub struct ChunkNeighborhood<'a> {
-    /// The data of the chunk that's being built.
-    pub this: &'a Chunk,
-    /// The chunk that's on the positive X side of this chunk.
-    pub x: &'a Chunk,
-    /// The chunk that's on the negative X side of this chunk.
-    pub nx: &'a Chunk,
-    /// The chunk that's on the positive Y side of this chunk.
-    pub y: &'a Chunk,
-    /// The chunk that's on the negative Y side of this chunk.
-    pub ny: &'a Chunk,
-    /// The chunk that's on the positive Z side of this chunk.
-    pub z: &'a Chunk,
-    /// The chunk that's on the negative Z side of this chunk.
-    pub nz: &'a Chunk,
 }
