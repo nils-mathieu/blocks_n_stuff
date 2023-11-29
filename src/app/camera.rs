@@ -162,9 +162,8 @@ impl Camera {
         let half_fov_y = 0.5 * Self::FOV_Y.to_radians();
         let half_fov_x = self.aspect_ratio * half_fov_y;
 
-        // Distance along the camera's forward axis.
+        // near/far planes
         let dist_z = forward.dot(relative_position);
-
         if Self::NEAR - radius > dist_z || dist_z > Self::FAR + radius {
             return false;
         }

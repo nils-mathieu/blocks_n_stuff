@@ -104,11 +104,10 @@ impl App {
         self.camera.notify_mouse_moved(dx, dy);
     }
 
-    // OPTIMIZE: manging to make this function take a shared reference would probably make the
-    // code way cleaner. That would probably require to smartly load chunks in the tick function
-    // instead.
     /// Renders a frame to the window.
     pub fn render(&mut self) {
+        // TODO: print quad count in debug info.
+
         let mut quad_buffers = Vec::new();
         let mut chunk_uniforms = Vec::new();
 
@@ -146,15 +145,15 @@ impl App {
 
 /// Calls the provided function for every visible chunk from the camera.
 fn chunks_in_frustum(camera: &Camera, mut callback: impl FnMut(ChunkPos)) {
-    const HORIZONTAL_RENDER_DISTANCE: i32 = 8;
-    const VERTICAL_RENDER_DISTANCE: i32 = 8;
+    const HORIZONTAL_RENDER_DISTANCE: i32 = 12;
+    const VERTICAL_RENDER_DISTANCE: i32 = 12;
     const CHUNK_RADIUS: f32 = (Chunk::SIDE as f32) * 0.8660254; // sqrt(3) / 2
 
     fn coord_to_chunk(coord: f32) -> i32 {
         if coord >= 0.0 {
             coord as i32 / Chunk::SIDE
         } else {
-            (coord as i32 - Chunk::SIDE + 1) / Chunk::SIDE
+            coord as i32 / Chunk::SIDE - 1
         }
     }
 
@@ -163,6 +162,7 @@ fn chunks_in_frustum(camera: &Camera, mut callback: impl FnMut(ChunkPos)) {
         coord_to_chunk(camera.position().y),
         coord_to_chunk(camera.position().z),
     );
+
     for x in -HORIZONTAL_RENDER_DISTANCE..=HORIZONTAL_RENDER_DISTANCE {
         for y in -VERTICAL_RENDER_DISTANCE..=VERTICAL_RENDER_DISTANCE {
             for z in -HORIZONTAL_RENDER_DISTANCE..=HORIZONTAL_RENDER_DISTANCE {
@@ -171,8 +171,9 @@ fn chunks_in_frustum(camera: &Camera, mut callback: impl FnMut(ChunkPos)) {
                 }
 
                 let relative_chunk_pos = IVec3::new(x, y, z);
-                let relative_chunk_pos_center =
-                    (relative_chunk_pos.as_vec3() + Vec3::splat(0.5)) * Chunk::SIDE as f32;
+                let relative_chunk_pos_center = (relative_chunk_pos.as_vec3() + Vec3::splat(0.5))
+                    * Chunk::SIDE as f32
+                    - (camera.position() - camera_chunk_pos.as_vec3() * Chunk::SIDE as f32);
 
                 if camera.is_sphere_in_frustum(relative_chunk_pos_center, CHUNK_RADIUS) {
                     callback(camera_chunk_pos + relative_chunk_pos);

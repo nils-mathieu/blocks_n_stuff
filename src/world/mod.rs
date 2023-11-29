@@ -63,11 +63,11 @@ impl Chunks {
     /// This function does not attempt to rebuild the geometry of the chunk.
     pub fn get_or_generate<F>(&mut self, pos: ChunkPos, generate: F) -> &mut ChunkEntry
     where
-        F: FnOnce() -> Chunk,
+        F: FnOnce(ChunkPos) -> Chunk,
     {
         use hashbrown::hash_map::Entry;
         match self.chunks.entry(pos) {
-            Entry::Vacant(e) => e.insert(ChunkEntry::new(generate())),
+            Entry::Vacant(e) => e.insert(ChunkEntry::new(generate(pos))),
             Entry::Occupied(e) => e.into_mut(),
         }
     }
@@ -75,15 +75,15 @@ impl Chunks {
     /// Gets the neighborhood of a chunk.
     fn get_chunk_neighborhood<F>(&mut self, pos: ChunkPos, mut generate: F) -> [&mut ChunkEntry; 7]
     where
-        F: FnMut() -> Chunk,
+        F: FnMut(ChunkPos) -> Chunk,
     {
         // Make sure that the chunk is loaded.
         self.get_or_generate(pos, &mut generate);
         self.get_or_generate(pos + IVec3::X, &mut generate);
-        self.get_or_generate(pos + IVec3::Y, &mut generate);
-        self.get_or_generate(pos + IVec3::Z, &mut generate);
         self.get_or_generate(pos + IVec3::NEG_X, &mut generate);
+        self.get_or_generate(pos + IVec3::Y, &mut generate);
         self.get_or_generate(pos + IVec3::NEG_Y, &mut generate);
+        self.get_or_generate(pos + IVec3::Z, &mut generate);
         self.get_or_generate(pos + IVec3::NEG_Z, &mut generate);
 
         // SAFETY:
@@ -152,7 +152,7 @@ impl World {
     /// If the chunk was already previously requested, the priority of the request is overwritten
     /// regardless of whether the new priority is higher or lower.
     pub fn request_chunk(&mut self, pos: ChunkPos, _priority: usize) -> Option<&mut ChunkEntry> {
-        let mut generate = || self.generator.generate(pos);
+        let mut generate = |pos| self.generator.generate(pos);
 
         let chunk = self.chunks.get_or_generate(pos, &mut generate);
 
@@ -162,7 +162,6 @@ impl World {
             return Some(chunk);
         }
 
-        chunk.dirty = false;
         let [chunk, x, nx, y, ny, z, nz] = self.chunks.get_chunk_neighborhood(pos, generate);
 
         chunk.geometry.build(
@@ -177,6 +176,8 @@ impl World {
             },
             &mut self.chunk_build_context,
         );
+
+        chunk.dirty = false;
 
         Some(chunk)
     }

@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use bytemuck::Zeroable;
 use glam::IVec3;
 
@@ -22,7 +24,7 @@ const Z_MASK: u16 = 0b11111 << 10;
 // OPTIMIZE: depending of how we end up using this type, we could switch up the layout of chunks
 // to improve cache locality. If most of our iterations are done on the Y axis first, we could
 // store the Y coordinate first in the index, then the X coordinate, and finally the Z coordinate.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct LocalPos(u16);
 
 impl LocalPos {
@@ -143,6 +145,16 @@ impl LocalPos {
     }
 }
 
+impl Debug for LocalPos {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LocalPos")
+            .field("x", &self.x())
+            .field("y", &self.y())
+            .field("z", &self.z())
+            .finish()
+    }
+}
+
 /// The inner chunk data.
 ///
 /// This type is ***huge*** and should basically never be instanciated on the stack.
@@ -205,5 +217,13 @@ impl Chunk {
     pub fn get_block_mut(&mut self, pos: LocalPos) -> &mut BlockId {
         let data = self.data.get_or_insert_with(bytemuck::zeroed_box);
         unsafe { data.blocks.get_unchecked_mut(pos.index()) }
+    }
+
+    /// Returns whether the chunk is empty.
+    pub fn is_empty(&self) -> bool {
+        match self.data.as_ref() {
+            Some(data) => data.blocks.iter().all(|&id| id == BlockId::Air),
+            None => true,
+        }
     }
 }
