@@ -127,8 +127,13 @@ impl App {
         };
         let mut render_data = self.render_data_storage.build();
         render_data.clear_color([0.0, 0.0, 1.0, 1.0]);
+        let view = self.camera.view_matrix();
+        let projection = self.camera.projection_matrix();
         render_data.frame_uniforms(FrameUniforms {
-            camera: self.camera.matrix(),
+            inverse_projection: projection.inverse(),
+            projection,
+            inverse_view: view.inverse(),
+            view,
         });
         chunks_in_frustum(&self.camera, |chunk_pos| {
             if let Some(chunk) = self.world.get_existing_chunk(chunk_pos) {

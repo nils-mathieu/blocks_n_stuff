@@ -1,9 +1,8 @@
-// The uniform data that's written every frame.
 struct FrameUniforms {
-    // The camera matrix.
-    //
-    // This matrix convert world-space coordinates to clip-space coordinates.
-    camera: mat4x4<f32>,
+    projection: mat4x4<f32>,
+    inverse_projection: mat4x4<f32>,
+    view: mat4x4<f32>,
+    inverse_view: mat4x4<f32>,
 }
 
 @group(0) @binding(0)
@@ -115,7 +114,7 @@ fn vs_main(
     }
 
     var output: Interpolator;
-    output.position = frame.camera * vec4(world_pos, 1.0);
+    output.position = frame.projection * frame.view * vec4(world_pos, 1.0);
     output.tex_coords = tex_coords;
     output.tex_index = tex_index;
     return output;

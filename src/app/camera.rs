@@ -132,17 +132,20 @@ impl Camera {
         self.position
     }
 
-    /// Computes the matrix that transforms world-space coordinates into clip-space coordinates.
-    pub fn matrix(&self) -> Mat4 {
+    /// Computes the view matrix of the camera.
+    pub fn view_matrix(&self) -> Mat4 {
         let forward = Quat::from_rotation_y(self.yaw) * Quat::from_rotation_x(self.pitch) * Vec3::Z;
-        let perspective = Mat4::perspective_lh(
+        Mat4::look_to_lh(self.position, forward, Vec3::Y)
+    }
+
+    /// Computes the projection matrix of the camera.
+    pub fn projection_matrix(&self) -> Mat4 {
+        Mat4::perspective_lh(
             Self::FOV_Y.to_radians(),
             self.aspect_ratio,
             Self::NEAR,
             Self::FAR,
-        );
-        let view = Mat4::look_to_lh(self.position, forward, Vec3::Y);
-        perspective * view
+        )
     }
 
     /// Determines whether the provided sphere is in the camera's frustum.

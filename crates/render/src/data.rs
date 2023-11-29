@@ -61,12 +61,19 @@ pub(crate) struct QuadVertices<'res> {
     pub len: u32,
 }
 
+// OPTIMIZE: Figure out which of those fields we really need.
 /// The uniform data that is uploaded to the GPU once per frame.
 #[derive(Debug, Default, Clone, Copy, Zeroable, Pod)]
 #[repr(C)]
 pub struct FrameUniforms {
-    /// The projection and view matrix of the camera.
-    pub camera: Mat4,
+    /// Converts view-space coordinates to clip-space coordinates.
+    pub projection: Mat4,
+    /// The inverse of `projection`.
+    pub inverse_projection: Mat4,
+    /// Converts world-space coordinates to view-space coordinates.
+    pub view: Mat4,
+    /// The inverse of `view`.
+    pub inverse_view: Mat4,
 }
 
 /// Contains information about a chunk.

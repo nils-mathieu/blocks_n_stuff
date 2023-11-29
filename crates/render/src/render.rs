@@ -73,6 +73,11 @@ impl Renderer {
         rp.set_bind_group(0, &self.frame_uniforms_bind_group, &[]);
         rp.set_bind_group(2, &self.texture_atlas_bind_group, &[]);
 
+        // The skybox pipeline is responsible for rendering the skybox.
+        // This is the first thing that we render.
+        rp.set_pipeline(&self.skybox_pipeline);
+        rp.draw(0..4, 0..1);
+
         // The quad pipeline is responsible for rendering axis-aligned quads (the faces of voxels).
         // Every time a new instance buffer is drawn, the pipeline must be bound to the correct
         // chunk uniform (using the dynamic offset of the bind group).

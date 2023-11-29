@@ -96,9 +96,14 @@ pub struct Renderer {
     /// The bind group responsible for using the `texture_atlas`.
     texture_atlas_bind_group: wgpu::BindGroup,
 
+    /// The pipeline responsible for the skybox.
+    ///
+    /// More information in [`shaders::skybox::create_shader`].
+    skybox_pipeline: wgpu::RenderPipeline,
+
     /// The pipeline responsible for rendering axis-aligned quads.
     ///
-    /// More infor in [`quad::create_shader`].
+    /// More information in [`shaders::quad::create_shader`].
     quad_pipeline: wgpu::RenderPipeline,
 }
 
@@ -139,6 +144,8 @@ impl Renderer {
         );
         let quad_pipeline =
             shaders::quad::create_shader(&gpu, &pipeline_layout, config.output_format);
+        let skybox_pipeline =
+            shaders::skybox::create_shader(&gpu, &frame_uniforms_layout, config.output_format);
 
         Self {
             gpu,
@@ -153,6 +160,7 @@ impl Renderer {
             texture_atlas_layout,
             pixel_sampler,
             quad_pipeline,
+            skybox_pipeline,
         }
     }
 
@@ -215,7 +223,7 @@ fn create_frame_uniforms_layout(gpu: &Gpu) -> wgpu::BindGroupLayout {
                     min_binding_size: None,
                     ty: wgpu::BufferBindingType::Uniform,
                 },
-                visibility: wgpu::ShaderStages::VERTEX,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
             }],
         })
 }
