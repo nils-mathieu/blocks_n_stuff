@@ -17,16 +17,14 @@ license = "MIT"
 publish = false
 
 [workspace]
-members = ["crates/core"]
+members = ["crates/core", "crates/render"]
 
 [dependencies]
 bns-core = { path = "crates/core" }
+bns-render = { path = "crates/render" }
 
 winit = "0.29"
-wgpu = { path = "../wgpu/wgpu" } # TODO: use crates.io when wgpu finally uses raw-window-handle v0.6
-pollster = "0.3"
 glam = { version = "0.24", features = ["bytemuck"] }
-bitflags = "2"
 bytemuck = { version = "1", features = [
     "derive",
     "extern_crate_std",

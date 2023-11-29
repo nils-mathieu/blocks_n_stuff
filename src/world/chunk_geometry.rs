@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
 use bns_core::{BlockAppearance, Chunk, LocalPos};
-
-use crate::gfx::render_data::QuadInstance;
-use crate::gfx::Gpu;
+use bns_render::data::QuadInstance;
+use bns_render::{DynamicVertexBuffer, Gpu};
 
 /// Contains some resources useful for building a chunk.
 ///
@@ -23,6 +22,7 @@ impl ChunkBuildContext {
     }
 
     /// Resets the context.
+    #[inline]
     fn reset(&mut self) {
         self.quads.clear();
     }
@@ -34,7 +34,7 @@ pub struct ChunkGeometry {
     /// The quad instances of the chunk.
     ///
     /// When `None`, the vertex buffer has not been created.
-    pub quads: Option<(u32, wgpu::Buffer)>,
+    pub quads: Option<DynamicVertexBuffer<QuadInstance>>,
 }
 
 impl ChunkGeometry {
@@ -53,24 +53,24 @@ impl ChunkGeometry {
                 BlockAppearance::Invisible => (),
                 BlockAppearance::Regular { top, bottom, side } => {
                     context.quads.extend_from_slice(&[
-                        QuadInstance::from_texture(side)
+                        QuadInstance::from_texture(side as u32)
                             | QuadInstance::X
-                            | QuadInstance::from_local_pos(local_pos),
-                        QuadInstance::from_texture(side)
+                            | QuadInstance::from_chunk_index(local_pos.index()),
+                        QuadInstance::from_texture(side as u32)
                             | QuadInstance::NEG_X
-                            | QuadInstance::from_local_pos(local_pos),
-                        QuadInstance::from_texture(top)
+                            | QuadInstance::from_chunk_index(local_pos.index()),
+                        QuadInstance::from_texture(top as u32)
                             | QuadInstance::Y
-                            | QuadInstance::from_local_pos(local_pos),
-                        QuadInstance::from_texture(bottom)
+                            | QuadInstance::from_chunk_index(local_pos.index()),
+                        QuadInstance::from_texture(bottom as u32)
                             | QuadInstance::NEG_Y
-                            | QuadInstance::from_local_pos(local_pos),
-                        QuadInstance::from_texture(side)
+                            | QuadInstance::from_chunk_index(local_pos.index()),
+                        QuadInstance::from_texture(side as u32)
                             | QuadInstance::Z
-                            | QuadInstance::from_local_pos(local_pos),
-                        QuadInstance::from_texture(side)
+                            | QuadInstance::from_chunk_index(local_pos.index()),
+                        QuadInstance::from_texture(side as u32)
                             | QuadInstance::NEG_Z
-                            | QuadInstance::from_local_pos(local_pos),
+                            | QuadInstance::from_chunk_index(local_pos.index()),
                     ]);
                 }
             }
@@ -79,30 +79,13 @@ impl ChunkGeometry {
         if context.quads.is_empty() {
             self.quads = None;
         } else {
-            let (count, buf) = self.quads.get_or_insert_with(|| {
-                (
-                    0,
-                    create_quad_vertex_buffer(&context.gpu, context.quads.len() as _),
-                )
-            });
-
-            *count = context.quads.len() as _;
-            context
-                .gpu
-                .queue
-                .write_buffer(buf, 0, bytemuck::cast_slice(&context.quads));
+            self.quads
+                .get_or_insert_with(|| {
+                    DynamicVertexBuffer::new(context.gpu.clone(), context.quads.len() as u32)
+                })
+                .replace(&context.quads);
         }
     }
-}
-
-/// Creates the vertex buffer that contains the quad instances of a chunk.
-fn create_quad_vertex_buffer(gpu: &Gpu, capacity: wgpu::BufferAddress) -> wgpu::Buffer {
-    gpu.device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("chunk quad instances"),
-        size: capacity * std::mem::size_of::<QuadInstance>() as wgpu::BufferAddress,
-        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    })
 }
 
 /// The neighborhood of a chunk.

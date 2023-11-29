@@ -26,9 +26,15 @@ pub fn run() {
     let window = create_window(&event_loop);
     let mut app = App::new(window.clone());
 
-    app.render();
-    window.set_visible(true);
+    // Render the first frame before showing the window.
+    {
+        let size = window.inner_size();
+        app.notify_resized(size.width, size.height);
+        app.render();
+        window.set_visible(true);
+    }
 
+    // Start the event loop.
     event_loop
         .run(move |event, target| match event {
             Event::AboutToWait => {
@@ -51,7 +57,7 @@ pub fn run() {
                     app.notify_keyboard(target, &event);
                 }
                 WindowEvent::Resized(s) => {
-                    app.notify_resized(target, s.width, s.height);
+                    app.notify_resized(s.width, s.height);
                 }
                 WindowEvent::RedrawRequested => {
                     app.render();

@@ -198,14 +198,12 @@ dependencies = [
 name = "blocks_n_stuff"
 version = "0.1.0"
 dependencies = [
- "bitflags 2.4.1",
  "bns-core",
+ "bns-render",
  "bytemuck",
  "glam",
  "hashbrown",
- "pollster",
  "rustc-hash",
- "wgpu",
  "windows-sys 0.52.0",
  "winit",
 ]
@@ -216,6 +214,18 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "glam",
+]
+
+[[package]]
+name = "bns-render"
+version = "0.1.0"
+dependencies = [
+ "bitflags 2.4.1",
+ "bytemuck",
+ "glam",
+ "pollster",
+ "raw-window-handle",
+ "wgpu",
 ]
 
 [[package]]

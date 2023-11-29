@@ -3,14 +3,14 @@
 use std::sync::Arc;
 
 use bns_core::Chunk;
-use glam::{IVec3, Vec3, Vec4};
+use bns_render::data::{ChunkUniforms, FrameUniforms, RenderDataStorage};
+use bns_render::{Renderer, RendererConfig, Surface};
+use glam::{IVec3, Vec3};
 use winit::event::KeyEvent;
 use winit::event_loop::EventLoopWindowTarget;
 use winit::keyboard::KeyCode;
 use winit::window::{CursorGrabMode, Fullscreen, Window};
 
-use crate::gfx::render_data::{BufferSlice, ChunkUniforms, FrameUniforms, RenderData};
-use crate::gfx::Renderer;
 use crate::window::UserEvent;
 use crate::world::{ChunkPos, World};
 use crate::worldgen::StandardWorldGenerator;
@@ -28,8 +28,12 @@ pub struct App {
     ///
     /// This can be used to control it.
     window: Arc<Window>,
+    /// The surface on which things are rendered.
+    surface: Surface<'static>,
     /// The renderer contains the resources required to render things using GPU resources.
     renderer: Renderer,
+    /// Some storage to efficiently create [`RenderData`](bns_render::data::RenderData) instances.
+    render_data_storage: RenderDataStorage,
 
     /// The current state of the camera.
     camera: Camera,
@@ -41,7 +45,13 @@ pub struct App {
 impl App {
     /// Creates a new [`App`] instance.
     pub fn new(window: Arc<Window>) -> Self {
-        let renderer = Renderer::new(window.clone());
+        let surface = Surface::new(window.clone());
+        let renderer = Renderer::new(
+            surface.gpu().clone(),
+            RendererConfig {
+                output_format: surface.info().format,
+            },
+        );
 
         let world = World::new(
             renderer.gpu().clone(),
@@ -55,7 +65,9 @@ impl App {
         window.set_cursor_visible(false);
 
         Self {
+            render_data_storage: RenderDataStorage::new(&renderer),
             window,
+            surface,
             renderer,
             camera: Camera::default(),
             world,
@@ -69,8 +81,10 @@ impl App {
 
     /// Notifies the application that the size of the window on which it is drawing stuff has
     /// changed.
-    pub fn notify_resized(&mut self, _target: &Ctx, width: u32, height: u32) {
-        self.renderer.notify_resized(width, height);
+    pub fn notify_resized(&mut self, width: u32, height: u32) {
+        self.surface.config_mut().width = width;
+        self.surface.config_mut().height = height;
+        self.renderer.resize(width, height);
         self.camera.notify_resized(width, height);
     }
 
@@ -108,29 +122,28 @@ impl App {
     pub fn render(&mut self) {
         // TODO: print quad count in debug info.
 
-        let mut quad_buffers = Vec::new();
-        let mut chunk_uniforms = Vec::new();
-
+        let Some(frame) = self.surface.acquire_image() else {
+            return;
+        };
+        let mut render_data = self.render_data_storage.build();
+        render_data.clear_color([0.0, 0.0, 1.0, 1.0]);
+        render_data.frame_uniforms(FrameUniforms {
+            camera: self.camera.matrix(),
+        });
         chunks_in_frustum(&self.camera, |chunk_pos| {
             if let Some(chunk) = self.world.get_existing_chunk(chunk_pos) {
-                if let Some((count, quads)) = &chunk.geometry.quads {
-                    quad_buffers.push(BufferSlice::new(quads, *count));
-                    chunk_uniforms.push(ChunkUniforms {
-                        position: chunk_pos,
-                        _padding: [0; 13],
-                    });
+                if let Some(buffer) = &chunk.geometry.quads {
+                    render_data.add_quad_vertices(
+                        ChunkUniforms {
+                            position: chunk_pos,
+                        },
+                        buffer,
+                    );
                 }
             }
         });
-
-        self.renderer.render(&RenderData {
-            clear_color: Vec4::new(0.0, 0.0, 1.0, 1.0),
-            frame_uniforms: FrameUniforms {
-                camera: self.camera.matrix(),
-            },
-            chunk_uniforms: &chunk_uniforms,
-            quads: &quad_buffers,
-        });
+        self.renderer.render(frame.target(), &render_data);
+        frame.present();
     }
 
     /// Advances the state of the application by one tick.

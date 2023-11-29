@@ -1,0 +1,17 @@
+[package]
+name = "bns-render"
+version = "0.1.0"
+
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+wgpu = { path = "../../../wgpu/wgpu" }               # TODO: use crates.io when wgpu finally uses raw-window-handle v0.6
+pollster = "0.3"
+raw-window-handle = "0.6"
+bitflags = "2"
+glam = { version = "0.24", features = ["bytemuck"] }
+bytemuck = { version = "1", features = ["derive"] }

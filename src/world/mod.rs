@@ -2,14 +2,13 @@ use std::hash::BuildHasherDefault;
 use std::sync::Arc;
 
 use bns_core::Chunk;
+use bns_render::Gpu;
 use glam::IVec3;
 
 use hashbrown::HashMap;
 
 mod chunk_geometry;
 pub use chunk_geometry::*;
-
-use crate::gfx::Gpu;
 
 /// The position of a chunk.
 pub type ChunkPos = IVec3;
