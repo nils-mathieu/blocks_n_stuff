@@ -1,6 +1,8 @@
+use std::borrow::Cow;
 use std::mem::size_of;
 use std::sync::Arc;
 
+use wgpu::util::DeviceExt;
 use wgpu::TextureFormat;
 
 use crate::data::{ChunkUniforms, FrameUniforms};
@@ -22,12 +24,45 @@ pub struct RenderTarget<'a> {
 ///
 /// If any of those need to change, the whole [`Renderer`] needs to be re-created.
 #[derive(Clone, Debug)]
-pub struct RendererConfig {
+pub struct RendererConfig<'a> {
     /// The format of the output image of the renderer.
     ///
     /// Providing a [`RenderTarget`] that has an output format different from this one will likely
     /// result in a panic.
     pub output_format: TextureFormat,
+    /// The texture atlas to use initially.
+    pub texture_atlas: TextureAtlasConfig<'a>,
+}
+
+/// Information about a texture atlas to be created.
+#[derive(Clone, Debug)]
+pub struct TextureAtlasConfig<'a> {
+    /// The data of the texture atlas.
+    pub data: Cow<'a, [u8]>,
+    /// The width of the textures in the atlas.
+    pub width: u32,
+    /// The height of the textures in the atlas.
+    pub height: u32,
+    /// The number of textures in the atlas.
+    pub count: u32,
+    /// The number of mip levels to generate.
+    pub mip_level_count: u32,
+    /// The format of the textures in the atlas.
+    pub format: TextureFormat,
+}
+
+impl<'a> TextureAtlasConfig<'a> {
+    /// Creates a dummy [`TextureAtlasConfig`] with the provided number of images.
+    pub const fn dummy<const COUNT: usize>() -> Self {
+        Self {
+            data: Cow::Borrowed(&[0u8; COUNT]),
+            width: 1,
+            height: 1,
+            count: COUNT as u32,
+            mip_level_count: 1,
+            format: TextureFormat::R8Unorm,
+        }
+    }
 }
 
 /// Contains the state required to render things using GPU resources.
@@ -52,6 +87,14 @@ pub struct Renderer {
     chunk_uniforms_buffer: wgpu::Buffer,
     /// A bind group that includes the `chunk_uniforms_bind_group`.
     chunk_uniforms_bind_group: wgpu::BindGroup,
+
+    /// The sampler responsible for sampling pixels from the texture atlas.
+    pixel_sampler: wgpu::Sampler,
+
+    /// The texture atlas bind group layout, used to create the `texture_atlas_bind_group`.
+    texture_atlas_layout: wgpu::BindGroupLayout,
+    /// The bind group responsible for using the `texture_atlas`.
+    texture_atlas_bind_group: wgpu::BindGroup,
 
     /// The pipeline responsible for rendering axis-aligned quads.
     ///
@@ -80,8 +123,20 @@ impl Renderer {
             64 * chunk_uniforms_alignment as wgpu::BufferAddress,
             chunk_uniforms_alignment,
         );
-        let pipeline_layout =
-            create_pipeline_layout(&gpu, &frame_uniforms_layout, &chunk_uniforms_layout);
+        let pixel_sampler = create_pixel_sampler(&gpu);
+        let texture_atlas_layout = create_texture_atlas_layout(&gpu);
+        let texture_atlas_bind_group = create_texture_atlas(
+            &gpu,
+            &texture_atlas_layout,
+            &config.texture_atlas,
+            &pixel_sampler,
+        );
+        let pipeline_layout = create_pipeline_layout(
+            &gpu,
+            &frame_uniforms_layout,
+            &chunk_uniforms_layout,
+            &texture_atlas_layout,
+        );
         let quad_pipeline =
             shaders::quad::create_shader(&gpu, &pipeline_layout, config.output_format);
 
@@ -94,6 +149,9 @@ impl Renderer {
             chunk_uniforms_layout,
             chunk_uniforms_bind_group,
             chunk_uniforms_buffer,
+            texture_atlas_bind_group,
+            texture_atlas_layout,
+            pixel_sampler,
             quad_pipeline,
         }
     }
@@ -108,6 +166,16 @@ impl Renderer {
     /// of the provided size.
     pub fn resize(&mut self, width: u32, height: u32) {
         self.depth_buffer = create_depth_buffer(&self.gpu, width, height);
+    }
+
+    /// Re-creates the texture atlas.
+    pub fn set_texture_atlas(&mut self, config: &TextureAtlasConfig) {
+        self.texture_atlas_bind_group = create_texture_atlas(
+            &self.gpu,
+            &self.texture_atlas_layout,
+            config,
+            &self.pixel_sampler,
+        );
     }
 }
 
@@ -221,15 +289,104 @@ fn create_chunks_uniforms_buffer(
     (buffer, bind_group)
 }
 
+fn create_pixel_sampler(gpu: &Gpu) -> wgpu::Sampler {
+    gpu.device.create_sampler(&wgpu::SamplerDescriptor {
+        label: Some("Pixel Sampler"),
+        address_mode_u: wgpu::AddressMode::ClampToEdge,
+        address_mode_v: wgpu::AddressMode::ClampToEdge,
+        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        mag_filter: wgpu::FilterMode::Nearest,
+        min_filter: wgpu::FilterMode::Nearest,
+        mipmap_filter: wgpu::FilterMode::Nearest,
+        lod_min_clamp: 0.0,
+        lod_max_clamp: 32.0,
+        compare: None,
+        anisotropy_clamp: 1,
+        border_color: None,
+    })
+}
+
+fn create_texture_atlas_layout(gpu: &Gpu) -> wgpu::BindGroupLayout {
+    gpu.device
+        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Texture Atlas Bind Group Layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    count: None,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                        view_dimension: wgpu::TextureViewDimension::D2Array,
+                    },
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    count: None,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                },
+            ],
+        })
+}
+
+fn create_texture_atlas(
+    gpu: &Gpu,
+    layout: &wgpu::BindGroupLayout,
+    config: &TextureAtlasConfig,
+    sampler: &wgpu::Sampler,
+) -> wgpu::BindGroup {
+    let texture = gpu.device.create_texture_with_data(
+        &gpu.queue,
+        &wgpu::TextureDescriptor {
+            label: Some("Texture Atlas"),
+            size: wgpu::Extent3d {
+                width: config.width,
+                height: config.height,
+                depth_or_array_layers: config.count,
+            },
+            mip_level_count: config.mip_level_count,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: config.format,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        },
+        wgpu::util::TextureDataOrder::LayerMajor,
+        &config.data,
+    );
+
+    let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+    let bind_group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("Texture Atlas Bind Group"),
+        layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&view),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: wgpu::BindingResource::Sampler(sampler),
+            },
+        ],
+    });
+
+    bind_group
+}
+
 fn create_pipeline_layout(
     gpu: &Gpu,
     frame_uniforms_layout: &wgpu::BindGroupLayout,
     chunk_uniforms_layout: &wgpu::BindGroupLayout,
+    texture_atlas: &wgpu::BindGroupLayout,
 ) -> wgpu::PipelineLayout {
     gpu.device
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Pipeline Layout"),
-            bind_group_layouts: &[&frame_uniforms_layout, &chunk_uniforms_layout],
+            bind_group_layouts: &[frame_uniforms_layout, chunk_uniforms_layout, texture_atlas],
             push_constant_ranges: &[],
         })
 }

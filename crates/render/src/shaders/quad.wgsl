@@ -121,13 +121,17 @@ fn vs_main(
     return output;
 }
 
+@group(2) @binding(0)
+var texture_atlas: texture_2d_array<f32>;
+@group(2) @binding(1)
+var texture_atlas_sampler: sampler;
+
 @fragment
 fn fs_main(input: Interpolator) -> @location(0) vec4<f32> {
-    var COLORS: array<vec4<f32>, 3> = array(
-        vec4(0.15, 0.15, 0.20, 1.0),
-        vec4(0.32, 0.15, 0.15, 1.0),
-        vec4(0.38, 0.90, 0.52, 1.0),
+    return textureSample(
+        texture_atlas,
+        texture_atlas_sampler,
+        input.tex_coords,
+        input.tex_index,
     );
-
-    return COLORS[input.tex_index];
 }

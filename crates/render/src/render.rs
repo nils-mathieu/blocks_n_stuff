@@ -71,6 +71,7 @@ impl Renderer {
 
         // Set the bind groups that are used by most of the pipelines.
         rp.set_bind_group(0, &self.frame_uniforms_bind_group, &[]);
+        rp.set_bind_group(2, &self.texture_atlas_bind_group, &[]);
 
         // The quad pipeline is responsible for rendering axis-aligned quads (the faces of voxels).
         // Every time a new instance buffer is drawn, the pipeline must be bound to the correct

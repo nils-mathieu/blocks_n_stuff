@@ -1,5 +1,7 @@
 use std::io;
 
+use crate::ImageMetadata;
+
 /// Loads an image from the provided reader.
 ///
 /// The image is expected to be in the PNG format.
@@ -28,11 +30,13 @@ pub fn load(reader: impl io::Read) -> Result<crate::Image, crate::Error> {
     reader.next_frame(&mut pixels).map_err(map_error)?;
 
     Ok(crate::Image {
-        width: reader.info().width,
-        height: reader.info().height,
         pixels,
-        format,
-        color_space,
+        metadata: ImageMetadata {
+            width: reader.info().width,
+            height: reader.info().height,
+            format,
+            color_space,
+        },
     })
 }
 

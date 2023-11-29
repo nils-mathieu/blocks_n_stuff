@@ -16,5 +16,38 @@ use bytemuck::Contiguous;
 pub enum TextureId {
     Stone,
     Dirt,
-    Grass,
+    GrassSide,
+    GrassTop,
+}
+
+impl TextureId {
+    /// The total number of [`TextureId`] instances.
+    pub const COUNT: usize = <Self as Contiguous>::MAX_VALUE as usize + 1;
+
+    /// Creates a new [`TextureId`] from the given index.
+    ///
+    /// # Safety
+    ///
+    /// The index must be less than [`TextureId::COUNT`].
+    #[inline]
+    pub const unsafe fn from_index_unchecked(index: usize) -> Self {
+        std::mem::transmute(index as u8)
+    }
+
+    /// Returns the file name that the image representing this texture should have.
+    ///
+    /// # Remarks
+    ///
+    /// The extension of the file name is not included.
+    #[inline]
+    pub fn file_name(self) -> &'static str {
+        const NAMES: [&str; TextureId::COUNT] = ["stone", "dirt", "grass_side", "grass_top"];
+        unsafe { NAMES.get_unchecked(self as usize) }
+    }
+
+    /// Returns an iterator over all the [`TextureId`] instances.
+    #[inline]
+    pub fn all() -> impl Clone + ExactSizeIterator<Item = Self> {
+        unsafe { (0..Self::COUNT).map(|x| Self::from_index_unchecked(x)) }
+    }
 }

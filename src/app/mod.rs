@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
-use bns_core::Chunk;
+use bns_core::{Chunk, TextureId};
 use bns_render::data::{ChunkUniforms, FrameUniforms, RenderDataStorage};
-use bns_render::{Renderer, RendererConfig, Surface};
+use bns_render::{Renderer, RendererConfig, Surface, TextureAtlasConfig, TextureFormat};
 use glam::{IVec3, Vec3};
 use winit::event::KeyEvent;
 use winit::event_loop::EventLoopWindowTarget;
@@ -50,9 +50,9 @@ impl App {
             surface.gpu().clone(),
             RendererConfig {
                 output_format: surface.info().format,
+                texture_atlas: load_texture_atlas(),
             },
         );
-
         let world = World::new(
             renderer.gpu().clone(),
             Box::new(StandardWorldGenerator::new()),
@@ -158,8 +158,8 @@ impl App {
 
 /// Calls the provided function for every visible chunk from the camera.
 fn chunks_in_frustum(camera: &Camera, mut callback: impl FnMut(ChunkPos)) {
-    const HORIZONTAL_RENDER_DISTANCE: i32 = 12;
-    const VERTICAL_RENDER_DISTANCE: i32 = 12;
+    const HORIZONTAL_RENDER_DISTANCE: i32 = 6;
+    const VERTICAL_RENDER_DISTANCE: i32 = 6;
     const CHUNK_RADIUS: f32 = (Chunk::SIDE as f32) * 0.8660254; // sqrt(3) / 2
 
     fn coord_to_chunk(coord: f32) -> i32 {
@@ -193,5 +193,40 @@ fn chunks_in_frustum(camera: &Camera, mut callback: impl FnMut(ChunkPos)) {
                 }
             }
         }
+    }
+}
+
+fn load_texture_atlas() -> TextureAtlasConfig<'static> {
+    let mut data = Vec::new();
+    let mut count = 0;
+    let mut metadata = None;
+
+    for texture_id in TextureId::all() {
+        let path = format!("assets/{}.png", texture_id.file_name());
+        println!("loading texture: {}", path);
+        let mut image = bns_image::Image::load_png(std::fs::File::open(path).unwrap()).unwrap();
+        image.ensure_rgba();
+
+        match &metadata {
+            Some(metadata) => assert_eq!(metadata, &image.metadata),
+            None => metadata = Some(image.metadata),
+        }
+
+        data.extend_from_slice(&image.pixels);
+        count += 1;
+    }
+
+    let metadata = metadata.unwrap();
+
+    TextureAtlasConfig {
+        data: data.into(),
+        width: metadata.width,
+        height: metadata.height,
+        count,
+        mip_level_count: 1,
+        format: match metadata.color_space {
+            bns_image::ColorSpace::Srgb => TextureFormat::Rgba8UnormSrgb,
+            bns_image::ColorSpace::Linear => TextureFormat::Rgba8Unorm,
+        },
     }
 }

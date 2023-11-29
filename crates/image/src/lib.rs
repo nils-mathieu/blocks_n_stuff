@@ -1,10 +1,11 @@
 //! A simple image loading library.
 
-use std::io;
+use std::{fmt, io};
 
 mod png;
 
 /// An error that might occur when loading an image.
+#[derive(Debug)]
 pub enum Error {
     /// An I/O error occured.
     Io(io::Error),
@@ -15,6 +16,17 @@ pub enum Error {
     UnsupportedAnimation,
     /// The format of the image is not supported.
     UnsupportedFormat,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Self::Io(ref err) => write!(f, "I/O error: {}", err),
+            Self::Format => write!(f, "invalid image format"),
+            Self::UnsupportedAnimation => write!(f, "animated images are not supported"),
+            Self::UnsupportedFormat => write!(f, "unsupported image format"),
+        }
+    }
 }
 
 /// The format of a loaded image.
@@ -43,18 +55,25 @@ pub enum ColorSpace {
     Linear,
 }
 
-/// A loaded image.
-pub struct Image {
+/// The format of an image.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ImageMetadata {
     /// The width of the loaded image.
     pub width: u32,
     /// The height of the loaded image.
     pub height: u32,
-    /// The pixels of the loaded image, encoded in RGBA format, one byte per channel.
-    pub pixels: Vec<u8>,
     /// The format of the image.
     pub format: Format,
     /// The color space of the image.
     pub color_space: ColorSpace,
+}
+
+/// A loaded image.
+pub struct Image {
+    /// The pixels of the loaded image, encoded in RGBA format, one byte per channel.
+    pub pixels: Vec<u8>,
+    /// The metadata of the image.
+    pub metadata: ImageMetadata,
 }
 
 impl Image {
@@ -69,7 +88,7 @@ impl Image {
     /// [`Rgba`]: Format::Rgba
     #[allow(clippy::identity_op)]
     pub fn ensure_rgba(&mut self) {
-        match self.format {
+        match self.metadata.format {
             Format::Rgba => (),
             Format::Rgb => {
                 let cnt = self.pixels.len() / 3;
@@ -147,6 +166,6 @@ impl Image {
             }
         }
 
-        self.format = Format::Rgba;
+        self.metadata.format = Format::Rgba;
     }
 }

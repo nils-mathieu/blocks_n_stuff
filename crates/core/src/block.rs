@@ -49,9 +49,9 @@ impl BlockId {
             // Grass
             BlockInfo {
                 appearance: BlockAppearance::Regular {
-                    top: TextureId::Grass,
+                    top: TextureId::GrassTop,
                     bottom: TextureId::Dirt,
-                    side: TextureId::Grass,
+                    side: TextureId::GrassSide,
                 },
             },
             // Dirt
