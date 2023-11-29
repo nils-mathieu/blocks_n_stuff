@@ -36,4 +36,4 @@ hashbrown = "0.14"
 
 [target.'cfg(target_os = "windows")'.dependencies.windows-sys]
 version = "0.52"
-features = ["Win32_Foundation"]
+features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"]
