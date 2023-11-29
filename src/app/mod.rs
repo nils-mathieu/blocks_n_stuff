@@ -83,6 +83,11 @@ impl App {
     /// Notifies the application that the size of the window on which it is drawing stuff has
     /// changed.
     pub fn notify_resized(&mut self, width: u32, height: u32) {
+        if width == 0 || height == 0 {
+            // We're probably minimized.
+            return;
+        }
+
         self.surface.config_mut().width = width;
         self.surface.config_mut().height = height;
         self.renderer.resize(width, height);
