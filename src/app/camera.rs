@@ -17,6 +17,10 @@ pub struct Camera {
     pressing_fly_up: bool,
     /// Whether the user is currently pressing the "fly down" key.
     pressing_fly_down: bool,
+    /// Whether the camera is in "sprint" mode.
+    ///
+    /// In this mode, the horizontal movement is multiplied by a factor.
+    sprinting: bool,
     /// The position of the camera in world-space coordinates.
     position: Vec3,
     /// The yaw of the camera, in radians.
@@ -46,6 +50,8 @@ impl Camera {
     pub const NEAR: f32 = 0.1;
     /// The distance of the far plane from the camera.
     pub const FAR: f32 = 1000.0;
+    /// The amount of speed to add when sprinting.
+    pub const SPRINT_FACTOR: f32 = 4.0;
 
     /// Notifies the camera that the size of the output display has changed.
     pub fn notify_resized(&mut self, width: u32, height: u32) {
@@ -66,6 +72,12 @@ impl Camera {
             self.pressing_fly_up = event.state.is_pressed();
         } else if event.physical_key == KeyCode::ShiftLeft {
             self.pressing_fly_down = event.state.is_pressed();
+        } else if event.physical_key == KeyCode::ControlLeft && event.state.is_pressed() {
+            self.sprinting = !self.sprinting;
+        }
+
+        if !self.pressing_forward {
+            self.sprinting = false;
         }
     }
 
@@ -104,6 +116,11 @@ impl Camera {
         self.position += Quat::from_rotation_y(self.yaw)
             * Vec3::new(movement_input.x, 0.0, movement_input.y)
             * Self::SPEED
+            * (if self.sprinting {
+                Self::SPRINT_FACTOR
+            } else {
+                1.0
+            })
             * dt;
 
         self.position.y += vertical_movement_input * Self::FLY_SPEED * dt;
