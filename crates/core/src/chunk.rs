@@ -1,14 +1,13 @@
-use std::ops::{Index, IndexMut};
-
 use bytemuck::Zeroable;
+use glam::IVec3;
 
-use super::{BlockId, ChunkGeometry};
+use crate::BlockId;
 
 const X_MASK: u16 = 0b11111;
 const Y_MASK: u16 = 0b11111 << 5;
 const Z_MASK: u16 = 0b11111 << 10;
 
-/// A local block position within a chunk.
+/// A local block position within a [`Chunk`].
 ///
 /// # Representation
 ///
@@ -43,6 +42,7 @@ impl LocalPos {
     /// # Safety
     ///
     /// This function assumes that the coordinates are less than [`Chunk::SIDE`].
+    #[inline]
     pub unsafe fn from_xyz_unchecked(x: i32, y: i32, z: i32) -> Self {
         let index = x + y * Chunk::SIDE + z * Chunk::SIDE * Chunk::SIDE;
         Self::new_unchecked(index as usize)
@@ -97,6 +97,12 @@ impl LocalPos {
         ((self.0 & Z_MASK) >> 10) as _
     }
 
+    /// Returns the position as a [`IVec3`].
+    #[inline]
+    pub fn to_ivec3(self) -> IVec3 {
+        IVec3::new(self.x(), self.y(), self.z())
+    }
+
     /// Returns an iterator over all the [`LocalPos`] instances that have a Y coordinate equal to
     /// the provided one.
     ///
@@ -137,70 +143,67 @@ impl LocalPos {
     }
 }
 
-/// The data of a [`Chunk`], not including its built geometry and other metadata.
+/// The inner chunk data.
+///
+/// This type is ***huge*** and should basically never be instanciated on the stack.
 #[derive(Zeroable)]
-pub struct ChunkData {
-    /// The blocks in the chunk.
-    pub blocks: [BlockId; Chunk::SIZE],
+struct ChunkData {
+    blocks: [BlockId; Chunk::SIZE],
 }
 
-impl ChunkData {
-    /// Creates a new, empty [`Chunk`].
-    #[inline]
-    pub fn empty() -> Box<Self> {
-        bytemuck::zeroed_box()
-    }
-}
-
-impl Index<LocalPos> for ChunkData {
-    type Output = BlockId;
-
-    #[inline]
-    fn index(&self, index: LocalPos) -> &Self::Output {
-        // SAFETY:
-        //  By invariant, the index of a `LocalPos` is always in bounds of this
-        //  array.
-        unsafe { self.blocks.get_unchecked(index.index()) }
-    }
-}
-
-impl IndexMut<LocalPos> for ChunkData {
-    #[inline]
-    fn index_mut(&mut self, index: LocalPos) -> &mut Self::Output {
-        // SAFETY:
-        //  By invariant, the index of a `LocalPos` is always in bounds of this
-        //  array.
-        unsafe { self.blocks.get_unchecked_mut(index.index()) }
-    }
-}
-
-/// Stores the state of a chunk loaded in memory.
+/// Represents the content of a chunk.
+///
+/// # Remarks
+///
+/// Because this crate is meant to be used in both the client and the server, this type *does not*
+/// include built geometry information or other metadata that can be derived from the chunk data
+/// itself.
+///
+/// Those should instead be stored in a separate structure defined in downstream crates.
 pub struct Chunk {
-    // OPTIMIZE: use an option to avoid creating a [`ChunkData`] instance alltogether when
-    // the chunk is empty to save memory. Maybe move the box within [`ChunkData`] itself then,
-    // to make the API a bit more ergonomic.
-    /// The data of the chunk.
-    pub data: Box<ChunkData>,
-
-    /// The geometry of the chunk.
-    pub geometry: ChunkGeometry,
-
-    /// Whether the geometry of the chunk is dirty and needs to be rebuilt.
-    pub dirty: bool,
+    /// The inner data of the chunk.
+    ///
+    /// This `Option<T>` is set to [`None`] when the chunk is empty to avoid allocating a huge
+    /// chunk of memory for nothing.
+    data: Option<Box<ChunkData>>,
 }
 
 impl Chunk {
-    /// The size of a chunk in a single dimension.
+    /// The side-length of a chunk, in blocks.
+    ///
+    /// The total size of a chunk is the cube of this value.
     pub const SIDE: i32 = 32;
-    /// The total number of blocks in a chunk.
+
+    /// The total size of a chunk, in blocks.
+    ///
+    /// This is equal to `SIDE * SIDE * SIDE`.
     pub const SIZE: usize = (Self::SIDE * Self::SIDE * Self::SIDE) as usize;
 
-    /// Creates a new [`Chunk`] with the given data.
-    pub fn new(data: Box<ChunkData>) -> Self {
-        Self {
-            data,
-            geometry: ChunkGeometry::new(),
-            dirty: true,
+    /// Creates a new [`Chunk`] instance with the provided data.
+    #[inline]
+    pub fn empty() -> Self {
+        Self { data: None }
+    }
+
+    /// Returns the block at the provided position.
+    #[inline]
+    pub fn get_block(&self, pos: LocalPos) -> BlockId {
+        match &self.data {
+            Some(data) => unsafe { *data.blocks.get_unchecked(pos.index()) },
+            None => BlockId::Air,
         }
+    }
+
+    /// Returns a mutable reference to the block at the provided position.
+    ///
+    /// # Remarks
+    ///
+    /// This function forces the chunk to allocate its data if it was empty. If you know
+    /// that the value you're trying to insert is [`BlockId::Air`], you should skip calling
+    /// the function.
+    #[inline]
+    pub fn get_block_mut(&mut self, pos: LocalPos) -> &mut BlockId {
+        let data = self.data.get_or_insert_with(bytemuck::zeroed_box);
+        unsafe { data.blocks.get_unchecked_mut(pos.index()) }
     }
 }

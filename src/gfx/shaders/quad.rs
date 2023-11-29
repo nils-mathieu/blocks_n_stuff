@@ -1,10 +1,9 @@
 use bitflags::bitflags;
+use bns_core::LocalPos;
 use bytemuck::{Pod, Zeroable};
 
-use crate::gfx::Gpu;
-use crate::world::LocalPos;
-
 use super::RenderResources;
+use crate::gfx::Gpu;
 
 bitflags! {
     /// Some flags that are stored in a [`QuadInstance`] to describe it.
@@ -89,36 +88,6 @@ bitflags! {
 }
 
 impl QuadInstance {
-    /// Creates a [`QuadInstance`] that has the `x` field set to the provided value.
-    ///
-    /// # Panics
-    ///
-    /// In debug builds, this function panics if `x` is larger than `31`.
-    pub fn from_x(x: u32) -> Self {
-        debug_assert!(x < 32);
-        Self::from_bits_retain(x << 7)
-    }
-
-    /// Creates a [`QuadInstance`] that has the `y` field set to the provided value.
-    ///
-    /// # Panics
-    ///
-    /// In debug builds, this function panics if `y` is larger than `31`.
-    pub fn from_y(y: u32) -> Self {
-        debug_assert!(y < 32);
-        Self::from_bits_retain(y << 12)
-    }
-
-    /// Creates a [`QuadInstance`] that has the `z` field set to the provided value.
-    ///
-    /// # Panics
-    ///
-    /// In debug builds, this function panics if `z` is larger than `31`.
-    pub fn from_z(z: u32) -> Self {
-        debug_assert!(z < 32);
-        Self::from_bits_retain(z << 17)
-    }
-
     /// Creates a new [`QuadInstance`] from the provided local position.
     pub fn from_local_pos(local_pos: LocalPos) -> Self {
         let index = local_pos.index() as u32;

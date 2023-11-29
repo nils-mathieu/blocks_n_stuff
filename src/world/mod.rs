@@ -1,15 +1,10 @@
 use std::hash::BuildHasherDefault;
 use std::sync::Arc;
 
+use bns_core::Chunk;
 use glam::IVec3;
 
 use hashbrown::HashMap;
-
-mod chunk;
-pub use chunk::*;
-
-mod block;
-pub use block::*;
 
 mod chunk_geometry;
 pub use chunk_geometry::*;
@@ -27,13 +22,34 @@ pub trait WorldGenerator {
     ///
     /// This function is expected to be pure. Calling it multiple times with the same `pos` value
     /// should produce the same exact chunk.
-    fn generate(&mut self, pos: ChunkPos) -> Box<ChunkData>;
+    fn generate(&mut self, pos: ChunkPos) -> Chunk;
+}
+
+/// Stores the state of a chunk loaded in memory.
+pub struct ChunkEntry {
+    /// The inner chunk data.
+    pub inner: Chunk,
+    /// The geometry of the chunk.
+    pub geometry: ChunkGeometry,
+    /// Whether the geometry of the chunk is dirty and needs to be rebuilt.
+    pub dirty: bool,
+}
+
+impl ChunkEntry {
+    /// Creates a new [`Chunk`] with the given data.
+    pub fn new(inner: Chunk) -> Self {
+        Self {
+            inner,
+            geometry: ChunkGeometry::new(),
+            dirty: true,
+        }
+    }
 }
 
 /// A collection of chunks.
 #[derive(Default)]
 struct Chunks {
-    chunks: HashMap<ChunkPos, Chunk, BuildHasherDefault<rustc_hash::FxHasher>>,
+    chunks: HashMap<ChunkPos, ChunkEntry, BuildHasherDefault<rustc_hash::FxHasher>>,
 }
 
 impl Chunks {
@@ -45,21 +61,21 @@ impl Chunks {
     /// # Remarks
     ///
     /// This function does not attempt to rebuild the geometry of the chunk.
-    pub fn get_or_generate<F>(&mut self, pos: ChunkPos, generate: F) -> &mut Chunk
+    pub fn get_or_generate<F>(&mut self, pos: ChunkPos, generate: F) -> &mut ChunkEntry
     where
-        F: FnOnce() -> Box<ChunkData>,
+        F: FnOnce() -> Chunk,
     {
         use hashbrown::hash_map::Entry;
         match self.chunks.entry(pos) {
-            Entry::Vacant(e) => e.insert(Chunk::new(generate())),
+            Entry::Vacant(e) => e.insert(ChunkEntry::new(generate())),
             Entry::Occupied(e) => e.into_mut(),
         }
     }
 
     /// Gets the neighborhood of a chunk.
-    fn get_chunk_neighborhood<F>(&mut self, pos: ChunkPos, mut generate: F) -> [&mut Chunk; 7]
+    fn get_chunk_neighborhood<F>(&mut self, pos: ChunkPos, mut generate: F) -> [&mut ChunkEntry; 7]
     where
-        F: FnMut() -> Box<ChunkData>,
+        F: FnMut() -> Chunk,
     {
         // Make sure that the chunk is loaded.
         self.get_or_generate(pos, &mut generate);
@@ -114,7 +130,7 @@ impl World {
     /// Returns an existing chunk at the provided position.
     ///
     /// The chunk is not built if it was not already built.
-    pub fn get_existing_chunk(&self, pos: ChunkPos) -> Option<&Chunk> {
+    pub fn get_existing_chunk(&self, pos: ChunkPos) -> Option<&ChunkEntry> {
         self.chunks.chunks.get(&pos)
     }
 
@@ -135,14 +151,14 @@ impl World {
     ///
     /// If the chunk was already previously requested, the priority of the request is overwritten
     /// regardless of whether the new priority is higher or lower.
-    pub fn request_chunk(&mut self, pos: ChunkPos, _priority: usize) -> Option<&mut Chunk> {
+    pub fn request_chunk(&mut self, pos: ChunkPos, _priority: usize) -> Option<&mut ChunkEntry> {
         let mut generate = || self.generator.generate(pos);
 
         let chunk = self.chunks.get_or_generate(pos, &mut generate);
 
         if !chunk.dirty {
             // SAFETY: https://github.com/rust-lang/rfcs/blob/master/text/2094-nll.md#problem-case-3-conditional-control-flow-across-functions
-            let chunk = unsafe { std::mem::transmute::<&mut Chunk, &mut Chunk>(chunk) };
+            let chunk = unsafe { std::mem::transmute::<&mut ChunkEntry, &mut ChunkEntry>(chunk) };
             return Some(chunk);
         }
 
@@ -151,13 +167,13 @@ impl World {
 
         chunk.geometry.build(
             ChunkNeighborhood {
-                this: &chunk.data,
-                x: &x.data,
-                nx: &nx.data,
-                y: &y.data,
-                ny: &ny.data,
-                z: &z.data,
-                nz: &nz.data,
+                this: &chunk.inner,
+                x: &x.inner,
+                nx: &nx.inner,
+                y: &y.inner,
+                ny: &ny.inner,
+                z: &z.inner,
+                nz: &nz.inner,
             },
             &mut self.chunk_build_context,
         );

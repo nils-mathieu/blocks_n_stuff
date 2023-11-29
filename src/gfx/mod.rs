@@ -14,7 +14,6 @@ pub mod render_data;
 
 use self::render_data::RenderData;
 use self::render_graph::RenderGraph;
-use self::shaders::RenderResources;
 
 /// The renderer is responsible for using the GPU to render things on a render target.
 pub struct Renderer {

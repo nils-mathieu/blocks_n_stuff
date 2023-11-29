@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
+use bns_core::{BlockAppearance, Chunk, LocalPos};
+
 use crate::gfx::render_data::QuadInstance;
 use crate::gfx::Gpu;
-
-use super::{BlockAppearance, ChunkData, LocalPos, BLOCK_REGISTRY};
 
 /// Contains some resources useful for building a chunk.
 ///
@@ -49,7 +49,7 @@ impl ChunkGeometry {
 
         // TODO: actually perform some culling.
         for local_pos in LocalPos::iter_all() {
-            match BLOCK_REGISTRY[neighborhood.this[local_pos]].appearance {
+            match neighborhood.this.get_block(local_pos).info().appearance {
                 BlockAppearance::Invisible => (),
                 BlockAppearance::Regular { .. } => {
                     context.quads.extend_from_slice(&[
@@ -96,17 +96,17 @@ fn create_quad_vertex_buffer(gpu: &Gpu, capacity: wgpu::BufferAddress) -> wgpu::
 /// The neighborhood of a chunk.
 pub struct ChunkNeighborhood<'a> {
     /// The data of the chunk that's being built.
-    pub this: &'a ChunkData,
+    pub this: &'a Chunk,
     /// The chunk that's on the positive X side of this chunk.
-    pub x: &'a ChunkData,
+    pub x: &'a Chunk,
     /// The chunk that's on the negative X side of this chunk.
-    pub nx: &'a ChunkData,
+    pub nx: &'a Chunk,
     /// The chunk that's on the positive Y side of this chunk.
-    pub y: &'a ChunkData,
+    pub y: &'a Chunk,
     /// The chunk that's on the negative Y side of this chunk.
-    pub ny: &'a ChunkData,
+    pub ny: &'a Chunk,
     /// The chunk that's on the positive Z side of this chunk.
-    pub z: &'a ChunkData,
+    pub z: &'a Chunk,
     /// The chunk that's on the negative Z side of this chunk.
-    pub nz: &'a ChunkData,
+    pub nz: &'a Chunk,
 }

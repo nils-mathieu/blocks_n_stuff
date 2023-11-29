@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 
+use bns_core::Chunk;
 use glam::{IVec3, Vec3, Vec4};
 use winit::event::KeyEvent;
 use winit::event_loop::EventLoopWindowTarget;
@@ -11,7 +12,7 @@ use winit::window::{CursorGrabMode, Fullscreen, Window};
 use crate::gfx::render_data::{BufferSlice, ChunkUniforms, FrameUniforms, RenderData};
 use crate::gfx::Renderer;
 use crate::window::UserEvent;
-use crate::world::{Chunk, ChunkPos, World};
+use crate::world::{ChunkPos, World};
 use crate::worldgen::StandardWorldGenerator;
 
 mod camera;

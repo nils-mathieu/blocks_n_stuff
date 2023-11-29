@@ -1,14 +1,27 @@
 [package]
 name = "blocks_n_stuff"
 version = "0.1.0"
+description = "A Minecraft-inspired game to showcase my graphics programming skills."
+
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[workspace.package]
 edition = "2021"
 authors = ["Nils Mathieu <contact@nils-mathieu.fr>"]
-description = "A Minecraft-inspired game to showcase my graphics programming skills."
 repository = "https://github.com/nils-mathieu/blocks_n_stuff"
 license = "MIT"
 publish = false
 
+[workspace]
+members = ["crates/core"]
+
 [dependencies]
+bns-core = { path = "crates/core" }
+
 winit = "0.29"
 wgpu = { path = "../wgpu/wgpu" } # TODO: use crates.io when wgpu finally uses raw-window-handle v0.6
 pollster = "0.3"
