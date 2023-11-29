@@ -126,7 +126,6 @@ impl App {
             return;
         };
         let mut render_data = self.render_data_storage.build();
-        render_data.clear_color([0.0, 0.0, 1.0, 1.0]);
         let view = self.camera.view_matrix();
         let projection = self.camera.projection_matrix();
         render_data.frame_uniforms(FrameUniforms {

@@ -46,12 +46,7 @@ impl Renderer {
             label: Some("Main Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: data.clear_color[0],
-                        g: data.clear_color[1],
-                        b: data.clear_color[2],
-                        a: data.clear_color[3],
-                    }),
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                     store: wgpu::StoreOp::Store,
                 },
                 resolve_target: None,

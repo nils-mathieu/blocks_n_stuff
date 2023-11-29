@@ -43,7 +43,6 @@ impl RenderDataStorage {
             chunk_uniforms_align: self.chunk_uniforms_align,
             chunk_uniforms: &mut self.chunk_uniforms,
             frame_uniforms: FrameUniforms::default(),
-            clear_color: [0.0; 4],
             quad_vertices: unsafe { std::mem::transmute(&mut self.quad_vertices) },
         }
     }
@@ -262,8 +261,6 @@ pub struct RenderData<'a, 'res> {
 
     /// The frame uniforms for the frame.
     pub(crate) frame_uniforms: FrameUniforms,
-    /// The clear color for the frame.
-    pub(crate) clear_color: [f64; 4],
 
     /// The vertices of the quads to render.
     ///
@@ -297,12 +294,6 @@ impl<'a, 'res> RenderData<'a, 'res> {
             vertices: vertices.slice(),
             len,
         });
-    }
-
-    /// Sets the clear color for the frame.
-    #[inline]
-    pub fn clear_color(&mut self, value: [f64; 4]) {
-        self.clear_color = value;
     }
 
     /// Set the [`FrameUniforms`] instance for the frame.
