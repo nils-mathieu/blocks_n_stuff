@@ -13,7 +13,7 @@ pub use chunk_geometry::*;
 /// The position of a chunk.
 pub type ChunkPos = IVec3;
 
-/// Describes how to generate a [`World`](World).
+/// Describes how to generate a [`World`].
 pub trait WorldGenerator {
     /// Generates a chunk for the provided position.
     ///

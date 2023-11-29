@@ -9,6 +9,8 @@ use bytemuck::Contiguous;
 ///
 /// Just like [`BlockId`], this type will need to be replaced if we want to support modding
 /// and custom blocks.
+///
+/// [`BlockId`]: crate::BlockId
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Contiguous)]
 #[repr(u8)]
 pub enum TextureId {

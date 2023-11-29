@@ -77,6 +77,8 @@ pub enum BlockAppearance {
     ///
     /// The helper function [`uniform`] can be used to create a [`BlockAppearance`]
     /// instance with the same texture for all faces.
+    ///
+    /// [`uniform`]: BlockAppearance::uniform
     Regular {
         /// The texture that should be applied to the top face of the block (facing the positive
         /// Y axis).

@@ -220,7 +220,7 @@ impl QuadInstance {
         Self::from_bits_retain((index as u32) << 7)
     }
 
-    /// Creates a new [`QuadInstance`] from the provided [`TextureId`].
+    /// Creates a new [`QuadInstance`] from the provided texture index.
     ///
     /// # Panics
     ///
@@ -266,7 +266,7 @@ pub struct RenderData<'a, 'res> {
 }
 
 impl<'a, 'res> RenderData<'a, 'res> {
-    /// Inserts a new [`QuadVertices`] instance into the render data.
+    /// Registers a new instance buffer of [`QuadInstance`]s.
     pub fn add_quad_vertices(
         &mut self,
         chunk: ChunkUniforms,
