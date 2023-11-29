@@ -1,5 +1,5 @@
 use bitflags::bitflags;
-use bns_core::LocalPos;
+use bns_core::{LocalPos, TextureId};
 use bytemuck::{Pod, Zeroable};
 
 use super::RenderResources;
@@ -21,6 +21,7 @@ bitflags! {
     /// | 7-11  | `x`        | The local X position of the quad. |
     /// | 12-16 | `y`        | The local Y position of the quad. |
     /// | 17-21 | `z`        | The local Z position of the quad. |
+    /// | 22-31 | `texture`  | The index of the quad's texture.  |
     ///
     /// - `facing` can be one of the following values:
     ///
@@ -42,6 +43,9 @@ bitflags! {
     ///
     /// - `x`, `y`, and `z` are the local position of the quad. They are stored as 5-bit unsigned
     ///   integers, which means that they can range from 0 to 31.
+    ///
+    /// - `texture` is the index of the quad's texture. It is stored as a 10-bit unsigned integer,
+    ///   which means that it can range from 0 to 1023.
     #[derive(Debug, Clone, Copy)]
     #[repr(transparent)]
     pub struct QuadInstance: u32 {
@@ -84,14 +88,26 @@ bitflags! {
         ///
         /// This constant represents the value `31`.
         const Z_MASK = 0b11111 << 17;
+
+        /// The bits that are used to store the `texture` field.
+        ///
+        /// This constant represents the value `1023`.
+        const TEXTURE_MASK = 0b1111111111 << 22;
     }
 }
 
 impl QuadInstance {
     /// Creates a new [`QuadInstance`] from the provided local position.
+    #[inline]
     pub fn from_local_pos(local_pos: LocalPos) -> Self {
         let index = local_pos.index() as u32;
         Self::from_bits_retain(index << 7)
+    }
+
+    /// Creates a new [`QuadInstance`] from the provided [`TextureId`].
+    #[inline]
+    pub fn from_texture(texture: TextureId) -> Self {
+        Self::from_bits_retain((texture as u32) << 22)
     }
 }
 

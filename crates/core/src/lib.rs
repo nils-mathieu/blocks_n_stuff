@@ -6,3 +6,6 @@ pub use block::*;
 
 mod chunk;
 pub use chunk::*;
+
+mod texture;
+pub use texture::*;

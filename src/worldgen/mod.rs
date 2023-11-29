@@ -20,7 +20,14 @@ impl WorldGenerator for StandardWorldGenerator {
 
         if pos.y == 0 {
             for pos in LocalPos::iter_surface(0) {
-                *result.get_block_mut(pos) = BlockId::Stone;
+                let id = match (pos.x() + pos.z()) % 3 {
+                    0 => BlockId::Grass,
+                    1 => BlockId::Dirt,
+                    2 => BlockId::Stone,
+                    _ => unreachable!(),
+                };
+
+                *result.get_block_mut(pos) = id;
             }
         }
 

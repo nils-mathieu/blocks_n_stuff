@@ -25,6 +25,8 @@ struct Interpolator {
     @builtin(position) position: vec4<f32>,
     // The texture coordinates of the vertex.
     @location(0) tex_coords: vec2<f32>,
+    // The index of the texture to use.
+    @location(1) @interpolate(flat) tex_index: u32,
 }
 
 @vertex
@@ -83,6 +85,7 @@ fn vs_main(
     let local_x: u32 = (instance >> 7u) & 31u;
     let local_y: u32 = (instance >> 12u) & 31u;
     let local_z: u32 = (instance >> 17u) & 31u;
+    let tex_index: u32 = (instance >> 22u) & 1023u;
 
     // The position of the vertex relative to the voxel, origin.
     // OPTIMIZE: move the `face` field four bits to the left to avoid
@@ -114,10 +117,17 @@ fn vs_main(
     var output: Interpolator;
     output.position = frame.camera * vec4(world_pos, 1.0);
     output.tex_coords = tex_coords;
+    output.tex_index = tex_index;
     return output;
 }
 
 @fragment
 fn fs_main(input: Interpolator) -> @location(0) vec4<f32> {
-    return vec4(input.tex_coords, 0.0, 1.0);
+    var COLORS: array<vec4<f32>, 3> = array(
+        vec4(0.15, 0.15, 0.20, 1.0),
+        vec4(0.32, 0.15, 0.15, 1.0),
+        vec4(0.38, 0.90, 0.52, 1.0),
+    );
+
+    return COLORS[input.tex_index];
 }

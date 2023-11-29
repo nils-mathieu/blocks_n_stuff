@@ -1,5 +1,7 @@
 use bytemuck::{Contiguous, Zeroable};
 
+use crate::TextureId;
+
 /// A block identifier.
 ///
 /// This enumeration defines what blocks are authorized to exist in a game world.
@@ -14,6 +16,8 @@ pub enum BlockId {
     #[default]
     Air,
     Stone,
+    Grass,
+    Dirt,
 }
 
 // SAFETY:
@@ -42,25 +46,22 @@ impl BlockId {
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Stone),
             },
+            // Grass
+            BlockInfo {
+                appearance: BlockAppearance::Regular {
+                    top: TextureId::Grass,
+                    bottom: TextureId::Dirt,
+                    side: TextureId::Grass,
+                },
+            },
+            // Dirt
+            BlockInfo {
+                appearance: BlockAppearance::uniform(TextureId::Dirt),
+            },
         ];
 
         unsafe { INFOS.get_unchecked(self as usize) }
     }
-}
-
-/// The ID of a texture.
-///
-/// This enumeration defines a list of indices that are valid for the global texture
-/// atlas.
-///
-/// # Remarks
-///
-/// Just like [`BlockId`], this type will need to be replaced if we want to support modding
-/// and custom blocks.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Contiguous)]
-#[repr(u8)]
-pub enum TextureId {
-    Stone,
 }
 
 /// Describes the appearance of a block.
@@ -77,8 +78,13 @@ pub enum BlockAppearance {
     /// The helper function [`uniform`] can be used to create a [`BlockAppearance`]
     /// instance with the same texture for all faces.
     Regular {
+        /// The texture that should be applied to the top face of the block (facing the positive
+        /// Y axis).
         top: TextureId,
+        /// The texture that should be applied to the bottom face of the block (facing the negative
+        /// Y axis).
         bottom: TextureId,
+        /// The texture that should be applied to the side faces of the block (X and Y axis).
         side: TextureId,
     },
 }

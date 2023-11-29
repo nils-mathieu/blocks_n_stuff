@@ -51,14 +51,26 @@ impl ChunkGeometry {
         for local_pos in LocalPos::iter_all() {
             match neighborhood.this.get_block(local_pos).info().appearance {
                 BlockAppearance::Invisible => (),
-                BlockAppearance::Regular { .. } => {
+                BlockAppearance::Regular { top, bottom, side } => {
                     context.quads.extend_from_slice(&[
-                        QuadInstance::X | QuadInstance::from_local_pos(local_pos),
-                        QuadInstance::NEG_X | QuadInstance::from_local_pos(local_pos),
-                        QuadInstance::Y | QuadInstance::from_local_pos(local_pos),
-                        QuadInstance::NEG_Y | QuadInstance::from_local_pos(local_pos),
-                        QuadInstance::Z | QuadInstance::from_local_pos(local_pos),
-                        QuadInstance::NEG_Z | QuadInstance::from_local_pos(local_pos),
+                        QuadInstance::from_texture(side)
+                            | QuadInstance::X
+                            | QuadInstance::from_local_pos(local_pos),
+                        QuadInstance::from_texture(side)
+                            | QuadInstance::NEG_X
+                            | QuadInstance::from_local_pos(local_pos),
+                        QuadInstance::from_texture(top)
+                            | QuadInstance::Y
+                            | QuadInstance::from_local_pos(local_pos),
+                        QuadInstance::from_texture(bottom)
+                            | QuadInstance::NEG_Y
+                            | QuadInstance::from_local_pos(local_pos),
+                        QuadInstance::from_texture(side)
+                            | QuadInstance::Z
+                            | QuadInstance::from_local_pos(local_pos),
+                        QuadInstance::from_texture(side)
+                            | QuadInstance::NEG_Z
+                            | QuadInstance::from_local_pos(local_pos),
                     ]);
                 }
             }
