@@ -34,19 +34,20 @@ pub fn run() {
         window.set_visible(true);
     }
 
+    let mut last_tick = std::time::Instant::now();
+
     // Start the event loop.
     event_loop
         .run(move |event, target| match event {
             Event::AboutToWait => {
-                // TODO: properly compute the delta time.
-                // Note that this must take in account that sometimes the `AboutToWait` event is
-                // never fired. Maybe simply giving an upper bound to the delta time is enough?
-                // The rule is pretty simple: the user must not see things accelerate. Only slow
-                // down in the worst case.
-                let dt = 1.0;
+                // FIXME: when the user resizes the window, the `AboutToWait` event is not fired
+                // for a while and the delta time ends up being huge.
+                let now = std::time::Instant::now();
+                let dt = now - last_tick;
+                last_tick = now;
 
                 // This is where the main application logic should run.
-                app.tick(target, dt);
+                app.tick(target, dt.as_secs_f32());
                 app.render();
             }
             Event::WindowEvent { event, .. } => match event {

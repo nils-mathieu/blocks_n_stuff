@@ -37,9 +37,9 @@ pub struct Camera {
 
 impl Camera {
     /// The speed at which the camera moves, in units per second.
-    pub const SPEED: f32 = 0.1;
+    pub const SPEED: f32 = 10.0;
     /// The speed at which the camera flies up/down.
-    pub const FLY_SPEED: f32 = 0.1;
+    pub const FLY_SPEED: f32 = 10.0;
     /// The vertical field of view of the camera, in degrees.
     pub const FOV_Y: f32 = 60.0;
     /// The sensitivity of the mouse.
@@ -73,7 +73,7 @@ impl Camera {
         } else if event.physical_key == KeyCode::ShiftLeft {
             self.pressing_fly_down = event.state.is_pressed();
         } else if event.physical_key == KeyCode::ControlLeft && event.state.is_pressed() {
-            self.sprinting = !self.sprinting;
+            self.sprinting = true;
         }
 
         if !self.pressing_forward {
