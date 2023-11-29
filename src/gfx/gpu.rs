@@ -33,7 +33,17 @@ impl Gpu {
             .block_on()
             .expect("failed to find a suitable GPU adapter");
         let (device, queue) = adapter
-            .request_device(&Default::default(), None)
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    limits: wgpu::Limits {
+                        min_uniform_buffer_offset_alignment: 64,
+                        ..Default::default()
+                    },
+                    features: wgpu::Features::empty(),
+                    label: Some("Main Device"),
+                },
+                None,
+            )
             .block_on()
             .expect("failed to establish a connection with the selected GPU device");
 

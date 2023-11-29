@@ -2,6 +2,7 @@ use bitflags::bitflags;
 use bytemuck::{Pod, Zeroable};
 
 use crate::gfx::Gpu;
+use crate::world::LocalPos;
 
 use super::RenderResources;
 
@@ -116,6 +117,12 @@ impl QuadInstance {
     pub fn from_z(z: u32) -> Self {
         debug_assert!(z < 32);
         Self::from_bits_retain(z << 17)
+    }
+
+    /// Creates a new [`QuadInstance`] from the provided local position.
+    pub fn from_local_pos(local_pos: LocalPos) -> Self {
+        let index = local_pos.index() as u32;
+        Self::from_bits_retain(index << 7)
     }
 }
 

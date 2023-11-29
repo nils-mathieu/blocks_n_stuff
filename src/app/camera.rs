@@ -27,6 +27,10 @@ pub struct Camera {
     aspect_ratio: f32,
 }
 
+// OPTIMIZE:
+//  The forward vector and rotation quaternions are computed multiple times per frame when
+//  they only really change when new inputs from the player are received.
+
 impl Camera {
     /// The speed at which the camera moves, in units per second.
     pub const SPEED: f32 = 0.1;
@@ -38,6 +42,10 @@ impl Camera {
     pub const MOUSE_SENSITIVITY: f32 = 0.002;
     /// The maximum pitch value of the camera.
     pub const MAX_PITCH: f32 = std::f32::consts::FRAC_PI_2 - 0.01;
+    /// The distance of the near plane from the camera.
+    pub const NEAR: f32 = 0.1;
+    /// The distance of the far plane from the camera.
+    pub const FAR: f32 = 1000.0;
 
     /// Notifies the camera that the size of the output display has changed.
     pub fn notify_resized(&mut self, width: u32, height: u32) {
@@ -101,12 +109,63 @@ impl Camera {
         self.position.y += vertical_movement_input * Self::FLY_SPEED * dt;
     }
 
+    /// Returns the position of the camera.
+    #[inline]
+    pub fn position(&self) -> Vec3 {
+        self.position
+    }
+
     /// Computes the matrix that transforms world-space coordinates into clip-space coordinates.
     pub fn matrix(&self) -> Mat4 {
         let forward = Quat::from_rotation_y(self.yaw) * Quat::from_rotation_x(self.pitch) * Vec3::Z;
-        let perspective =
-            Mat4::perspective_lh(Self::FOV_Y.to_radians(), self.aspect_ratio, 0.1, 100.0);
+        let perspective = Mat4::perspective_lh(
+            Self::FOV_Y.to_radians(),
+            self.aspect_ratio,
+            Self::NEAR,
+            Self::FAR,
+        );
         let view = Mat4::look_to_lh(self.position, forward, Vec3::Y);
         perspective * view
+    }
+
+    /// Determines whether the provided sphere is in the camera's frustum.
+    ///
+    /// # Arguments
+    ///
+    /// - `relative_position` - The position of the sphere relative to the camera. In world space,
+    ///   the formula is `sphere_position - camera_position`.
+    ///
+    /// - `radius` - The radius of the sphere.
+    pub fn is_sphere_in_frustum(&self, relative_position: Vec3, radius: f32) -> bool {
+        let rotation = Quat::from_rotation_y(self.yaw) * Quat::from_rotation_x(self.pitch);
+
+        let forward = rotation * Vec3::Z;
+        let up = rotation * Vec3::Y;
+        let right = rotation * Vec3::X;
+        let half_fov_y = 0.5 * Self::FOV_Y.to_radians();
+        let half_fov_x = self.aspect_ratio * half_fov_y;
+
+        // Distance along the camera's forward axis.
+        let dist_z = forward.dot(relative_position);
+
+        if Self::NEAR - radius > dist_z || dist_z > Self::FAR + radius {
+            return false;
+        }
+
+        // top/bottom planes
+        let dist_y = up.dot(relative_position);
+        let dist = radius / half_fov_y.cos() + dist_z * half_fov_y.tan();
+        if dist_y > dist || dist_y < -dist {
+            return false;
+        }
+
+        // left/right planes
+        let dist_x = right.dot(relative_position);
+        let dist = radius / half_fov_x.cos() + dist_z * half_fov_x.tan();
+        if dist_x > dist || dist_x < -dist {
+            return false;
+        }
+
+        true
     }
 }

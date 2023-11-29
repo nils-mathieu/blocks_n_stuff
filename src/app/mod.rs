@@ -2,16 +2,17 @@
 
 use std::sync::Arc;
 
+use glam::{IVec3, Vec3, Vec4};
 use winit::event::KeyEvent;
 use winit::event_loop::EventLoopWindowTarget;
 use winit::keyboard::KeyCode;
 use winit::window::{CursorGrabMode, Fullscreen, Window};
 
-use crate::gfx::render_data::{
-    FrameUniforms, QuadInstance, RenderData, UniformBuffer, VertexBuffer,
-};
+use crate::gfx::render_data::{BufferSlice, ChunkUniforms, FrameUniforms, RenderData};
 use crate::gfx::Renderer;
 use crate::window::UserEvent;
+use crate::world::{Chunk, ChunkPos, World};
+use crate::worldgen::StandardWorldGenerator;
 
 mod camera;
 
@@ -29,40 +30,22 @@ pub struct App {
     /// The renderer contains the resources required to render things using GPU resources.
     renderer: Renderer,
 
-    /// The uniform buffer that stores the frame-specific data.
-    frame_uniforms: UniformBuffer<FrameUniforms>,
-    /// The quads to draw.
-    quads: VertexBuffer<QuadInstance>,
-
     /// The current state of the camera.
     camera: Camera,
+
+    /// The world that contains all the chunks.
+    world: World,
 }
 
 impl App {
     /// Creates a new [`App`] instance.
     pub fn new(window: Arc<Window>) -> Self {
         let renderer = Renderer::new(window.clone());
-        let frame_uniforms = renderer.create_frame_uniform_buffer();
 
-        let mut quads_buf = Vec::new();
-        for x in 0..31 {
-            for z in 0..31 {
-                let pos =
-                    QuadInstance::from_x(x) | QuadInstance::from_y(0) | QuadInstance::from_z(z);
-
-                quads_buf.extend_from_slice(&[
-                    pos | QuadInstance::X,
-                    pos | QuadInstance::NEG_X,
-                    pos | QuadInstance::Y,
-                    pos | QuadInstance::NEG_Y,
-                    pos | QuadInstance::Z,
-                    pos | QuadInstance::NEG_Z,
-                ]);
-            }
-        }
-
-        let mut quads = VertexBuffer::new(renderer.gpu().clone(), quads_buf.len() as _);
-        quads.write(&quads_buf);
+        let world = World::new(
+            renderer.gpu().clone(),
+            Box::new(StandardWorldGenerator::new()),
+        );
 
         window
             .set_cursor_grab(CursorGrabMode::Confined)
@@ -73,9 +56,8 @@ impl App {
         Self {
             window,
             renderer,
-            frame_uniforms,
             camera: Camera::default(),
-            quads,
+            world,
         }
     }
 
@@ -121,23 +103,80 @@ impl App {
         self.camera.notify_mouse_moved(dx, dy);
     }
 
+    // OPTIMIZE: manging to make this function take a shared reference would probably make the
+    // code way cleaner. That would probably require to smartly load chunks in the tick function
+    // instead.
     /// Renders a frame to the window.
     pub fn render(&mut self) {
-        // Write the frame-specific data to the uniform buffer.
-        self.frame_uniforms.write(&FrameUniforms {
-            camera: self.camera.matrix(),
+        let mut quad_buffers = Vec::new();
+        let mut chunk_uniforms = Vec::new();
+
+        chunks_in_frustum(&self.camera, |chunk_pos| {
+            if let Some(chunk) = self.world.get_existing_chunk(chunk_pos) {
+                if let Some((count, quads)) = &chunk.geometry.quads {
+                    quad_buffers.push(BufferSlice::new(quads, *count));
+                    chunk_uniforms.push(ChunkUniforms {
+                        position: chunk_pos,
+                        _padding: [0; 13],
+                    });
+                }
+            }
         });
 
-        let render_data = RenderData {
-            frame_uniforms: &self.frame_uniforms,
-            quads: &self.quads,
-        };
-
-        self.renderer.render(&render_data);
+        self.renderer.render(&RenderData {
+            clear_color: Vec4::new(0.0, 0.0, 1.0, 1.0),
+            frame_uniforms: FrameUniforms {
+                camera: self.camera.matrix(),
+            },
+            chunk_uniforms: &chunk_uniforms,
+            quads: &quad_buffers,
+        });
     }
 
     /// Advances the state of the application by one tick.
     pub fn tick(&mut self, _target: &Ctx, dt: f32) {
         self.camera.tick(dt);
+
+        chunks_in_frustum(&self.camera, |chunk_pos| {
+            self.world.request_chunk(chunk_pos, 0);
+        });
+    }
+}
+
+/// Calls the provided function for every visible chunk from the camera.
+fn chunks_in_frustum(camera: &Camera, mut callback: impl FnMut(ChunkPos)) {
+    const HORIZONTAL_RENDER_DISTANCE: i32 = 8;
+    const VERTICAL_RENDER_DISTANCE: i32 = 8;
+    const CHUNK_RADIUS: f32 = (Chunk::SIDE as f32) * 0.8660254; // sqrt(3) / 2
+
+    fn coord_to_chunk(coord: f32) -> i32 {
+        if coord >= 0.0 {
+            coord as i32 / Chunk::SIDE
+        } else {
+            (coord as i32 - Chunk::SIDE + 1) / Chunk::SIDE
+        }
+    }
+
+    let camera_chunk_pos = ChunkPos::new(
+        coord_to_chunk(camera.position().x),
+        coord_to_chunk(camera.position().y),
+        coord_to_chunk(camera.position().z),
+    );
+    for x in -HORIZONTAL_RENDER_DISTANCE..=HORIZONTAL_RENDER_DISTANCE {
+        for y in -VERTICAL_RENDER_DISTANCE..=VERTICAL_RENDER_DISTANCE {
+            for z in -HORIZONTAL_RENDER_DISTANCE..=HORIZONTAL_RENDER_DISTANCE {
+                if x * x + z * z > HORIZONTAL_RENDER_DISTANCE * HORIZONTAL_RENDER_DISTANCE {
+                    continue;
+                }
+
+                let relative_chunk_pos = IVec3::new(x, y, z);
+                let relative_chunk_pos_center =
+                    (relative_chunk_pos.as_vec3() + Vec3::splat(0.5)) * Chunk::SIDE as f32;
+
+                if camera.is_sphere_in_frustum(relative_chunk_pos_center, CHUNK_RADIUS) {
+                    callback(camera_chunk_pos + relative_chunk_pos);
+                }
+            }
+        }
     }
 }

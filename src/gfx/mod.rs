@@ -4,7 +4,6 @@ use std::sync::Arc;
 
 use winit::window::Window;
 
-mod helpers;
 mod render_graph;
 mod shaders;
 
@@ -13,8 +12,7 @@ pub use gpu::Gpu;
 
 pub mod render_data;
 
-use self::helpers::UniformBuffer;
-use self::render_data::{FrameUniforms, RenderData};
+use self::render_data::RenderData;
 use self::render_graph::RenderGraph;
 use self::shaders::RenderResources;
 
@@ -23,7 +21,6 @@ pub struct Renderer {
     gpu: Arc<Gpu>,
     surface: wgpu::Surface<'static>,
     config: wgpu::SurfaceConfiguration,
-    resources: RenderResources,
     graph: RenderGraph,
 }
 
@@ -37,14 +34,12 @@ impl Renderer {
             .get_default_config(&gpu.adapter, width, height)
             .unwrap();
         surface.configure(&gpu.device, &config);
-        let resources = RenderResources::new(&gpu);
-        let graph = RenderGraph::new(&gpu, &resources, &config);
+        let graph = RenderGraph::new(&gpu, &config);
 
         Self {
             gpu,
             surface,
             config,
-            resources,
             graph,
         }
     }
@@ -53,11 +48,6 @@ impl Renderer {
     #[inline]
     pub fn gpu(&self) -> &Arc<Gpu> {
         &self.gpu
-    }
-
-    /// Creates a new [`UniformBuffer`] that follows the layout of the frame uniform layout.
-    pub fn create_frame_uniform_buffer(&self) -> UniformBuffer<FrameUniforms> {
-        self.resources.frame_uniforms.instanciate(self.gpu.clone())
     }
 
     /// Notifies the renderer that the size of the window on which it is drawing has changed.
