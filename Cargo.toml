@@ -17,12 +17,13 @@ license = "MIT"
 publish = false
 
 [workspace]
-members = ["crates/core", "crates/render", "crates/image"]
+members = ["crates/core", "crates/render", "crates/image", "crates/rng"]
 
 [dependencies]
 bns-core = { path = "crates/core" }
 bns-render = { path = "crates/render" }
 bns-image = { path = "crates/image" }
+bns-rng = { path = "crates/rng" }
 
 winit = "0.29"
 glam = { version = "0.24", features = ["bytemuck"] }

@@ -1,0 +1,9 @@
+[package]
+name = "bns-rng"
+version = "0.1.0"
+
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true

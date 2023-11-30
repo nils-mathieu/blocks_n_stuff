@@ -202,6 +202,7 @@ dependencies = [
  "bns-core",
  "bns-image",
  "bns-render",
+ "bns-rng",
  "bytemuck",
  "glam",
  "hashbrown",
@@ -237,6 +238,10 @@ dependencies = [
  "raw-window-handle",
  "wgpu",
 ]
+
+[[package]]
+name = "bns-rng"
+version = "0.1.0"
 
 [[package]]
 name = "bumpalo"
