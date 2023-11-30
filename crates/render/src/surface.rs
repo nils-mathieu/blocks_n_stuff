@@ -96,7 +96,7 @@ impl<'w> Surface<'w> {
             .get_default_config(&adapter, 0, 0)
             .expect("the selected GPU is not compatible with the surface");
 
-        let gpu = Arc::new(Gpu { device, queue });
+        let gpu = Arc::new(Gpu::new(device, queue));
 
         Self {
             gpu,

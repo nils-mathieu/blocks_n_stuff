@@ -170,6 +170,9 @@ bitflags! {
         /// This constant represents the value `31`.
         const Z_MASK = 0b11111 << 17;
 
+        /// The bits that are used to store the index of the voxel within its chunk.
+        const CHUNK_INDEX_MASK = Self::X_MASK.bits() | Self::Y_MASK.bits() | Self::Z_MASK.bits();
+
         /// The bits that are used to store the `texture` field.
         ///
         /// This constant represents the value `1023`.
@@ -180,67 +183,72 @@ bitflags! {
 impl QuadInstance {
     /// Creates a new [`QuadInstance`] from the provided local X position.
     ///
-    /// # Panics
+    /// # Remarks
     ///
-    /// This function panics if `x` is greater than or equal to 32.
+    /// This function may return an invalid value if `x` is greater than or equal to
+    /// [`Chunk::SIDE`].
     #[inline]
     #[track_caller]
-    pub fn from_x(x: u32) -> Self {
-        debug_assert!(x < 32);
-        Self::from_bits_retain(x << 7)
+    pub fn from_x(x: i32) -> Self {
+        Self::from_bits_retain((x as u32) << 7)
     }
 
     /// Creates a new [`QuadInstance`] from the provided local Y position.
     ///
-    /// # Panics
+    /// # Remarks
     ///
-    /// This function panics if `y` is greater than or equal to 32.
+    /// This function may return an invalid value if `y` is greater than or equal to
+    /// [`Chunk::SIDE`].
     #[inline]
     #[track_caller]
-    pub fn from_y(y: u32) -> Self {
-        debug_assert!(y < 32);
-        Self::from_bits_retain(y << 12)
+    pub fn from_y(y: i32) -> Self {
+        Self::from_bits_retain((y as u32) << 12)
     }
 
     /// Creates a new [`QuadInstance`] from the provided local Z position.
     ///
-    /// # Panics
+    /// # Remarks
     ///
-    /// This function panics if `z` is greater than or equal to 32.
+    /// This function may return an invalid value if `z` is greater than or equal to
+    /// [`Chunk::SIDE`].
     #[inline]
     #[track_caller]
-    pub fn from_z(z: u32) -> Self {
-        debug_assert!(z < 32);
-        Self::from_bits_retain(z << 17)
+    pub fn from_z(z: i32) -> Self {
+        Self::from_bits_retain((z as u32) << 17)
     }
 
     /// Creates a new [`QuadInstance`] from the provided local position.
     ///
-    /// # Panics
+    /// # Remarks
     ///
-    /// This function panics if any of the provided coordinates are out of bounds.
+    /// This function may return an invalid value if the provided index is greater than
+    /// [`Chunk::SIZE`].
     #[inline]
     #[track_caller]
     pub fn from_chunk_index(index: usize) -> Self {
-        debug_assert!(index < 32 * 32 * 32);
         Self::from_bits_retain((index as u32) << 7)
     }
 
+    /// The maximum number of textures that can be represented by a [`QuadInstance`].
+    pub const MAX_TEXTURES: u32 = 1024;
+
     /// Creates a new [`QuadInstance`] from the provided texture index.
     ///
-    /// # Panics
+    /// # Remarks
     ///
-    /// This function panics in debug builds if `texture` is greater than or equal to 1024.
+    /// This function may return an invalid value if the provided texture index is larger
+    /// than [`QuadInstance::MAX_TEXTURES`].
     #[inline]
     #[track_caller]
     pub fn from_texture(texture: u32) -> Self {
-        assert!(texture < 1024);
         Self::from_bits_retain(texture << 22)
     }
 }
 
 unsafe impl Zeroable for QuadInstance {}
 unsafe impl Pod for QuadInstance {}
+
+pub use wgpu::CommandEncoder;
 
 /// The data required to render a frame.
 ///
@@ -271,7 +279,7 @@ pub struct RenderData<'a, 'res> {
 
 impl<'a, 'res> RenderData<'a, 'res> {
     /// Registers a new instance buffer of [`QuadInstance`]s.
-    pub fn add_quad_vertices(
+    pub fn add_quad_instances(
         &mut self,
         chunk: ChunkUniforms,
         vertices: &'res impl Vertices<Vertex = QuadInstance>,

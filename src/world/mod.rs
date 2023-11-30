@@ -14,6 +14,7 @@ use hashbrown::HashMap;
 mod chunk_geometry;
 pub use chunk_geometry::*;
 use parking_lot::{Condvar, Mutex, MutexGuard};
+use smallvec::SmallVec;
 
 /// The position of a chunk.
 pub type ChunkPos = IVec3;
@@ -31,46 +32,66 @@ pub trait WorldGenerator: Send + Clone {
 
 bitflags! {
     /// Some flags associated with a [`LoadedChunk`].
-    pub struct ChunkFlags: u8 {
-        /// Whether the inner geometry of a chunk is dirty and must be rebuilt.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub struct DirtyFlags: u8 {
+        /// Whether the inner geometry of the chunk is dirty and must be rebuilt.
         const INNER_DIRTY = 1 << 0;
 
+        /// Whether the positive X boundary of the chunk is dirty and must be rebuilt.
+        const BOUNDARY_DIRTY_X = 1 << 1;
+        /// Whether the negative X boundary of the chunk is dirty and must be rebuilt.
+        const BOUNDARY_DIRTY_NEG_X = 1 << 2;
+        /// Whether the positive Y boundary of the chunk is dirty and must be rebuilt.
+        const BOUNDARY_DIRTY_Y = 1 << 3;
+        /// Whether the negative Y boundary of the chunk is dirty and must be rebuilt.
+        const BOUNDARY_DIRTY_NEG_Y = 1 << 4;
+        /// Whether the positive Z boundary of the chunk is dirty and must be rebuilt.
+        const BOUNDARY_DIRTY_Z = 1 << 5;
+        /// Whether the negative Z boundary of the chunk is dirty and must be rebuilt.
+        const BOUNDARY_DIRTY_NEG_Z = 1 << 6;
+
         /// Union of all the dirty flags.
-        const ANY_DIRTY = Self::INNER_DIRTY.bits();
+        const ANY_DIRTY = Self::INNER_DIRTY.bits()
+            | Self::BOUNDARY_DIRTY_X.bits()
+            | Self::BOUNDARY_DIRTY_NEG_X.bits()
+            | Self::BOUNDARY_DIRTY_Y.bits()
+            | Self::BOUNDARY_DIRTY_NEG_Y.bits()
+            | Self::BOUNDARY_DIRTY_Z.bits()
+            | Self::BOUNDARY_DIRTY_NEG_Z.bits();
     }
 }
 
 /// Stores the state of a chunk loaded in memory.
 pub struct LoadedChunk {
     /// The inner chunk data.
-    pub inner: Chunk,
+    pub data: Chunk,
     /// The geometry of the chunk.
     pub geometry: ChunkGeometry,
     /// Whether the geometry of the chunk is dirty and needs to be rebuilt.
-    pub flags: ChunkFlags,
+    pub dirty_flags: DirtyFlags,
 }
 
 impl LoadedChunk {
     /// Creates a new [`Chunk`] with the given data.
     pub fn new(inner: Chunk) -> Self {
         Self {
-            inner,
+            data: inner,
             geometry: ChunkGeometry::new(),
-            flags: ChunkFlags::ANY_DIRTY,
+            dirty_flags: DirtyFlags::ANY_DIRTY,
         }
     }
 
     /// Returns whether the chunk is missing some geometry.
     #[inline]
     pub fn is_dirty(&self) -> bool {
-        self.flags.intersects(ChunkFlags::ANY_DIRTY)
+        self.dirty_flags.intersects(DirtyFlags::ANY_DIRTY)
     }
 }
 
 /// A chunk entry into the [`World`].
 pub enum ChunkEntry {
     /// The chunk is currently being generated.
-    Generting,
+    Generating,
     /// The chunk is loaded in memory.
     Loaded(LoadedChunk),
 }
@@ -177,6 +198,22 @@ impl TaskPool {
         self.condvar.notify_one();
     }
 
+    /// Pushes a collection of tasks to be executed.
+    pub fn push_tasks(&self, tasks: impl IntoIterator<Item = (ChunkPos, Priority)>) {
+        let mut count = 0;
+
+        self.tasks.lock().extend(
+            tasks
+                .into_iter()
+                .inspect(|_| count += 1)
+                .map(|(pos, priority)| Task { pos, priority }),
+        );
+
+        for _ in 0..count {
+            self.condvar.notify_one();
+        }
+    }
+
     /// Requests the worker threads to stop.
     pub fn stop(&self) {
         self.should_stop.store(true, Relaxed);
@@ -232,6 +269,8 @@ pub struct World {
     chunks: Chunks,
     /// The task pool used to generate new chunks.
     task_pool: Arc<TaskPool>,
+    /// The context used to build chunks.
+    chunk_build_context: ChunkBuildContext,
 }
 
 impl World {
@@ -248,8 +287,13 @@ impl World {
                 while let Some(task) = task_pool.fetch_task() {
                     let chunk = generator.generate(task.pos);
                     let mut entry = LoadedChunk::new(chunk);
-                    entry.flags.remove(ChunkFlags::INNER_DIRTY);
-                    entry.geometry.build_inner(&entry.inner, &mut build_context);
+
+                    // Build the inner geometry of the chunk.
+                    build_context.reset();
+                    build_context.build_inner(&entry.data);
+                    build_context.append_to(&mut entry.geometry);
+                    entry.dirty_flags.remove(DirtyFlags::INNER_DIRTY);
+
                     task_pool.push_result(task.pos, entry);
                 }
             });
@@ -258,6 +302,7 @@ impl World {
         Self {
             task_pool,
             chunks: Chunks::default(),
+            chunk_build_context: ChunkBuildContext::new(gpu),
         }
     }
 
@@ -317,18 +362,112 @@ impl World {
             Entry::Occupied(e) => e.into_mut(),
             Entry::Vacant(e) => {
                 self.task_pool.push_task(pos, priority);
-                e.insert(ChunkEntry::Generting)
+                e.insert(ChunkEntry::Generating)
             }
         };
 
         let ChunkEntry::Loaded(loaded) = entry else {
-            return entry;
+            // SAFETY:
+            //  The borrow checker is not smart enough to realize that returning the entry
+            //  makes it valid to borrow the map mutably later.
+            return unsafe { std::mem::transmute::<&mut ChunkEntry, &mut ChunkEntry>(entry) };
         };
 
+        // If the chunk is already built, we can return it immediately.
         if !loaded.is_dirty() {
-            return entry;
+            // SAFETY: same as above.
+            return unsafe { std::mem::transmute::<&mut ChunkEntry, &mut ChunkEntry>(entry) };
         }
 
-        unreachable!("chunk should always be built when leaving thet task pool");
+        // Reborrow the chunk using shared references.
+        let Some(ChunkEntry::Loaded(chunk)) = self.chunks.get(&pos) else {
+            // SAFETY:
+            //  We know that the chunk is present in the map because we just inserted it.
+            unsafe { std::hint::unreachable_unchecked() }
+        };
+
+        let mut dirty_flags = chunk.dirty_flags;
+        let mut to_request = SmallVec::<[ChunkPos; 6]>::new();
+        let mut get_or_request = |pos: ChunkPos| match self.chunks.get(&pos) {
+            Some(ChunkEntry::Loaded(chunk)) => Some(chunk),
+            Some(ChunkEntry::Generating) => None,
+            None => {
+                to_request.push(pos);
+                None
+            }
+        };
+
+        // Some parts of the chunk is dirty, we need to rebuild those.
+        self.chunk_build_context.reset();
+        if dirty_flags.contains(DirtyFlags::BOUNDARY_DIRTY_X) {
+            if let Some(other) = get_or_request(pos + IVec3::X) {
+                self.chunk_build_context
+                    .build_boundary_x(&chunk.data, &other.data);
+                dirty_flags.remove(DirtyFlags::BOUNDARY_DIRTY_X);
+            }
+        }
+        if dirty_flags.contains(DirtyFlags::BOUNDARY_DIRTY_NEG_X) {
+            if let Some(other) = get_or_request(pos - IVec3::X) {
+                self.chunk_build_context
+                    .build_boundary_neg_x(&chunk.data, &other.data);
+                dirty_flags.remove(DirtyFlags::BOUNDARY_DIRTY_NEG_X);
+            }
+        }
+        if dirty_flags.contains(DirtyFlags::BOUNDARY_DIRTY_Y) {
+            if let Some(other) = get_or_request(pos + IVec3::Y) {
+                self.chunk_build_context
+                    .build_boundary_y(&chunk.data, &other.data);
+                dirty_flags.remove(DirtyFlags::BOUNDARY_DIRTY_Y);
+            }
+        }
+        if dirty_flags.contains(DirtyFlags::BOUNDARY_DIRTY_NEG_Y) {
+            if let Some(other) = get_or_request(pos - IVec3::Y) {
+                self.chunk_build_context
+                    .build_boundary_neg_y(&chunk.data, &other.data);
+                dirty_flags.remove(DirtyFlags::BOUNDARY_DIRTY_NEG_Y);
+            }
+        }
+        if dirty_flags.contains(DirtyFlags::BOUNDARY_DIRTY_Z) {
+            if let Some(other) = get_or_request(pos + IVec3::Z) {
+                self.chunk_build_context
+                    .build_boundary_z(&chunk.data, &other.data);
+                dirty_flags.remove(DirtyFlags::BOUNDARY_DIRTY_Z);
+            }
+        }
+        if dirty_flags.contains(DirtyFlags::BOUNDARY_DIRTY_NEG_Z) {
+            if let Some(other) = get_or_request(pos - IVec3::Z) {
+                self.chunk_build_context
+                    .build_boundary_neg_z(&chunk.data, &other.data);
+                dirty_flags.remove(DirtyFlags::BOUNDARY_DIRTY_NEG_Z);
+            }
+        }
+
+        if !to_request.is_empty() {
+            self.chunks
+                .extend(to_request.iter().map(|&pos| (pos, ChunkEntry::Generating)));
+            self.task_pool
+                .push_tasks(to_request.iter().map(|&pos| (pos, priority)));
+        }
+
+        // Reborrow again >:( the chunk for an exclusive reference.
+
+        // SAFETY:
+        //  We know that the chunk is present in the map because we just inserted it.
+        let entry = unsafe { self.chunks.get_mut(&pos).unwrap_unchecked() };
+
+        if let ChunkEntry::Loaded(chunk) = entry {
+            if dirty_flags != chunk.dirty_flags {
+                // We added some geometry to the chunk.
+                // We need to apply the changes to the GPU.
+                self.chunk_build_context.append_to(&mut chunk.geometry);
+                chunk.dirty_flags = dirty_flags;
+            }
+        } else {
+            // SAFETY:
+            //  We know that the chunk is laoded.
+            unsafe { std::hint::unreachable_unchecked() }
+        }
+
+        entry
     }
 }

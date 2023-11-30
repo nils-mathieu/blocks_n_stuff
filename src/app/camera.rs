@@ -53,6 +53,12 @@ impl Camera {
     /// The amount of speed to add when sprinting.
     pub const SPRINT_FACTOR: f32 = 4.0;
 
+    /// Teleports the camera to the provided position.
+    #[inline]
+    pub fn teleport(&mut self, position: Vec3) {
+        self.position = position;
+    }
+
     /// Notifies the camera that the size of the output display has changed.
     pub fn notify_resized(&mut self, width: u32, height: u32) {
         self.aspect_ratio = width as f32 / height as f32;

@@ -3,7 +3,7 @@ use crate::{RenderTarget, Renderer};
 
 impl Renderer {
     /// Renders to the provided [`RenderTarget`] using the provided [`RenderData`].
-    pub fn render(&mut self, target: RenderTarget, data: &RenderData) {
+    pub fn render(&mut self, target: RenderTarget, data: RenderData) {
         // The first step is to upload the data that we have to the GPU.
         // This data is expected to change on every frame, so we can't just upload it once and be
         // done with it.
@@ -89,6 +89,23 @@ impl Renderer {
 
         // Now that everything is recorded, we can submit the commands to the GPU.
         drop(rp);
-        self.gpu.queue.submit(std::iter::once(encoder.finish()));
+
+        let iter = self
+            .gpu
+            .iter_temp_command_encoders()
+            .map(|e| {
+                std::mem::replace(
+                    &mut *e.lock(),
+                    self.gpu
+                        .device
+                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: Some("Temporary Command Encoder"),
+                        }),
+                )
+                .finish()
+            })
+            .chain(std::iter::once(encoder.finish()));
+
+        self.gpu.queue.submit(iter);
     }
 }

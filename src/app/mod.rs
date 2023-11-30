@@ -72,12 +72,15 @@ impl App {
             .expect("failed to grab the mouse cursor");
         window.set_cursor_visible(false);
 
+        let mut camera = Camera::default();
+        camera.teleport(Vec3::new(0.0, 32.0, 0.0));
+
         Self {
             render_data_storage: RenderDataStorage::new(&renderer),
             window,
             surface,
             renderer,
-            camera: Camera::default(),
+            camera,
             world,
             render_distance: 16,
         }
@@ -176,8 +179,8 @@ impl App {
         });
         chunks_in_frustum(&self.camera, self.render_distance, |chunk_pos, _| {
             if let Some(chunk) = self.world.get_existing_chunk(chunk_pos) {
-                if let Some(buffer) = &chunk.geometry.quads {
-                    render_data.add_quad_vertices(
+                if let Some(buffer) = chunk.geometry.quad_instances() {
+                    render_data.add_quad_instances(
                         ChunkUniforms {
                             position: chunk_pos,
                         },
@@ -186,7 +189,7 @@ impl App {
                 }
             }
         });
-        self.renderer.render(frame.target(), &render_data);
+        self.renderer.render(frame.target(), render_data);
         frame.present();
     }
 

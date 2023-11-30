@@ -27,7 +27,9 @@ impl<T> DynamicVertexBuffer<T> {
             label: Some(type_name::<T>()),
             mapped_at_creation: false,
             size: initial_size as u64 * size_of::<T>() as u64,
-            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            usage: wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::COPY_SRC,
         });
 
         Self {
@@ -38,28 +40,52 @@ impl<T> DynamicVertexBuffer<T> {
         }
     }
 
-    /// Replaces the content of the buffer with the provided data.
-    ///
-    /// The length of the buffer is updated.
-    pub fn replace(&mut self, data: &[T])
+    /// Clears the buffer.
+    #[inline]
+    pub fn clear(&mut self) {
+        self.len = 0;
+    }
+
+    /// Extends the buffer with the provided data.
+    pub fn extend(&mut self, data: &[T])
     where
         T: NoUninit,
     {
-        let cap = self.buffer.size() / size_of::<T>() as u64;
+        let cap = self.buffer.size() / size_of::<T>() as wgpu::BufferAddress;
+        let new_len = self.len + data.len() as u32;
 
-        if data.len() as u64 > cap {
-            self.buffer = self.gpu.device.create_buffer(&wgpu::BufferDescriptor {
+        if new_len as wgpu::BufferAddress > cap {
+            let new_buffer = self.gpu.device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some(type_name::<T>()),
                 mapped_at_creation: false,
-                size: data.len() as u64 * size_of::<T>() as u64,
-                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                size: new_len as wgpu::BufferAddress * size_of::<T>() as wgpu::BufferAddress,
+                usage: wgpu::BufferUsages::VERTEX
+                    | wgpu::BufferUsages::COPY_DST
+                    | wgpu::BufferUsages::COPY_SRC,
             });
+
+            // Request a copy of the old buffer into the new one.
+            self.gpu
+                .temp_command_encoder()
+                .lock()
+                .copy_buffer_to_buffer(
+                    &self.buffer,
+                    0,
+                    &new_buffer,
+                    0,
+                    self.len as wgpu::BufferAddress * size_of::<T>() as wgpu::BufferAddress,
+                );
+
+            self.buffer = new_buffer;
         }
 
-        self.gpu
-            .queue
-            .write_buffer(&self.buffer, 0, bytemuck::cast_slice(data));
-        self.len = data.len() as u32;
+        self.gpu.queue.write_buffer(
+            &self.buffer,
+            self.len as wgpu::BufferAddress * size_of::<T>() as wgpu::BufferAddress,
+            bytemuck::cast_slice(data),
+        );
+
+        self.len = new_len;
     }
 }
 

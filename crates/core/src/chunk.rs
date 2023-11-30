@@ -83,19 +83,19 @@ impl LocalPos {
 
     /// Returns the X coordinate of the position.
     #[inline]
-    pub fn x(&self) -> i32 {
+    pub fn x(self) -> i32 {
         (self.0 & X_MASK) as _
     }
 
     /// Returns the Y coordinate of the position.
     #[inline]
-    pub fn y(&self) -> i32 {
+    pub fn y(self) -> i32 {
         ((self.0 & Y_MASK) >> 5) as _
     }
 
     /// Returns the Z coordinate of the position.
     #[inline]
-    pub fn z(&self) -> i32 {
+    pub fn z(self) -> i32 {
         ((self.0 & Z_MASK) >> 10) as _
     }
 
@@ -122,12 +122,11 @@ impl LocalPos {
     /// Returns an iterator over all the [`LocalPos`] instances in the column with the current
     /// Y coordinate.
     #[inline]
-    pub fn iter_column(&self) -> impl Iterator<Item = Self> {
+    pub fn iter_column(mut self) -> impl Iterator<Item = Self> {
         const S: u16 = Chunk::SIDE as u16;
 
-        let mut this = *self;
-        this.clear_y();
-        (0u16..S).map(move |y| Self(this.0 + y * S))
+        self.clear_y();
+        (0u16..S).map(move |y| Self(self.0 + y * S))
     }
 
     /// Returns an iterator over all the [`LocalPos`] instances in the chunk.
@@ -140,8 +139,49 @@ impl LocalPos {
     ///
     /// The returned index is guaranteed to be less than [`Chunk::SIZE`].
     #[inline]
-    pub fn index(&self) -> usize {
+    pub fn index(self) -> usize {
         self.0 as usize
+    }
+
+    /// Adds the provided value to the X coordinate of the position.
+    ///
+    /// # Safety
+    ///
+    /// The final X coordinate must be less than [`Chunk::SIDE`].
+    #[inline]
+    pub unsafe fn add_x_unchecked(self, x: i32) -> Self {
+        Self(self.0.wrapping_add(x as u16))
+    }
+
+    /// Adds the provided value to the Y coordinate of the position.
+    ///
+    /// # Safety
+    ///
+    /// The final Y coordinate must be less than [`Chunk::SIDE`].
+    #[inline]
+    pub unsafe fn add_y_unchecked(self, y: i32) -> Self {
+        Self(self.0.wrapping_add((y as u16) << 5))
+    }
+
+    /// Adds the provided value to the Z coordinate of the position.
+    ///
+    /// # Safety
+    ///
+    /// The final Z coordinate must be less than [`Chunk::SIDE`].
+    #[inline]
+    pub unsafe fn add_z_unchecked(self, z: i32) -> Self {
+        Self(self.0.wrapping_add((z as u16) << 10))
+    }
+
+    /// Adds the provided offset to the position.
+    ///
+    /// # Safety
+    ///
+    /// The final coordinates must all be less than [`Chunk::SIDE`].
+    #[inline]
+    pub unsafe fn add_unchecked(self, offset: IVec3) -> Self {
+        let offset = offset.x + (offset.y << 5) + (offset.z << 10);
+        Self(self.0.wrapping_add(offset as u16))
     }
 }
 
