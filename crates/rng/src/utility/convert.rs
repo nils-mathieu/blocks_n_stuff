@@ -8,9 +8,9 @@ pub fn f32_from_u32_01(x: u32) -> f32 {
 /// Converts a `u32` value into a `f32` value in the range `[-1.0, 1.0]`.
 #[inline]
 pub fn f32_from_u32_11(x: u32) -> f32 {
-    // `f32_from_u32_01` does not use the least significant bit of `x`, meaning we can use it for
+    // `f32_from_u32_01` does not use the most significant bit of `x`, meaning we can use it for
     // the sign bit.
-    if x & 1 != 0 {
+    if x & 0x1000_0000 != 0 {
         -f32_from_u32_01(x)
     } else {
         f32_from_u32_01(x)

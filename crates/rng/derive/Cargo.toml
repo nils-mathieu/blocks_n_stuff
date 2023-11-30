@@ -1,5 +1,5 @@
 [package]
-name = "bns-rng"
+name = "bns-rng-derive"
 version = "0.1.0"
 
 edition.workspace = true
@@ -8,5 +8,9 @@ repository.workspace = true
 license.workspace = true
 publish.workspace = true
 
+[lib]
+proc-macro = true
+
 [dependencies]
-bns-rng-derive = { path = "derive" }
+syn = { version = "2", features = ["full"] }
+quote = "1"

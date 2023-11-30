@@ -8,6 +8,8 @@ pub use mixer::*;
 pub mod noises;
 pub mod rngs;
 
+pub use bns_rng_derive::FromRng;
+
 /// The default pseudo-random number generator.
 ///
 /// This general purpose RNG should be sufficient in a vast majority of cases.
@@ -46,6 +48,27 @@ pub trait Rng {
 pub trait FromRng {
     /// Generates a new instance of `Self` from the provided random number generator.
     fn from_rng(rng: &mut impl Rng) -> Self;
+}
+
+impl FromRng for u32 {
+    #[inline]
+    fn from_rng(rng: &mut impl Rng) -> Self {
+        rng.next_u32()
+    }
+}
+
+impl FromRng for u64 {
+    #[inline]
+    fn from_rng(rng: &mut impl Rng) -> Self {
+        rng.next_u64()
+    }
+}
+
+impl FromRng for f32 {
+    #[inline]
+    fn from_rng(rng: &mut impl Rng) -> Self {
+        rng.next_f32_01()
+    }
 }
 
 /// A trait for types that can map an input to a (usually continuous) pseudorandom output.
