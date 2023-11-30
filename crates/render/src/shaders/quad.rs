@@ -68,7 +68,7 @@ pub fn create_shader(
                 bias: wgpu::DepthBiasState::default(),
                 depth_compare: wgpu::CompareFunction::LessEqual,
                 depth_write_enabled: true,
-                format: wgpu::TextureFormat::Depth32Float,
+                format: crate::DEPTH_FORMAT,
                 stencil: wgpu::StencilState::default(),
             }),
             multisample: wgpu::MultisampleState {

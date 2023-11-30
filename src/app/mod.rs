@@ -3,11 +3,11 @@
 use std::sync::Arc;
 
 use bns_core::{Chunk, TextureId};
-use bns_render::data::{ChunkUniforms, FrameUniforms, RenderDataStorage};
+use bns_render::data::{ChunkUniforms, FrameUniforms, LineVertexFlags, RenderDataStorage};
 use bns_render::{Renderer, RendererConfig, Surface, TextureAtlasConfig, TextureFormat};
 use bns_rng::{DefaultRng, FromRng};
 
-use glam::{IVec3, Vec3};
+use glam::{IVec3, Vec3, Vec4};
 
 use winit::event::KeyEvent;
 use winit::event_loop::EventLoopWindowTarget;
@@ -22,8 +22,33 @@ mod camera;
 
 use self::camera::Camera;
 
+const VERTICAL_RENDER_DISTANCE: i32 = 6;
+
 /// The context passed to the functions of [`App`] to control the event loop.
 type Ctx = EventLoopWindowTarget<UserEvent>;
+
+/// The state of the debug chunk display.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum DebugChunkState {
+    /// No debug information are displayed.
+    Hidden,
+    /// Draw the chunk that the camera is currently in.
+    ShowCurrentChunk,
+    /// Draw the chunk grid.
+    ShowAllChunks,
+}
+
+impl DebugChunkState {
+    /// Returns the next state in the cycle.
+    #[inline]
+    pub fn next_state(self) -> Self {
+        match self {
+            Self::Hidden => Self::ShowCurrentChunk,
+            Self::ShowCurrentChunk => Self::ShowAllChunks,
+            Self::ShowAllChunks => Self::Hidden,
+        }
+    }
+}
 
 /// Contains the state of the application.
 pub struct App {
@@ -46,6 +71,9 @@ pub struct App {
 
     /// The distance (in chunks) at which chunks are rendered.
     render_distance: i32,
+
+    /// The current state of the chunk debug display.
+    debug_chunk_state: DebugChunkState,
 }
 
 impl App {
@@ -83,6 +111,7 @@ impl App {
             camera,
             world,
             render_distance: 16,
+            debug_chunk_state: DebugChunkState::Hidden,
         }
     }
 
@@ -150,6 +179,11 @@ impl App {
             );
         }
 
+        if event.state.is_pressed() && event.physical_key == KeyCode::F10 {
+            self.debug_chunk_state = self.debug_chunk_state.next_state();
+            println!("Debug chunk state: {:?}", self.debug_chunk_state);
+        }
+
         self.camera.notify_keyboard(event);
     }
 
@@ -168,6 +202,7 @@ impl App {
         let Some(frame) = self.surface.acquire_image() else {
             return;
         };
+
         let mut render_data = self.render_data_storage.build();
         let view = self.camera.view_matrix();
         let projection = self.camera.projection_matrix();
@@ -189,6 +224,62 @@ impl App {
                 }
             }
         });
+
+        const CURRENT_CHUNK_COLOR: Vec4 = Vec4::new(1.0, 0.0, 0.0, 1.0);
+        const OTHER_CHUNK_COLOR: Vec4 = Vec4::new(1.0, 1.0, 0.0, 1.0);
+        match self.debug_chunk_state {
+            DebugChunkState::Hidden => (),
+            DebugChunkState::ShowAllChunks => {
+                const S: f32 = Chunk::SIDE as f32;
+                let chunk_pos = chunk_of(self.camera.position()).as_vec3() * S;
+                let count = self.render_distance.min(6);
+                let bound = count as f32 * S;
+                for a in -count..=count {
+                    let a = a as f32 * S;
+                    for b in -count..=count {
+                        let b = b as f32 * S;
+
+                        render_data.gizmos_line(
+                            chunk_pos + Vec3::new(bound, a, b),
+                            chunk_pos + Vec3::new(-bound, a, b),
+                            OTHER_CHUNK_COLOR,
+                            LineVertexFlags::empty(),
+                        );
+                        render_data.gizmos_line(
+                            chunk_pos + Vec3::new(a, bound, b),
+                            chunk_pos + Vec3::new(a, -bound, b),
+                            OTHER_CHUNK_COLOR,
+                            LineVertexFlags::empty(),
+                        );
+                        render_data.gizmos_line(
+                            chunk_pos + Vec3::new(a, b, bound),
+                            chunk_pos + Vec3::new(a, b, -bound),
+                            OTHER_CHUNK_COLOR,
+                            LineVertexFlags::empty(),
+                        );
+                    }
+                }
+
+                render_data.gizmos_aabb(
+                    chunk_pos,
+                    chunk_pos + Vec3::splat(S),
+                    CURRENT_CHUNK_COLOR,
+                    LineVertexFlags::ABOVE,
+                );
+            }
+            DebugChunkState::ShowCurrentChunk => {
+                const S: f32 = Chunk::SIDE as f32;
+
+                let chunk_pos = chunk_of(self.camera.position()).as_vec3() * S;
+                render_data.gizmos_aabb(
+                    chunk_pos,
+                    chunk_pos + Vec3::splat(S),
+                    CURRENT_CHUNK_COLOR,
+                    LineVertexFlags::ABOVE,
+                );
+            }
+        }
+
         self.renderer.render(frame.target(), render_data);
         frame.present();
     }
@@ -209,22 +300,9 @@ fn chunks_in_frustum(
     render_distance: i32,
     mut callback: impl FnMut(ChunkPos, Priority),
 ) {
-    const VERTICAL_RENDER_DISTANCE: i32 = 6;
     const CHUNK_RADIUS: f32 = (Chunk::SIDE as f32) * 0.8660254; // sqrt(3) / 2
 
-    fn coord_to_chunk(coord: f32) -> i32 {
-        if coord >= 0.0 {
-            coord as i32 / Chunk::SIDE
-        } else {
-            coord as i32 / Chunk::SIDE - 1
-        }
-    }
-
-    let camera_chunk_pos = ChunkPos::new(
-        coord_to_chunk(camera.position().x),
-        coord_to_chunk(camera.position().y),
-        coord_to_chunk(camera.position().z),
-    );
+    let camera_chunk_pos = chunk_of(camera.position());
 
     for x in -render_distance..=render_distance {
         for y in -VERTICAL_RENDER_DISTANCE..=VERTICAL_RENDER_DISTANCE {
@@ -245,6 +323,23 @@ fn chunks_in_frustum(
             }
         }
     }
+}
+
+/// Returns the chunk that the provided position is in.
+fn chunk_of(pos: Vec3) -> ChunkPos {
+    fn coord_to_chunk(coord: f32) -> i32 {
+        if coord >= 0.0 {
+            coord as i32 / Chunk::SIDE
+        } else {
+            coord as i32 / Chunk::SIDE - 1
+        }
+    }
+
+    ChunkPos::new(
+        coord_to_chunk(pos.x),
+        coord_to_chunk(pos.y),
+        coord_to_chunk(pos.z),
+    )
 }
 
 fn load_texture_atlas() -> TextureAtlasConfig<'static> {

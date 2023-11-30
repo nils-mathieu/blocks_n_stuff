@@ -16,3 +16,6 @@ mod resources;
 pub use resources::*;
 
 pub mod data;
+
+/// The format of the depth buffer.
+const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;

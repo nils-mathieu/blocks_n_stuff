@@ -64,7 +64,7 @@ impl<'w> Surface<'w> {
             + raw_window_handle::HasDisplayHandle,
     {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::VULKAN,
+            backends: wgpu::Backends::all(),
             ..Default::default()
         });
         let surface = instance
@@ -85,7 +85,8 @@ impl<'w> Surface<'w> {
                         min_uniform_buffer_offset_alignment: 64,
                         ..Default::default()
                     },
-                    ..Default::default()
+                    features: wgpu::Features::POLYGON_MODE_LINE,
+                    label: Some("GPU Device"),
                 },
                 None,
             )

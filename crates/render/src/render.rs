@@ -1,3 +1,7 @@
+use std::mem::size_of_val;
+
+use wgpu::util::DeviceExt;
+
 use crate::data::RenderData;
 use crate::{RenderTarget, Renderer};
 
@@ -33,6 +37,24 @@ impl Renderer {
             0,
             bytemuck::cast_slice(data.chunk_uniforms),
         );
+
+        // Upload the line vertices to the GPU.
+        if self.line_vertices.size() < size_of_val(&**data.line_vertices) as u64 {
+            self.line_vertices =
+                self.gpu
+                    .device
+                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        contents: bytemuck::cast_slice(data.line_vertices),
+                        label: Some("Line Vertices Buffer"),
+                        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                    });
+        } else {
+            self.gpu.queue.write_buffer(
+                &self.line_vertices,
+                0,
+                bytemuck::cast_slice(data.line_vertices),
+            );
+        }
 
         // Now that we have upload everything, we can start recording GPU commands.
         let mut encoder = self
@@ -85,6 +107,17 @@ impl Renderer {
                 &[quad_vertices.chunk_index * self.chunk_uniforms_alignment],
             );
             rp.draw(0..4, 0..quad_vertices.len);
+        }
+
+        // The line pipeline is responsible for drawing lines in world-space.
+        if !data.line_vertices.is_empty() {
+            rp.set_pipeline(&self.line_pipeline);
+            rp.set_vertex_buffer(
+                0,
+                self.line_vertices
+                    .slice(..size_of_val(&**data.line_vertices) as u64),
+            );
+            rp.draw(0..data.line_vertices.len() as u32, 0..1)
         }
 
         // Now that everything is recorded, we can submit the commands to the GPU.

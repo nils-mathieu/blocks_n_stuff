@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 use bytemuck::{Pod, Zeroable};
-use glam::{IVec3, Mat4};
+use glam::{IVec3, Mat4, Vec3, Vec4};
 
 use crate::{Renderer, Vertices};
 
@@ -12,6 +12,7 @@ pub struct RenderDataStorage {
     chunk_uniforms_align: u32,
     chunk_uniforms: Vec<u8>,
     quad_vertices: Vec<QuadVertices<'static>>,
+    line_vertices: Vec<LineVertex>,
 }
 
 impl RenderDataStorage {
@@ -21,6 +22,7 @@ impl RenderDataStorage {
             chunk_uniforms_align: renderer.chunk_uniforms_alignment,
             chunk_uniforms: Vec::new(),
             quad_vertices: Vec::new(),
+            line_vertices: Vec::new(),
         }
     }
 
@@ -38,12 +40,14 @@ impl RenderDataStorage {
         // We know that the `'res` lifetime we're providing won't exceed ours ('a).
         self.chunk_uniforms.clear();
         self.quad_vertices.clear();
+        self.line_vertices.clear();
 
         RenderData {
             chunk_uniforms_align: self.chunk_uniforms_align,
             chunk_uniforms: &mut self.chunk_uniforms,
             frame_uniforms: FrameUniforms::default(),
             quad_vertices: unsafe { std::mem::transmute(&mut self.quad_vertices) },
+            line_vertices: &mut self.line_vertices,
         }
     }
 }
@@ -248,7 +252,32 @@ impl QuadInstance {
 unsafe impl Zeroable for QuadInstance {}
 unsafe impl Pod for QuadInstance {}
 
-pub use wgpu::CommandEncoder;
+bitflags! {
+    /// Some flags associated with a [`LineVertex`].
+    #[derive(Debug, Clone, Copy)]
+    #[repr(transparent)]
+    pub struct LineVertexFlags: u32 {
+        /// Whether the line should appear above all geometry in the world.
+        const ABOVE = 1 << 0;
+    }
+}
+
+unsafe impl Zeroable for LineVertexFlags {}
+unsafe impl Pod for LineVertexFlags {}
+
+/// A vertex that's used to construct a line.
+#[repr(C)]
+#[derive(Debug, Clone, Copy, Zeroable, Pod)]
+pub struct LineVertex {
+    /// The position of the vertex.
+    pub position: Vec3,
+    /// Some flags associated with the vertex.
+    ///
+    /// Those flags are expected to remain constant for all vertices of a line.
+    pub flags: LineVertexFlags,
+    /// The color of the vertex.
+    pub color: Vec4,
+}
 
 /// The data required to render a frame.
 ///
@@ -275,6 +304,13 @@ pub struct RenderData<'a, 'res> {
     /// The buffer slices in this array are expected to point to an instance buffer containing
     /// instances of [`QuadInstance`].
     pub(crate) quad_vertices: &'a mut Vec<QuadVertices<'res>>,
+    /// The vertices of the lines to render.
+    ///
+    /// The content of this buffer is uploaded to the GPU on every frame, so if in the future
+    /// we need to keep some static geometry around, we will need to use something more efficient.
+    ///
+    /// Right now, the lines are mainly used for debugging purposes, so this is not a problem.
+    pub(crate) line_vertices: &'a mut Vec<LineVertex>,
 }
 
 impl<'a, 'res> RenderData<'a, 'res> {
@@ -308,5 +344,165 @@ impl<'a, 'res> RenderData<'a, 'res> {
     #[inline]
     pub fn frame_uniforms(&mut self, value: FrameUniforms) {
         self.frame_uniforms = value;
+    }
+
+    /// Returns the raw vertex buffer containing the line vertices.
+    ///
+    /// # Remarks
+    ///
+    /// Adding an odd number of vertices to this buffer will result in weird behavior.
+    #[inline]
+    pub fn gizmos_line_vertices(&mut self) -> &mut Vec<LineVertex> {
+        self.line_vertices
+    }
+
+    /// Adds a line to the gizmos list.
+    pub fn gizmos_line(&mut self, start: Vec3, end: Vec3, color: Vec4, flags: LineVertexFlags) {
+        self.line_vertices.extend_from_slice(&[
+            LineVertex {
+                position: start,
+                flags,
+                color,
+            },
+            LineVertex {
+                position: end,
+                flags,
+                color,
+            },
+        ]);
+    }
+
+    /// Adds a new axis-aligned bounding box to the gizmos list.
+    pub fn gizmos_aabb(&mut self, min: Vec3, max: Vec3, color: Vec4, flags: LineVertexFlags) {
+        use glam::vec3;
+
+        // OPTIMZE: make sure that the vector is directly written to memory and not copied
+        // from stack.
+
+        self.line_vertices.extend_from_slice(&[
+            // Lower face
+            LineVertex {
+                position: vec3(min.x, min.y, min.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(max.x, min.y, min.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(max.x, min.y, min.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(max.x, min.y, max.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(max.x, min.y, max.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(min.x, min.y, max.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(min.x, min.y, max.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(min.x, min.y, min.z),
+                flags,
+                color,
+            },
+            // Upper face
+            LineVertex {
+                position: vec3(min.x, max.y, min.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(max.x, max.y, min.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(max.x, max.y, min.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(max.x, max.y, max.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(max.x, max.y, max.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(min.x, max.y, max.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(min.x, max.y, max.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(min.x, max.y, min.z),
+                flags,
+                color,
+            },
+            // Vertical edges
+            LineVertex {
+                position: vec3(min.x, min.y, min.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(min.x, max.y, min.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(max.x, min.y, min.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(max.x, max.y, min.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(max.x, min.y, max.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(max.x, max.y, max.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(min.x, min.y, max.z),
+                flags,
+                color,
+            },
+            LineVertex {
+                position: vec3(min.x, max.y, max.z),
+                flags,
+                color,
+            },
+        ]);
     }
 }
