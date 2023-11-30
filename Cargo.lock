@@ -204,6 +204,7 @@ dependencies = [
  "bns-render",
  "bns-rng",
  "bytemuck",
+ "getrandom",
  "glam",
  "hashbrown",
  "parking_lot",

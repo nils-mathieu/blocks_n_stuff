@@ -5,6 +5,7 @@ use std::sync::Arc;
 use bns_core::{Chunk, TextureId};
 use bns_render::data::{ChunkUniforms, FrameUniforms, RenderDataStorage};
 use bns_render::{Renderer, RendererConfig, Surface, TextureAtlasConfig, TextureFormat};
+use bns_rng::{DefaultRng, FromRng};
 
 use glam::{IVec3, Vec3};
 
@@ -58,7 +59,12 @@ impl App {
                 texture_atlas: load_texture_atlas(),
             },
         );
-        let world = World::new(renderer.gpu().clone(), StandardWorldGenerator::new());
+        let seed = random_seed();
+        println!("Seed: {seed}");
+        let world = World::new(
+            renderer.gpu().clone(),
+            StandardWorldGenerator::from_seed::<DefaultRng>(seed),
+        );
 
         window
             .set_cursor_grab(CursorGrabMode::Confined)
@@ -130,6 +136,15 @@ impl App {
         {
             self.render_distance -= 2;
             println!("Render distance: {}", self.render_distance);
+        }
+
+        if event.state.is_pressed() && event.physical_key == KeyCode::KeyR {
+            let seed = random_seed();
+            println!("Seed: {seed}");
+            self.world = World::new(
+                self.renderer.gpu().clone(),
+                StandardWorldGenerator::from_seed::<DefaultRng>(seed),
+            );
         }
 
         self.camera.notify_keyboard(event);
@@ -261,4 +276,11 @@ fn load_texture_atlas() -> TextureAtlasConfig<'static> {
             bns_image::ColorSpace::Linear => TextureFormat::Rgba8Unorm,
         },
     }
+}
+
+/// Returns a random seed for the world generator.
+fn random_seed() -> u64 {
+    let mut bytes = [0; 8];
+    getrandom::getrandom(&mut bytes).unwrap();
+    u64::from_ne_bytes(bytes)
 }

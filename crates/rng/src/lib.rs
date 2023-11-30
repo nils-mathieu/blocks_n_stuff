@@ -2,9 +2,6 @@
 
 pub mod utility;
 
-mod mixer;
-pub use mixer::*;
-
 pub mod noises;
 pub mod rngs;
 
@@ -45,9 +42,15 @@ pub trait Rng {
 }
 
 /// A trait for types that can be generated from a random number generator.
-pub trait FromRng {
+pub trait FromRng: Sized {
     /// Generates a new instance of `Self` from the provided random number generator.
     fn from_rng(rng: &mut impl Rng) -> Self;
+
+    /// Generates a new instance of `Self` using the provided random number generator initialized
+    /// with the provided seed.
+    fn from_seed<R: Rng>(seed: u64) -> Self {
+        Self::from_rng(&mut R::from_seed(seed))
+    }
 }
 
 impl FromRng for u32 {
