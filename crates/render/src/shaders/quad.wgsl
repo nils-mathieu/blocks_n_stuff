@@ -67,11 +67,13 @@ fn vs_main(
     );
 
     var TEX_COORDS: array<vec2<f32>, 4> = array(
-        vec2(0.0, 0.0),
         vec2(0.0, 1.0),
-        vec2(1.0, 0.0),
+        vec2(0.0, 0.0),
         vec2(1.0, 1.0),
+        vec2(1.0, 0.0),
     );
+
+    // OPTIMIZE: not really an optimization but it would be nice to use constants here.
 
     // Deconstruct the instance ID into local coordinates.
     // The full description of the flags is in the `src/gfx/shaders/quad.rs` file.
