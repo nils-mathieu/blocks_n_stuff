@@ -20,6 +20,7 @@ publish = false
 members = [
     "crates/core",
     "crates/render",
+    "crates/render/preprocessor",
     "crates/image",
     "crates/rng",
     "crates/rng/derive",

@@ -1,5 +1,7 @@
 use std::mem::size_of;
 
+use bns_render_preprocessor::preprocess;
+
 use crate::data::LineInstance;
 use crate::Gpu;
 
@@ -13,7 +15,9 @@ pub fn create_shader(
         .device
         .create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Line Shader Module"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("line.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(
+                preprocess!("crates/render/src/shaders/line.wgsl").into(),
+            ),
         });
 
     let pipeline_layout = gpu

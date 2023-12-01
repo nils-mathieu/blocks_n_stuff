@@ -1,5 +1,7 @@
 use std::borrow::Cow;
 
+use bns_render_preprocessor::preprocess;
+
 use crate::Gpu;
 
 /// Creates a pipeline that's responsible for rendering the skybox.
@@ -22,7 +24,9 @@ pub fn create_shader(
         .device
         .create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Skybox Shader Module"),
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("skybox.wgsl"))),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(preprocess!(
+                "crates/render/src/shaders/skybox.wgsl"
+            ))),
         });
 
     let pipeline_layout = gpu

@@ -1,5 +1,7 @@
 use std::mem::size_of;
 
+use bns_render_preprocessor::preprocess;
+
 use crate::data::QuadInstance;
 use crate::Gpu;
 
@@ -26,7 +28,9 @@ pub fn create_shader(
         .device
         .create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Quad Pipeline Shader Module"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("quad.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(
+                preprocess!("crates/render/src/shaders/quad.wgsl").into(),
+            ),
         });
 
     gpu.device

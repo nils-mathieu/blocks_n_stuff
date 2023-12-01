@@ -234,6 +234,7 @@ name = "bns-render"
 version = "0.1.0"
 dependencies = [
  "bitflags 2.4.1",
+ "bns-render-preprocessor",
  "bytemuck",
  "glam",
  "parking_lot",
@@ -242,6 +243,10 @@ dependencies = [
  "thread_local",
  "wgpu",
 ]
+
+[[package]]
+name = "bns-render-preprocessor"
+version = "0.1.0"
 
 [[package]]
 name = "bns-rng"
