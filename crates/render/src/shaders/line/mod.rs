@@ -40,6 +40,7 @@ impl LinePipeline {
             return;
         }
 
+        // Copy the lines into the GPU buffer, eventually resizing it if needed.
         if self.buffer.size() < size_of_val(lines) as u64 {
             self.buffer = gpu
                 .device
@@ -53,6 +54,7 @@ impl LinePipeline {
                 .write_buffer(&self.buffer, 0, bytemuck::cast_slice(lines));
         }
 
+        // Draw all the lines as a batch.
         rp.set_pipeline(&self.pipeline);
         rp.set_vertex_buffer(0, self.buffer.slice(..));
         rp.draw(0..4, 0..lines.len() as u32);

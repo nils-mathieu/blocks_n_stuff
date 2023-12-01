@@ -330,10 +330,10 @@ fn is_face_culled(me: BlockVisibility, other: BlockVisibility) -> bool {
 ///
 /// # Remarks
 ///
-/// This function takes [`Value`] implementations as an input so that it can be monomorphized
+/// This function takes [`IntoCoord`] implementations as an input so that it can be monomorphized
 /// into a version that does not perform bound checks at the chunk's boundaries. In the case
-/// where the coordinates are known to be within the chunk's boundaries, [`Coord`] can be used
-/// as an input.
+/// where the coordinates are known to be within the chunk's boundaries,
+/// [`Coord`](coord::Coord) can be used as an input.
 fn build_block(
     chunk: &Chunk,
     x: impl IntoCoord,
@@ -489,7 +489,7 @@ mod coord {
     /// A trait that returns the visibility of a block at a given position.
     ///
     /// This trait is used to monomorphize the `build_block` function and avoid bound checks
-    /// at the chunk's boundaries. See [`CulledFaces::of`] for more information.
+    /// at the chunk's boundaries. See [`build_block`](super::build_block) for more information.
     ///
     /// # Safety
     ///
@@ -506,7 +506,7 @@ mod coord {
         }
     }
 
-    /// An implementation of [`Value`].
+    /// An implementation of [`IntoCoord`].
     ///
     /// The inner value must be in the range `q..Chunk::SIDE - 1`.
     #[derive(Copy, Clone)]
@@ -531,7 +531,7 @@ mod coord {
         }
     }
 
-    /// An implementation of [`Value`] that returns the minimum value.
+    /// An implementation of [`IntoCoord`] that returns the minimum value.
     #[derive(Copy, Clone)]
     pub struct Min;
 
@@ -542,7 +542,7 @@ mod coord {
         }
     }
 
-    /// An implementation of [`Value`] that returns the maximum value.
+    /// An implementation of [`IntoCoord`] that returns the maximum value.
     #[derive(Copy, Clone)]
     pub struct Max;
 

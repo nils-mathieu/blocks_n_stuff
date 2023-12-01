@@ -173,6 +173,7 @@ impl QuadPipeline {
         rp: &mut wgpu::RenderPass<'res>,
         quads: &Quads<'res>,
     ) {
+        // Copy the chunk data into the GPU buffer, eventually resizing it if needed.
         if self.chunk_uniforms_buffer.size() < quads.chunks.len() as u64 {
             self.chunk_uniforms_buffer =
                 gpu.device
@@ -193,6 +194,8 @@ impl QuadPipeline {
                 .write_buffer(&self.chunk_uniforms_buffer, 0, &quads.chunks);
         }
 
+        // Draw each instance buffer registered, binding it to the correct chunk uniforms
+        // using dynamic offsets.
         rp.set_pipeline(&self.pipeline);
         for buf in &quads.buffers {
             rp.set_bind_group(

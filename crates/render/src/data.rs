@@ -6,13 +6,14 @@ pub use crate::shaders::line::{LineInstance, LineVertexFlags};
 pub use crate::shaders::quad::{ChunkUniforms, QuadInstance};
 
 /// The data required to render a frame.
-///
-/// An instance of this type can be created using the [`RenderDataStorage`] type.
 pub struct RenderData<'res> {
     /// The frame uniforms for the frame.
     pub frame: FrameUniforms,
 
-    /// Allows building a list of quad instance buffers to draw.
+    /// The list of quad instances to render.
+    ///
+    /// This collection automatically lays the data out in a way that's compatible and efficient
+    /// to send to the GPU.
     pub quads: Quads<'res>,
 
     /// The line instances to render.

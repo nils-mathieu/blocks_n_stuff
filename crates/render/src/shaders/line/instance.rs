@@ -19,9 +19,6 @@ unsafe impl Pod for LineVertexFlags {}
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Zeroable, Pod)]
 pub struct LineInstance {
-    // Note on the layout:
-    //  Right now the width is seaprate from the flags because we had a free padding to fill, but
-    //  if needed, it might go into the flags as a bitfield.
     /// The start position of the vertex, in world space.
     pub start: Vec3,
     /// The width of the line.

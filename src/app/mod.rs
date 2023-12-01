@@ -60,7 +60,7 @@ pub struct App {
     surface: Surface<'static>,
     /// The renderer contains the resources required to render things using GPU resources.
     renderer: Renderer,
-    /// Some storage to efficiently create [`RenderData`](bns_render::data::RenderData) instances.
+    /// Some storage to efficiently create [`RenderData`] instances.
     render_data: Option<RenderData<'static>>,
 
     /// The current state of the camera.
