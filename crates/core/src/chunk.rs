@@ -21,9 +21,6 @@ const Z_MASK: u16 = 0b11111 << 10;
 /// ```rust
 /// index = x + y * Chunk::SIDE + z * Chunk::SIDE * Chunk::SIDE
 /// ```
-// OPTIMIZE: depending of how we end up using this type, we could switch up the layout of chunks
-// to improve cache locality. If most of our iterations are done on the Y axis first, we could
-// store the Y coordinate first in the index, then the X coordinate, and finally the Z coordinate.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct LocalPos(u16);
 

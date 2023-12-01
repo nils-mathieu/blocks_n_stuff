@@ -39,8 +39,6 @@ impl<'a> TextureAtlasConfig<'a> {
     }
 }
 
-// OPTIMIZE: Figure out which of those fields we really need.
-/// The uniform data that is uploaded to the GPU once per frame.
 #[derive(Debug, Default, Clone, Copy, Zeroable, Pod)]
 #[repr(C)]
 pub struct FrameUniforms {

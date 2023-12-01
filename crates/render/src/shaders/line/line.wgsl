@@ -69,7 +69,7 @@ fn compute_line_quad(start: vec4<f32>, end: vec4<f32>, width: f32, index: u32) -
     // Note: the `max(w, 0.0)` is a hack to make the line look better. I definitely messed up
     // the math here, but it's good enough for now.
     // For context, this is supposed to apply the perspective divide to the line offset.
-    // OPTIMIZE: do this properly.
+    // FIXME: do this properly.
     return points[index >> 1u] + vec4(max(points[index >> 1u].w, 0.0) * offsets[index], 0.0, 0.0);
 }
 
