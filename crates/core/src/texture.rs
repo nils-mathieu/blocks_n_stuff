@@ -18,6 +18,21 @@ pub enum TextureId {
     Dirt,
     GrassSide,
     GrassTop,
+    Andesite,
+    Clay,
+    Diorite,
+    Granite,
+    Gravel,
+    PodzolTop,
+    PodzolSide,
+    RedSand,
+    Sand,
+    SandstoneTop,
+    SandstoneBottom,
+    SandstoneSide,
+    RedSandstoneTop,
+    RedSandstoneBottom,
+    RedSandstoneSide,
 }
 
 impl TextureId {
@@ -41,7 +56,27 @@ impl TextureId {
     /// The extension of the file name is not included.
     #[inline]
     pub fn file_name(self) -> &'static str {
-        const NAMES: [&str; TextureId::COUNT] = ["stone", "dirt", "grass_side", "grass_top"];
+        const NAMES: [&str; TextureId::COUNT] = [
+            "stone",
+            "dirt",
+            "grass_side",
+            "grass_top",
+            "andesite",
+            "clay",
+            "diorite",
+            "granite",
+            "gravel",
+            "podzol_top",
+            "podzol_side",
+            "red_sand",
+            "sand",
+            "sandstone_top",
+            "sandstone_bottom",
+            "sandstone_side",
+            "red_sandstone_top",
+            "red_sandstone_bottom",
+            "red_sandstone_side",
+        ];
         unsafe { NAMES.get_unchecked(self as usize) }
     }
 

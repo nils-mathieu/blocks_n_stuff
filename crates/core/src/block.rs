@@ -18,6 +18,16 @@ pub enum BlockId {
     Stone,
     Grass,
     Dirt,
+    Andesite,
+    Clay,
+    Diorite,
+    Granite,
+    Gravel,
+    Podzol,
+    RedSand,
+    Sand,
+    Sandstone,
+    RedSandstone,
 }
 
 // SAFETY:
@@ -60,6 +70,68 @@ impl BlockId {
             // Dirt
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Dirt),
+                visibility: BlockVisibility::Opaque,
+            },
+            // Andesite
+            BlockInfo {
+                appearance: BlockAppearance::uniform(TextureId::Andesite),
+                visibility: BlockVisibility::Opaque,
+            },
+            // Clay
+            BlockInfo {
+                appearance: BlockAppearance::uniform(TextureId::Clay),
+                visibility: BlockVisibility::Opaque,
+            },
+            // Diorite
+            BlockInfo {
+                appearance: BlockAppearance::uniform(TextureId::Diorite),
+                visibility: BlockVisibility::Opaque,
+            },
+            // Granite
+            BlockInfo {
+                appearance: BlockAppearance::uniform(TextureId::Granite),
+                visibility: BlockVisibility::Opaque,
+            },
+            // Gravel
+            BlockInfo {
+                appearance: BlockAppearance::uniform(TextureId::Gravel),
+                visibility: BlockVisibility::Opaque,
+            },
+            // Podzol
+            BlockInfo {
+                appearance: BlockAppearance::Regular {
+                    top: TextureId::PodzolTop,
+                    bottom: TextureId::Dirt,
+                    side: TextureId::PodzolSide,
+                },
+                visibility: BlockVisibility::Opaque,
+            },
+            // RedSand
+            BlockInfo {
+                appearance: BlockAppearance::uniform(TextureId::RedSand),
+                visibility: BlockVisibility::Opaque,
+            },
+            // Sand
+            BlockInfo {
+                appearance: BlockAppearance::uniform(TextureId::Sand),
+                visibility: BlockVisibility::Opaque,
+            },
+            // Sandstone
+            BlockInfo {
+                appearance: BlockAppearance::Regular {
+                    top: TextureId::SandstoneTop,
+                    bottom: TextureId::SandstoneBottom,
+                    side: TextureId::SandstoneSide,
+                },
+                visibility: BlockVisibility::Opaque,
+            },
+            // RedSandstone
+            BlockInfo {
+                appearance: BlockAppearance::Regular {
+                    top: TextureId::RedSandstoneTop,
+                    bottom: TextureId::RedSandstoneBottom,
+                    side: TextureId::RedSandstoneSide,
+                },
                 visibility: BlockVisibility::Opaque,
             },
         ];
