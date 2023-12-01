@@ -30,6 +30,7 @@ bitflags! {
     /// | 12-16 | `y`        | The local Y position of the quad. |
     /// | 17-21 | `z`        | The local Z position of the quad. |
     /// | 22-24 | `offset`   | The offset of the block.          |
+    /// | 25-28 | `occluded` | Whether the quad is occluded.     |
     ///
     /// - `facing` can be one of the following values:
     ///
@@ -56,6 +57,13 @@ bitflags! {
     ///   is in the direction opposite to the face's normal. For example, a face facing the
     ///   positive X axis with an offset of 1 will be pushed back by 1/8th of a block along the
     ///   negative X axis.
+    ///
+    /// - `occluded` is a bitfleld that describes which sides of the quad are occldued by other
+    ///    neighboring blocks. The bits are stored in the following order:
+    ///    - `0b0001`: The "top" of the quad is occluded.
+    ///    - `0b0010`: The "bottom" of the quad is occluded.
+    ///    - `0b0100`: The "left" of the quad is occluded.
+    ///    - `0b1000`: The "right" of the quad is occluded.
     #[derive(Debug, Clone, Copy)]
     #[repr(transparent)]
     pub struct QuadFlags: u32 {
@@ -123,6 +131,20 @@ bitflags! {
         ///
         /// This constant value represents the value 7.
         const OFFSET_MASK = 0b111 << 22;
+
+        /// Whether the "top" of the quad is occluded.
+        const OCCLUDED_TOP = 0b0001 << 25;
+        /// Whether the "bottom" of the quad is occluded.
+        const OCCLUDED_BOTTOM = 0b0010 << 25;
+        /// Whether the "left" of the quad is occluded.
+        const OCCLUDED_LEFT = 0b0100 << 25;
+        /// Whether the "right" of the quad is occluded.
+        const OCCLUDED_RIGHT = 0b1000 << 25;
+
+        /// The bits that are used to store the occlusion of the quad.
+        ///
+        /// This constant represents the value `15`.
+        const OCCLUDED_MASK = 0b1111 << 25;
     }
 }
 

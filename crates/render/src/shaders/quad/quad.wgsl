@@ -35,8 +35,10 @@ struct Interpolator {
     @location(0) tex_coords: vec2<f32>,
     // The index of the texture to use.
     @location(1) @interpolate(flat) tex_index: u32,
+    // The flags of the instance.
+    @location(2) @interpolate(flat) flags: u32,
     // The normal of the vertex.
-    @location(2) @interpolate(flat) normal: vec3<f32>,
+    @location(3) @interpolate(flat) normal: vec3<f32>,
 }
 
 @vertex
@@ -104,6 +106,10 @@ fn vs_main(
     let local_y: u32 = (instance.flags >> 12u) & 31u;
     let local_z: u32 = (instance.flags >> 17u) & 31u;
     let offset: u32 = (instance.flags >> 22u) & 7u;
+    let occluded_top: u32 = (instance.flags >> 25u) & 1u;
+    let occluded_bottom: u32 = (instance.flags >> 26u) & 1u;
+    let occluded_left: u32 = (instance.flags >> 27u) & 1u;
+    let occluded_right: u32 = (instance.flags >> 28u) & 1u;
 
     let normal = NORMALS[face];
 
@@ -137,6 +143,7 @@ fn vs_main(
     output.tex_coords = tex_coords;
     output.tex_index = instance.texture;
     output.normal = normal;
+    output.flags = instance.flags;
     return output;
 }
 
@@ -147,6 +154,17 @@ var texture_atlas_sampler: sampler;
 
 const LIGHT_DIRECTION: vec3<f32> = vec3<f32>(1.3, -1.8, 1.5);
 const LIGHT_INTENCITY: f32 = 0.2;
+
+const AMBIANT_OCCLUSION_INTENCITY: f32 = 1.0;
+
+// Computes the occlusion mask for the given texture coordinates and flags.
+fn occlusion_mask(v: vec2<f32>, flags: u32) -> f32 {
+    let top = 1.0 - f32((flags >> 25u) & 1u) * (1.0 - v.y);
+    let bottom = 1.0 - f32((flags >> 26u) & 1u) * v.y;
+    let left = 1.0 - f32((flags >> 27u) & 1u) * (1.0 - v.x);
+    let right = 1.0 - f32((flags >> 28u) & 1u) * v.x;
+    return top * bottom * left * right;
+}
 
 @fragment
 fn fs_main(input: Interpolator) -> @location(0) vec4<f32> {
@@ -164,6 +182,7 @@ fn fs_main(input: Interpolator) -> @location(0) vec4<f32> {
     }
 
     let light = (1.0 - LIGHT_INTENCITY) + LIGHT_INTENCITY * max(0.0, dot(input.normal, LIGHT_DIRECTION));
+    let occlusion = (1.0 - AMBIANT_OCCLUSION_INTENCITY) + AMBIANT_OCCLUSION_INTENCITY * occlusion_mask(input.tex_coords, input.flags);
 
-    return vec4<f32>(base_color.rgb * light, base_color.a);
+    return vec4<f32>(base_color.rgb * light * occlusion, base_color.a);
 }

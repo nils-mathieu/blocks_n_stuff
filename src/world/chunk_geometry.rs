@@ -421,7 +421,6 @@ fn build_chunk_boundary(
 /// Builds the quad instance for a singel voxel.
 fn build_voxel(pos: LocalPos, block: BlockId, culled: CulledFaces, ctx: &mut ChunkBuildContext) {
     let base_flags = QuadFlags::from_chunk_index(pos.index());
-
     let buffer = match block.info().visibility {
         BlockVisibility::SemiOpaque | BlockVisibility::Opaque => &mut ctx.opaque_quads,
         BlockVisibility::Invisible | BlockVisibility::Transparent => &mut ctx.transparent_quads,
