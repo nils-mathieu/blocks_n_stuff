@@ -13,13 +13,13 @@ pub fn derive_from_rng(input: TokenStream) -> TokenStream {
                 let ident = field.ident.as_ref().unwrap();
 
                 quote! {
-                    #ident : ::bns_rng::FromRng::from_rng(rng),
+                    #ident : bns_rng::FromRng::from_rng(rng),
                 }
             });
 
             quote! {
-                impl ::bns_rng::FromRng for #name {
-                    fn from_rng(rng: &mut impl ::bns_rng::Rng) -> Self {
+                impl bns_rng::FromRng for #name {
+                    fn from_rng(rng: &mut impl bns_rng::Rng) -> Self {
                         Self {
                             #(#field_init)*
                         }

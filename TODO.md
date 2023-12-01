@@ -21,10 +21,11 @@
   - [x] Optimized voxel renderer.
   - [x] Skybox.
   - [x] Reloadable texture atlas.
-  - [ ] Ambiant Occlusion
+  - [ ] Ambiant occlusion.
   - [ ] Distance fog.
   - [ ] Text rendering.
   - [ ] Debug UI.
+  - [ ] Mipmaps.
 - [ ] Basic gameplay.
   - [ ] Physics system.
   - [ ] Player movement.
