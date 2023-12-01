@@ -28,6 +28,12 @@ Here is a list of the things I want to implement:
   - [ ] Biomes.
   - [ ] Structures (trees, dungeons).
   - [ ] Caves.
+- [ ] Basic graphics.
+  - [x] Optimized voxel renderer.
+  - [x] Skybox.
+  - [x] Reloadable texture atlas.
+  - [ ] Text rendering.
+  - [ ] Debug UI.
 - [ ] Basic gameplay.
   - [ ] Physics system.
   - [ ] Player movement.
