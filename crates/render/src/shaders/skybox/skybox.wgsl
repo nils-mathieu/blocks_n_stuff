@@ -1,5 +1,12 @@
-#include <frame_uniforms.wgsl>
-#include <utils.wgsl>
+// Rust counterpart: `src/shaders/common.rs`
+struct FrameUniforms {
+    projection: mat4x4<f32>,
+    inverse_projection: mat4x4<f32>,
+    view: mat4x4<f32>,
+    inverse_view: mat4x4<f32>,
+    resolution: vec2<f32>,
+    _padding: vec2<u32>,
+}
 
 @group(0) @binding(0)
 var<uniform> frame: FrameUniforms;

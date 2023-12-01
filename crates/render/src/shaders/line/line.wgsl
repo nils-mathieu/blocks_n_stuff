@@ -1,18 +1,10 @@
-// Contains the uniform data that's meant to be updated every frame.
-//
-// The Rust counterpart of this type is located at `src/data.rs`.
+// Rust counterpart: `src/shaders/common.rs`
 struct FrameUniforms {
-    // The projection matrix used to convert coordinates from world-space to clip-space.
     projection: mat4x4<f32>,
-    // The inverse matrix of `projection`.
     inverse_projection: mat4x4<f32>,
-    // The view matrix used to convert coordinates from world-space to view-space.
     view: mat4x4<f32>,
-    // The inverse matrix of `view`.
     inverse_view: mat4x4<f32>,
-    // The resolution of the screen.
     resolution: vec2<f32>,
-
     _padding: vec2<u32>,
 }
 
@@ -39,12 +31,6 @@ struct Interpolator {
     @builtin(position) position: vec4<f32>,
     // The color of the vertex.
     @location(0) @interpolate(flat) color: vec4<f32>,
-    // The distance of the vertex from the camera.
-    @location(1) dist_to_camera: f32,
-    // The start position of the line in clip space.
-    @location(2) @interpolate(flat) start: vec2<f32>,
-    // The end position of the line in clip space.
-    @location(3) @interpolate(flat) end: vec2<f32>,
 }
 
 // This flag indicates that the line should be drawn above everything else (i.e. depth = 0.0).
@@ -89,7 +75,6 @@ fn compute_line_quad(start: vec4<f32>, end: vec4<f32>, width: f32, index: u32) -
 
 @vertex
 fn vs_main(in: Instance, @builtin(vertex_index) vertex_index: u32) -> Interpolator {
-    // Compute the clip-space position of the start and end position.
     var start = frame.projection * frame.view * vec4<f32>(in.start, 1.0);
     var end = frame.projection * frame.view * vec4<f32>(in.end, 1.0);
 
@@ -101,25 +86,13 @@ fn vs_main(in: Instance, @builtin(vertex_index) vertex_index: u32) -> Interpolat
         clip_space.z = 0.0;
     }
 
-    // I don't think this is doing what I think it's doing.
-    // OPTIMIZE: do this properly.
-    let dist_to_camera = 0.0;
-
     var out: Interpolator;
     out.position = clip_space;
     out.color = in.color;
-    out.dist_to_camera = dist_to_camera;
-    out.start = start.xy;
-    out.end = end.xy;
     return out;
 }
 
 @fragment
 fn fs_main(in: Interpolator) -> @location(0) vec4<f32> {
-    var out_color = in.color;
-
-    // fade out the color based on the depth
-    // out_color.a *= 1.0 / (1.0 + in.dist_to_camera * in.dist_to_camera * 0.0005);
-
-    return out_color;
+    return in.color;
 }
