@@ -1,39 +1,12 @@
 use std::borrow::Cow;
 use std::mem::size_of;
-use std::sync::Arc;
 
+use bytemuck::{Pod, Zeroable};
+use glam::{Mat4, Vec2};
 use wgpu::util::DeviceExt;
 use wgpu::TextureFormat;
 
-use crate::data::{FrameUniforms, LineInstance};
-use crate::shaders::quad::QuadPipeline;
-use crate::{shaders, Gpu};
-
-/// A target on which things can be rendered.
-#[derive(Clone, Copy, Debug)]
-pub struct RenderTarget<'a> {
-    /// A view into the target texture.
-    ///
-    /// This texture must have the `RENDER_ATTACHMENT` usage.
-    pub(crate) view: &'a wgpu::TextureView,
-}
-
-/// The static configuration of the [`Renderer`].
-///
-/// The configuration options of this struct are not expected to change during the lifetime of the
-/// created renderer.
-///
-/// If any of those need to change, the whole [`Renderer`] needs to be re-created.
-#[derive(Clone, Debug)]
-pub struct RendererConfig<'a> {
-    /// The format of the output image of the renderer.
-    ///
-    /// Providing a [`RenderTarget`] that has an output format different from this one will likely
-    /// result in a panic.
-    pub output_format: TextureFormat,
-    /// The texture atlas to use initially.
-    pub texture_atlas: TextureAtlasConfig<'a>,
-}
+use crate::Gpu;
 
 /// Information about a texture atlas to be created.
 #[derive(Clone, Debug)]
@@ -66,128 +39,81 @@ impl<'a> TextureAtlasConfig<'a> {
     }
 }
 
-/// Contains the state required to render things using GPU resources.
-pub struct Renderer {
-    /// A reference to the GPU.
-    gpu: Arc<Gpu>,
-
-    /// A view into the depth buffer texture.
-    depth_buffer: wgpu::TextureView,
-
-    /// The buffer responsible for storing an instance of [`FrameUniforms`].
-    frame_uniforms_buffer: wgpu::Buffer,
-    /// A bind group that includes `frame_uniforms_buffer`.
-    frame_uniforms_bind_group: wgpu::BindGroup,
-
-    /// The sampler responsible for sampling pixels from the texture atlas.
-    pixel_sampler: wgpu::Sampler,
-
-    /// The texture atlas bind group layout, used to create the `texture_atlas_bind_group`.
-    texture_atlas_layout: wgpu::BindGroupLayout,
-    /// The bind group responsible for using the `texture_atlas`.
-    texture_atlas_bind_group: wgpu::BindGroup,
-
-    /// The pipeline responsible for the skybox.
-    ///
-    /// More information in [`shaders::skybox::create_shader`].
-    skybox_pipeline: wgpu::RenderPipeline,
-
-    /// The pipeline responsible for rendering lines.
-    line_pipeline: wgpu::RenderPipeline,
-    /// The buffer responsible for storing the line instances.
-    line_instances: wgpu::Buffer,
-
-    /// The pipeline responsible for rendering lines.
-    quad_pipeline: QuadPipeline,
+// OPTIMIZE: Figure out which of those fields we really need.
+/// The uniform data that is uploaded to the GPU once per frame.
+#[derive(Debug, Default, Clone, Copy, Zeroable, Pod)]
+#[repr(C)]
+pub struct FrameUniforms {
+    /// Converts view-space coordinates to clip-space coordinates.
+    pub projection: Mat4,
+    /// The inverse of `projection`.
+    pub inverse_projection: Mat4,
+    /// Converts world-space coordinates to view-space coordinates.
+    pub view: Mat4,
+    /// The inverse of `view`.
+    pub inverse_view: Mat4,
+    /// The resolution of the render target.
+    pub resolution: Vec2,
+    /// Some additional padding for the struct.
+    pub _padding: [u32; 2],
 }
 
-impl Renderer {
-    /// Creates a new [`Renderer`] instance.
-    pub fn new(gpu: Arc<Gpu>, config: RendererConfig) -> Self {
-        let depth_buffer = create_depth_buffer(&gpu, 1, 1);
-        let frame_uniforms_layout = create_frame_uniforms_layout(&gpu);
-        let (frame_uniforms_buffer, frame_uniforms_bind_group) =
-            create_frame_uniforms_buffer(&gpu, &frame_uniforms_layout);
-        let pixel_sampler = create_pixel_sampler(&gpu);
-        let texture_atlas_layout = create_texture_atlas_layout(&gpu);
+/// Some resources commonly used through the renderer.
+pub struct CommonResources {
+    /// The depth buffer texture.
+    pub depth_buffer: wgpu::TextureView,
+    /// A non-filtering sampler that can be used to sample pixels from a texture.
+    pub pixel_sampler: wgpu::Sampler,
+    /// The bind group layout used to bind the texture atlas to the shaders.
+    pub texture_atlas_layout: wgpu::BindGroupLayout,
+    /// The bind group of the texture atlas (created from the `texture_atlas_layout`).
+    pub texture_atlas_bind_group: wgpu::BindGroup,
+    /// The buffer responsible for storing the frame uniforms.
+    pub frame_uniforms_buffer: wgpu::Buffer,
+    /// The bind group layout used to bind the frame uniforms to the shaders.
+    pub frame_uniforms_layout: wgpu::BindGroupLayout,
+    /// The bind group (created from the `frame_uniforms_layout`) that includes the buffer
+    /// responsible for storing the frame uniforms.
+    pub frame_uniforms_bind_group: wgpu::BindGroup,
+}
+
+impl CommonResources {
+    /// Creates a new [`CommonResources`] instance from the provided GPU.
+    pub fn new(gpu: &Gpu, texture_atlas_config: &TextureAtlasConfig) -> Self {
+        let pixel_sampler = create_pixel_sampler(gpu);
+        let texture_atlas_layout = create_texture_atlas_layout(gpu);
         let texture_atlas_bind_group = create_texture_atlas(
-            &gpu,
+            gpu,
             &texture_atlas_layout,
-            &config.texture_atlas,
+            texture_atlas_config,
             &pixel_sampler,
         );
-        let quad_pipeline = QuadPipeline::new(
-            &gpu,
-            &frame_uniforms_layout,
-            &texture_atlas_layout,
-            config.output_format,
-        );
-        let skybox_pipeline =
-            shaders::skybox::create_shader(&gpu, &frame_uniforms_layout, config.output_format);
-        let line_pipeline =
-            shaders::line::create_shader(&gpu, &frame_uniforms_layout, config.output_format);
-        let line_vertices = create_line_instance_buffer(&gpu);
+        let frame_uniforms_layout = create_frame_uniforms_layout(gpu);
+        let (frame_uniforms_buffer, frame_uniforms_bind_group) =
+            create_frame_uniforms_buffer(gpu, &frame_uniforms_layout);
+        let depth_buffer = create_depth_buffer(gpu, 1, 1);
 
         Self {
-            gpu,
+            pixel_sampler,
+            texture_atlas_layout,
+            texture_atlas_bind_group,
+            frame_uniforms_layout,
+            frame_uniforms_bind_group,
             depth_buffer,
             frame_uniforms_buffer,
-            frame_uniforms_bind_group,
-            texture_atlas_bind_group,
-            texture_atlas_layout,
-            pixel_sampler,
-            quad_pipeline,
-            skybox_pipeline,
-            line_pipeline,
-            line_instances: line_vertices,
         }
     }
 
-    /// Returns a reference to the underlying [`Gpu`] instance.
-    #[inline]
-    pub fn gpu(&self) -> &Arc<Gpu> {
-        &self.gpu
+    /// Updates the texture atlas with the provided configuration.
+    pub fn set_texture_atlas(&mut self, gpu: &Gpu, config: &TextureAtlasConfig) {
+        self.texture_atlas_bind_group =
+            create_texture_atlas(gpu, &self.texture_atlas_layout, config, &self.pixel_sampler);
     }
 
-    /// Resize the resources that this [`Renderer`] is using, targeting a [`RenderTarget`]
-    /// of the provided size.
-    pub fn resize(&mut self, width: u32, height: u32) {
-        self.depth_buffer = create_depth_buffer(&self.gpu, width, height);
+    /// Notifies this [`CommonResources`] that the render target has been resized.
+    pub fn notify_resized(&mut self, gpu: &Gpu, width: u32, height: u32) {
+        self.depth_buffer = create_depth_buffer(gpu, width, height);
     }
-
-    /// Re-creates the texture atlas.
-    pub fn set_texture_atlas(&mut self, config: &TextureAtlasConfig) {
-        self.texture_atlas_bind_group = create_texture_atlas(
-            &self.gpu,
-            &self.texture_atlas_layout,
-            config,
-            &self.pixel_sampler,
-        );
-    }
-}
-
-// Implementation of `Renderer::render`.
-#[path = "render.rs"]
-mod render;
-
-/// Creates a new depth buffer texture.
-fn create_depth_buffer(gpu: &Gpu, width: u32, height: u32) -> wgpu::TextureView {
-    let depth_buffer = gpu.device.create_texture(&wgpu::TextureDescriptor {
-        label: Some("Depth Buffer"),
-        size: wgpu::Extent3d {
-            width,
-            height,
-            depth_or_array_layers: 1,
-        },
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Depth32Float,
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        view_formats: &[],
-    });
-
-    depth_buffer.create_view(&wgpu::TextureViewDescriptor::default())
 }
 
 fn create_frame_uniforms_layout(gpu: &Gpu) -> wgpu::BindGroupLayout {
@@ -318,11 +244,22 @@ fn create_texture_atlas(
     bind_group
 }
 
-fn create_line_instance_buffer(gpu: &Gpu) -> wgpu::Buffer {
-    gpu.device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("Line Instance Buffer"),
-        mapped_at_creation: false,
-        size: 64 * size_of::<LineInstance>() as wgpu::BufferAddress,
-        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-    })
+/// Creates a new depth buffer texture.
+fn create_depth_buffer(gpu: &Gpu, width: u32, height: u32) -> wgpu::TextureView {
+    let depth_buffer = gpu.device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("Depth Buffer"),
+        size: wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Depth32Float,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        view_formats: &[],
+    });
+
+    depth_buffer.create_view(&wgpu::TextureViewDescriptor::default())
 }

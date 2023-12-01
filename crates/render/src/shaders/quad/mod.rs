@@ -1,14 +1,12 @@
 mod instance;
 pub use instance::*;
+use wgpu::util::DeviceExt;
 
 use std::mem::size_of;
 
-use bns_render_preprocessor::preprocess;
-
 use crate::{Gpu, Vertices};
 
-/// The source of the shader, after preprocessing.
-const SOURCE: &str = preprocess!("crates/render/src/shaders/quad/quad.wgsl");
+use super::common::CommonResources;
 
 /// Returns the alignment of [`ChunkUniforms`] for the provided [`Gpu`].
 fn get_chunk_alignment(gpu: &Gpu) -> usize {
@@ -91,7 +89,7 @@ impl<'res> Quads<'res> {
     }
 
     /// Registers a new chunk to be rendered.
-    pub fn add_quad_buffer(
+    pub fn register(
         &mut self,
         chunk: &ChunkUniforms,
         buffer: &'res dyn Vertices<Vertex = QuadInstance>,
@@ -109,12 +107,6 @@ impl<'res> Quads<'res> {
             len,
         });
     }
-}
-
-/// Contains the data that's ready to be rendered by the [`QuadPipeline`].
-pub struct Prepared<'res> {
-    /// The quad instances that are ready to be rendered.
-    buffers: &'res [QuadBuffer<'res>],
 }
 
 /// The rendering pipeline responsible for rendering axis-aligned quad [`Instance`]s.
@@ -142,8 +134,7 @@ impl QuadPipeline {
     /// Creates a new [`QuadPipeline`] instance.
     pub fn new(
         gpu: &Gpu,
-        frame_uniforms_layout: &wgpu::BindGroupLayout,
-        texture_atlas_layout: &wgpu::BindGroupLayout,
+        common_resources: &CommonResources,
         output_format: wgpu::TextureFormat,
     ) -> Self {
         let chunk_align = get_chunk_alignment(gpu);
@@ -151,17 +142,11 @@ impl QuadPipeline {
         let (chunk_uniforms_buffer, chunk_uniforms_bind_group) = create_chunk_uniforms_buffer(
             gpu,
             &chunk_uniforms_layout,
-            false,
             chunk_align as wgpu::BufferAddress * 64,
             chunk_align,
         );
-        let pipeline = create_pipeline(
-            gpu,
-            frame_uniforms_layout,
-            &chunk_uniforms_layout,
-            texture_atlas_layout,
-            output_format,
-        );
+        let pipeline =
+            create_pipeline(gpu, common_resources, &chunk_uniforms_layout, output_format);
 
         Self {
             chunk_uniforms_layout,
@@ -169,44 +154,6 @@ impl QuadPipeline {
             chunk_uniforms_buffer,
             chunk_align,
             pipeline,
-        }
-    }
-
-    /// Prepare the provided quad instances for rendering.
-    pub fn prepare<'res>(&mut self, gpu: &Gpu, quads: &'res Quads<'res>) -> Prepared<'res> {
-        // Write the chunk uniforms to the buffer.
-        if self.chunk_uniforms_buffer.size() < quads.chunks.len() as u64 {
-            (self.chunk_uniforms_buffer, self.chunk_uniforms_bind_group) =
-                create_chunk_uniforms_buffer(
-                    gpu,
-                    &self.chunk_uniforms_layout,
-                    true,
-                    quads.chunks.len() as wgpu::BufferAddress,
-                    self.chunk_align,
-                );
-
-            unsafe {
-                // The buffer is mapped in memory.
-                let mut mapped_range = self.chunk_uniforms_buffer.slice(..).get_mapped_range_mut();
-
-                // SAFETY:
-                //  We created a buffer that's large enough to store the chunk uniforms.
-                std::ptr::copy_nonoverlapping(
-                    quads.chunks.as_ptr(),
-                    mapped_range.as_mut_ptr(),
-                    quads.chunks.len(),
-                );
-            }
-
-            self.chunk_uniforms_buffer.unmap();
-        } else {
-            // The buffer is large enough, but it might not be mapped in memory.
-            gpu.queue
-                .write_buffer(&self.chunk_uniforms_buffer, 0, &quads.chunks);
-        }
-
-        Prepared {
-            buffers: &quads.buffers,
         }
     }
 
@@ -220,9 +167,34 @@ impl QuadPipeline {
     /// 2. `texture_atlas` (bind group 2)
     ///
     /// This function will clobber bind group 1.
-    pub fn render<'res>(&'res mut self, rp: &mut wgpu::RenderPass<'res>, prepared: Prepared<'res>) {
+    pub fn render<'res>(
+        &'res mut self,
+        gpu: &Gpu,
+        rp: &mut wgpu::RenderPass<'res>,
+        quads: &Quads<'res>,
+    ) {
+        if self.chunk_uniforms_buffer.size() < quads.chunks.len() as u64 {
+            self.chunk_uniforms_buffer =
+                gpu.device
+                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        contents: quads.chunks.as_slice(),
+                        label: Some("Chunk Uniforms Buffer"),
+                        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                    });
+
+            self.chunk_uniforms_bind_group = create_chunk_uniforms_bind_group(
+                gpu,
+                &self.chunk_uniforms_layout,
+                &self.chunk_uniforms_buffer,
+                self.chunk_align,
+            );
+        } else {
+            gpu.queue
+                .write_buffer(&self.chunk_uniforms_buffer, 0, &quads.chunks);
+        }
+
         rp.set_pipeline(&self.pipeline);
-        for buf in prepared.buffers {
+        for buf in &quads.buffers {
             rp.set_bind_group(
                 1,
                 &self.chunk_uniforms_bind_group,
@@ -255,46 +227,53 @@ fn create_chunk_uniforms_bind_group_layout(gpu: &Gpu, align: usize) -> wgpu::Bin
 fn create_chunk_uniforms_buffer(
     gpu: &Gpu,
     layout: &wgpu::BindGroupLayout,
-    mapped_at_creation: bool,
     size: wgpu::BufferAddress,
     align: usize,
 ) -> (wgpu::Buffer, wgpu::BindGroup) {
-    let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+    let buf = gpu.device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("Chunk Uniforms Buffer"),
-        mapped_at_creation,
+        mapped_at_creation: false,
         size,
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
     });
 
-    let bind_group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+    let bind_group = create_chunk_uniforms_bind_group(gpu, layout, &buf, align);
+
+    (buf, bind_group)
+}
+
+fn create_chunk_uniforms_bind_group(
+    gpu: &Gpu,
+    layout: &wgpu::BindGroupLayout,
+    buffer: &wgpu::Buffer,
+    align: usize,
+) -> wgpu::BindGroup {
+    gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Chunk Uniforms Bind Group"),
         layout,
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
             resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                buffer: &buffer,
+                buffer,
                 offset: 0,
                 size: wgpu::BufferSize::new(align as wgpu::BufferAddress),
             }),
         }],
-    });
-
-    (buffer, bind_group)
+    })
 }
 
 /// Creates the [`wgpu::RenderPipeline`] responsible for rendering axis-aligned quad instances.
 fn create_pipeline(
     gpu: &Gpu,
-    frame_uniforms_layout: &wgpu::BindGroupLayout,
+    common_resources: &CommonResources,
     chunk_uniforms_layout: &wgpu::BindGroupLayout,
-    texture_atlas_layout: &wgpu::BindGroupLayout,
     output_format: wgpu::TextureFormat,
 ) -> wgpu::RenderPipeline {
     let shader_module = gpu
         .device
         .create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Quad Pipeline Shader Module"),
-            source: wgpu::ShaderSource::Wgsl(SOURCE.into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("quad.wgsl").into()),
         });
 
     let layout = gpu
@@ -302,9 +281,9 @@ fn create_pipeline(
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Quad Pipeline Layout"),
             bind_group_layouts: &[
-                frame_uniforms_layout,
+                &common_resources.frame_uniforms_layout,
                 chunk_uniforms_layout,
-                texture_atlas_layout,
+                &common_resources.texture_atlas_layout,
             ],
             push_constant_ranges: &[],
         });

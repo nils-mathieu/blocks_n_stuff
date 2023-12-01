@@ -207,7 +207,7 @@ impl App {
 
         let view = self.camera.view_matrix();
         let projection = self.camera.projection_matrix();
-        render_data.frame_uniforms(FrameUniforms {
+        render_data.frame = FrameUniforms {
             inverse_projection: projection.inverse(),
             projection,
             inverse_view: view.inverse(),
@@ -217,11 +217,11 @@ impl App {
                 self.surface.config().height as f32,
             ),
             _padding: [0; 2],
-        });
+        };
         chunks_in_frustum(&self.camera, self.render_distance, |chunk_pos, _| {
             if let Some(chunk) = self.world.get_existing_chunk(chunk_pos) {
                 if let Some(buffer) = chunk.geometry.quad_instances() {
-                    render_data.add_quad_instances(
+                    render_data.quads.register(
                         &ChunkUniforms {
                             position: chunk_pos,
                         },
@@ -245,21 +245,21 @@ impl App {
                     for b in -count..=count {
                         let b = b as f32 * S;
 
-                        render_data.gizmos_line(LineInstance {
+                        render_data.lines.push(LineInstance {
                             start: chunk_pos + Vec3::new(bound, a, b),
                             end: chunk_pos + Vec3::new(-bound, a, b),
                             color: OTHER_CHUNK_COLOR,
                             width: 1.0,
                             flags: LineVertexFlags::empty(),
                         });
-                        render_data.gizmos_line(LineInstance {
+                        render_data.lines.push(LineInstance {
                             start: chunk_pos + Vec3::new(a, bound, b),
                             end: chunk_pos + Vec3::new(a, -bound, b),
                             color: OTHER_CHUNK_COLOR,
                             flags: LineVertexFlags::empty(),
                             width: 1.0,
                         });
-                        render_data.gizmos_line(LineInstance {
+                        render_data.lines.push(LineInstance {
                             start: chunk_pos + Vec3::new(a, b, bound),
                             end: chunk_pos + Vec3::new(a, b, -bound),
                             color: OTHER_CHUNK_COLOR,
@@ -269,7 +269,8 @@ impl App {
                     }
                 }
 
-                render_data.gizmos_aabb(
+                add_aabb_lines(
+                    &mut render_data,
                     chunk_pos,
                     chunk_pos + Vec3::splat(S),
                     CURRENT_CHUNK_COLOR,
@@ -281,7 +282,8 @@ impl App {
                 const S: f32 = Chunk::SIDE as f32;
 
                 let chunk_pos = chunk_of(self.camera.position()).as_vec3() * S;
-                render_data.gizmos_aabb(
+                add_aabb_lines(
+                    &mut render_data,
                     chunk_pos,
                     chunk_pos + Vec3::splat(S),
                     CURRENT_CHUNK_COLOR,
@@ -394,4 +396,93 @@ fn random_seed() -> u64 {
     let mut bytes = [0; 8];
     getrandom::getrandom(&mut bytes).unwrap();
     u64::from_ne_bytes(bytes)
+}
+
+/// Adds a new axis-aligned bounding box to the gizmos list.
+pub fn add_aabb_lines(
+    render_data: &mut RenderData,
+    min: Vec3,
+    max: Vec3,
+    color: Vec4,
+    width: f32,
+    flags: LineVertexFlags,
+) {
+    use glam::vec3;
+
+    let base = LineInstance {
+        width,
+        flags,
+        color,
+        start: Vec3::ZERO,
+        end: Vec3::ZERO,
+    };
+
+    // OPTIMZE: make sure that the vector is directly written to memory and not copied
+    // from stack.
+
+    render_data.lines.extend_from_slice(&[
+        // Lower face
+        LineInstance {
+            start: vec3(min.x, min.y, min.z),
+            end: vec3(max.x, min.y, min.z),
+            ..base
+        },
+        LineInstance {
+            start: vec3(max.x, min.y, min.z),
+            end: vec3(max.x, min.y, max.z),
+            ..base
+        },
+        LineInstance {
+            start: vec3(max.x, min.y, max.z),
+            end: vec3(min.x, min.y, max.z),
+            ..base
+        },
+        LineInstance {
+            start: vec3(min.x, min.y, max.z),
+            end: vec3(min.x, min.y, min.z),
+            ..base
+        },
+        // Upper face
+        LineInstance {
+            start: vec3(min.x, max.y, min.z),
+            end: vec3(max.x, max.y, min.z),
+            ..base
+        },
+        LineInstance {
+            start: vec3(max.x, max.y, min.z),
+            end: vec3(max.x, max.y, max.z),
+            ..base
+        },
+        LineInstance {
+            start: vec3(max.x, max.y, max.z),
+            end: vec3(min.x, max.y, max.z),
+            ..base
+        },
+        LineInstance {
+            start: vec3(min.x, max.y, max.z),
+            end: vec3(min.x, max.y, min.z),
+            ..base
+        },
+        // Vertical edges
+        LineInstance {
+            start: vec3(min.x, min.y, min.z),
+            end: vec3(min.x, max.y, min.z),
+            ..base
+        },
+        LineInstance {
+            start: vec3(max.x, min.y, min.z),
+            end: vec3(max.x, max.y, min.z),
+            ..base
+        },
+        LineInstance {
+            start: vec3(max.x, min.y, max.z),
+            end: vec3(max.x, max.y, max.z),
+            ..base
+        },
+        LineInstance {
+            start: vec3(min.x, min.y, max.z),
+            end: vec3(min.x, max.y, max.z),
+            ..base
+        },
+    ]);
 }

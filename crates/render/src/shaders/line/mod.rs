@@ -1,12 +1,66 @@
-use std::mem::size_of;
+use std::mem::{size_of, size_of_val};
 
-use bns_render_preprocessor::preprocess;
+mod instance;
+pub use instance::*;
+use wgpu::util::DeviceExt;
+use wgpu::RenderPass;
 
-use crate::data::LineInstance;
+use super::common::CommonResources;
 use crate::Gpu;
 
+/// Contains the state required to draw lines using GPU resources.
+pub struct LinePipeline {
+    /// The pipeline responsible for rendering lines.
+    pipeline: wgpu::RenderPipeline,
+    /// The buffer responsible for storing the line instances.
+    buffer: wgpu::Buffer,
+}
+
+impl LinePipeline {
+    /// Creates a new [`LinePipeline`] instance.
+    pub fn new(gpu: &Gpu, resources: &CommonResources, output_format: wgpu::TextureFormat) -> Self {
+        let pipeline = create_pipeline(gpu, &resources.frame_uniforms_layout, output_format);
+        let buffer = create_line_instance_buffer(gpu);
+
+        Self { pipeline, buffer }
+    }
+
+    /// Renders the provided lines.
+    ///
+    /// # Remarks
+    ///
+    /// This function expects the bind group 0 to be bound to the frame uniforms.
+    pub fn render<'res>(
+        &'res mut self,
+        gpu: &Gpu,
+        rp: &mut RenderPass<'res>,
+        lines: &[LineInstance],
+    ) {
+        if lines.is_empty() {
+            return;
+        }
+
+        if self.buffer.size() < size_of_val(lines) as u64 {
+            self.buffer = gpu
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    contents: bytemuck::cast_slice(lines),
+                    label: Some("Line Vertices Buffer"),
+                    usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                });
+        } else {
+            gpu.queue
+                .write_buffer(&self.buffer, 0, bytemuck::cast_slice(lines));
+        }
+
+        rp.set_pipeline(&self.pipeline);
+        rp.set_vertex_buffer(0, self.buffer.slice(..));
+        rp.draw(0..4, 0..lines.len() as u32);
+    }
+}
+
 /// Creates the render pipeline that's responsible for drawing lines.
-pub fn create_shader(
+fn create_pipeline(
     gpu: &Gpu,
     frame_uniforms_layout: &wgpu::BindGroupLayout,
     output_format: wgpu::TextureFormat,
@@ -15,9 +69,7 @@ pub fn create_shader(
         .device
         .create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Line Shader Module"),
-            source: wgpu::ShaderSource::Wgsl(
-                preprocess!("crates/render/src/shaders/line.wgsl").into(),
-            ),
+            source: wgpu::ShaderSource::Wgsl(include_str!("line.wgsl").into()),
         });
 
     let pipeline_layout = gpu
@@ -104,4 +156,14 @@ pub fn create_shader(
                 module: &shader_module,
             },
         })
+}
+
+/// Creates a buffer that can be used to store line instances.
+fn create_line_instance_buffer(gpu: &Gpu) -> wgpu::Buffer {
+    gpu.device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("Line Instance Buffer"),
+        mapped_at_creation: false,
+        size: 64 * size_of::<LineInstance>() as wgpu::BufferAddress,
+        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+    })
 }

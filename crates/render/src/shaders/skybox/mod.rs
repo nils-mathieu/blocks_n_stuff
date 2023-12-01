@@ -1,8 +1,26 @@
-use std::borrow::Cow;
-
-use bns_render_preprocessor::preprocess;
-
 use crate::Gpu;
+
+use super::common::CommonResources;
+
+/// A simple render pipeline that renders a shared-based skybox.
+pub struct SkyboxPipeline {
+    /// The pipeline responsible for the skybox.
+    pipeline: wgpu::RenderPipeline,
+}
+
+impl SkyboxPipeline {
+    /// Creates a new [`SkyboxPipeline`] instance.
+    pub fn new(gpu: &Gpu, resources: &CommonResources, output_format: wgpu::TextureFormat) -> Self {
+        let pipeline = create_shader(gpu, resources, output_format);
+        Self { pipeline }
+    }
+
+    /// Renders the skybox.
+    pub fn render<'res>(&'res mut self, _gpu: &Gpu, rp: &mut wgpu::RenderPass<'res>) {
+        rp.set_pipeline(&self.pipeline);
+        rp.draw(0..4, 0..1);
+    }
+}
 
 /// Creates a pipeline that's responsible for rendering the skybox.
 ///
@@ -17,23 +35,21 @@ use crate::Gpu;
 /// frame uniforms.
 pub fn create_shader(
     gpu: &Gpu,
-    frame_uniforms_layout: &wgpu::BindGroupLayout,
+    resources: &CommonResources,
     output_format: wgpu::TextureFormat,
 ) -> wgpu::RenderPipeline {
     let shader_module = gpu
         .device
         .create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Skybox Shader Module"),
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(preprocess!(
-                "crates/render/src/shaders/skybox.wgsl"
-            ))),
+            source: wgpu::ShaderSource::Wgsl(include_str!("skybox.wgsl").into()),
         });
 
     let pipeline_layout = gpu
         .device
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Skybox Pipeline Layout"),
-            bind_group_layouts: &[frame_uniforms_layout],
+            bind_group_layouts: &[&resources.frame_uniforms_layout],
             push_constant_ranges: &[],
         });
 
