@@ -74,6 +74,13 @@ impl FromRng for f32 {
     }
 }
 
+impl<T: FromRng, const N: usize> FromRng for [T; N] {
+    #[inline]
+    fn from_rng(rng: &mut impl Rng) -> Self {
+        std::array::from_fn(move |_| T::from_rng(rng))
+    }
+}
+
 /// A trait for types that can map an input to a (usually continuous) pseudorandom output.
 pub trait Noise<I> {
     /// The output of this noise.

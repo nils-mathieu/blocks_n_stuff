@@ -131,7 +131,7 @@ impl Camera {
     /// The maximum pitch value of the camera.
     pub const MAX_PITCH: f32 = std::f32::consts::FRAC_PI_2 - 0.01;
     /// The amount of speed to add when sprinting.
-    pub const SPRINT_FACTOR: f32 = 4.0;
+    pub const SPRINT_FACTOR: f32 = 16.0;
 
     /// Creates a new [`Camera`] instance.
     pub fn new(pos: Vec3, far: f32) -> Self {

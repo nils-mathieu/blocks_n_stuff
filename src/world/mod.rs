@@ -278,7 +278,7 @@ impl World {
     pub fn new<W: 'static + WorldGenerator>(gpu: Arc<Gpu>, generator: W) -> Self {
         let task_pool = Arc::new(TaskPool::new());
 
-        for _ in 0..4 {
+        for _ in 0..num_cpus::get().saturating_sub(3).max(1) {
             let task_pool = task_pool.clone();
             let mut generator = generator.clone();
             let gpu = gpu.clone();
