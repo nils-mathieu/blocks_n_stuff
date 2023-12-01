@@ -365,6 +365,7 @@ fn load_texture_atlas() -> TextureAtlasConfig<'static> {
     for texture_id in TextureId::all() {
         let path = format!("assets/{}.png", texture_id.file_name());
         let mut image = bns_image::Image::load_png(std::fs::File::open(path).unwrap()).unwrap();
+        image.ensure_srgb();
         image.ensure_rgba();
 
         match &metadata {
