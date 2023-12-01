@@ -30,7 +30,7 @@ struct Interpolator {
     // The index of the texture to use.
     @location(1) @interpolate(flat) tex_index: u32,
     // The normal of the vertex.
-    @location(2) @interpolate(flat) normals: vec3<f32>,
+    @location(2) @interpolate(flat) normal: vec3<f32>,
 }
 
 @vertex
@@ -133,7 +133,7 @@ fn vs_main(
     output.position = frame.projection * frame.view * vec4(world_pos, 1.0);
     output.tex_coords = tex_coords;
     output.tex_index = tex_index;
-    output.normals = NORMALS[face];
+    output.normal = NORMALS[face];
     return output;
 }
 
@@ -142,8 +142,8 @@ var texture_atlas: texture_2d_array<f32>;
 @group(2) @binding(1)
 var texture_atlas_sampler: sampler;
 
-const LIGHT_DIRECTION: vec3<f32> = vec3<f32>(1.73205080757, -1.73205080757, 1.73205080757);
-const LIGHT_INTENCITY: f32 = 0.5;
+const LIGHT_DIRECTION: vec3<f32> = vec3<f32>(1.3, -1.8, 1.5);
+const LIGHT_INTENCITY: f32 = 0.2;
 
 @fragment
 fn fs_main(input: Interpolator) -> @location(0) vec4<f32> {
@@ -153,8 +153,7 @@ fn fs_main(input: Interpolator) -> @location(0) vec4<f32> {
         input.tex_coords,
         input.tex_index,
     );
-
-    let light = (1.0 - LIGHT_INTENCITY) + LIGHT_INTENCITY * max(0.0, dot(input.normals, LIGHT_DIRECTION));
+    let light = (1.0 - LIGHT_INTENCITY) + LIGHT_INTENCITY * max(0.0, dot(input.normal, LIGHT_DIRECTION));
 
     return vec4<f32>(base_color.rgb * light, base_color.a);
 }

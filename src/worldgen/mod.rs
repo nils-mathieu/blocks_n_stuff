@@ -43,12 +43,13 @@ impl WorldGenerator for StandardWorldGenerator {
             let world_pos = pos * Chunk::SIDE + local_pos.to_ivec3();
             let climate = self.shared.climate.sample_climate(world_pos.xz());
 
-            if climate.height == 0 {
-                continue;
-            }
-
             if world_pos.y <= climate.height {
-                *ret.get_block_mut(local_pos) = BlockId::Stone;
+                *ret.get_block_mut(local_pos) = match climate.height {
+                    ..=-16 => BlockId::Gravel,
+                    -15..=2 => BlockId::Sand,
+                    3..=16 => BlockId::Grass,
+                    _ => BlockId::Stone,
+                };
             }
         }
 

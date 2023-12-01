@@ -112,8 +112,8 @@ fn sample_base_humidity(pos: IVec2, noises: &[Simplex2; 6]) -> f32 {
 /// This does not return the final continentalness of the block, only a base value that will be
 /// affected by other factors.
 fn sample_base_continentalness(pos: IVec2, noises: &[Simplex2; 6]) -> f32 {
-    let x = pos.x as f32 / 900.0;
-    let y = pos.y as f32 / 900.0;
+    let x = pos.x as f32 / 1500.0;
+    let y = pos.y as f32 / 1500.0;
 
     let mut ret = 0.0;
     ret += noises[0].sample([x, y]);
@@ -126,12 +126,27 @@ fn sample_base_continentalness(pos: IVec2, noises: &[Simplex2; 6]) -> f32 {
 }
 
 /// Computes the base height value of a block given its continentalness.
-fn compute_height(mut c: f32) -> i32 {
-    // Simulate erosion by flattening the terrain close to a continentalness of 0.
-    if -0.25 < c && c < 0.25 {
-        c *= 4.0;
-        (c * c * 20.0) as i32
+fn compute_height(c: f32) -> i32 {
+    if c < -0.5 {
+        // Deep ocean.
+        remap(c, -1.0, -0.5, -64.0, -16.0) as i32
+    } else if c < 0.0 {
+        // Shallow ocean.
+        remap(c, -0.5, 0.0, -16.0, 0.0) as i32
+    } else if c < 0.25 {
+        // Coast
+        remap(c, 0.0, 0.25, 0.0, 16.0) as i32
+    } else if c < 0.75 {
+        // Plains
+        remap(c, 0.25, 0.75, 16.0, 32.0) as i32
     } else {
-        0
+        // Mountains
+        remap(c, 0.75, 1.0, 32.0, 64.0) as i32
     }
+}
+
+/// Remaps the provided value from the old range to the new range.
+#[inline]
+fn remap(x: f32, old_min: f32, old_max: f32, new_min: f32, new_max: f32) -> f32 {
+    (x - old_min) / (old_max - old_min) * (new_max - new_min) + new_min
 }
