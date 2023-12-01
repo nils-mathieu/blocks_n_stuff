@@ -298,11 +298,20 @@ fn create_pipeline(
             vertex: wgpu::VertexState {
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: size_of::<QuadInstance>() as wgpu::BufferAddress,
-                    attributes: &[wgpu::VertexAttribute {
-                        format: wgpu::VertexFormat::Uint32,
-                        offset: 0,
-                        shader_location: 0,
-                    }],
+                    attributes: &[
+                        // flags
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Uint32,
+                            offset: 0,
+                            shader_location: 0,
+                        },
+                        // texture
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Uint32,
+                            offset: 4,
+                            shader_location: 1,
+                        },
+                    ],
                     step_mode: wgpu::VertexStepMode::Instance,
                 }],
                 entry_point: "vs_main",

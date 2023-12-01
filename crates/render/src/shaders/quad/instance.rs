@@ -2,6 +2,17 @@ use bitflags::bitflags;
 use bytemuck::{Pod, Zeroable};
 use glam::IVec3;
 
+/// A quad instance, as sent to the GPU.
+///
+#[derive(Debug, Clone, Copy, Zeroable, Pod)]
+#[repr(C)]
+pub struct QuadInstance {
+    /// Some flags associated with this instance.
+    pub flags: QuadFlags,
+    /// The index of the texture to use for this quad.
+    pub texture: u32,
+}
+
 bitflags! {
     /// Some flags that are stored in a [`QuadInstance`] to describe it.
     ///
@@ -18,7 +29,7 @@ bitflags! {
     /// | 7-11  | `x`        | The local X position of the quad. |
     /// | 12-16 | `y`        | The local Y position of the quad. |
     /// | 17-21 | `z`        | The local Z position of the quad. |
-    /// | 22-31 | `texture`  | The index of the quad's texture.  |
+    /// | 22-24 | `offset`   | The offset of the block.          |
     ///
     /// - `facing` can be one of the following values:
     ///
@@ -41,11 +52,13 @@ bitflags! {
     /// - `x`, `y`, and `z` are the local position of the quad. They are stored as 5-bit unsigned
     ///   integers, which means that they can range from 0 to 31.
     ///
-    /// - `texture` is the index of the quad's texture. It is stored as a 10-bit unsigned integer,
-    ///   which means that it can range from 0 to 1023.
+    /// - `offset` is an offset applied to the face, by increments of 1/8th of a block. The offset
+    ///   is in the direction opposite to the face's normal. For example, a face facing the
+    ///   positive X axis with an offset of 1 will be pushed back by 1/8th of a block along the
+    ///   negative X axis.
     #[derive(Debug, Clone, Copy)]
     #[repr(transparent)]
-    pub struct QuadInstance: u32 {
+    pub struct QuadFlags: u32 {
         /// Indicates that the quad is facing the positive X axis.
         const X = 0b000;
         /// Indicates that the quad is facing the negative X axis.
@@ -89,14 +102,31 @@ bitflags! {
         /// The bits that are used to store the index of the voxel within its chunk.
         const CHUNK_INDEX_MASK = Self::X_MASK.bits() | Self::Y_MASK.bits() | Self::Z_MASK.bits();
 
-        /// The bits that are used to store the `texture` field.
+        /// The quad is not offset from its original position.
+        const OFFSET_0 = 0b000 << 22;
+        /// The quad is pushed back 1/8th of a block.
+        const OFFSET_1 = 0b001 << 22;
+        /// The quad is pushed back 2/8th of a block.
+        const OFFSET_2 = 0b010 << 22;
+        /// The quad is pushed back 3/8th of a block.
+        const OFFSET_3 = 0b011 << 22;
+        /// The quad is pushed back 4/8th of a block.
+        const OFFSET_4 = 0b100 << 22;
+        /// The quad is pushed back 5/8th of a block.
+        const OFFSET_5 = 0b101 << 22;
+        /// The quad is pushed back 6/8th of a block.
+        const OFFSET_6 = 0b110 << 22;
+        /// The quad is pushed back 7/8th of a block.
+        const OFFSET_7 = 0b111 << 22;
+
+        /// The bits that are used to store the offset of the quad.
         ///
-        /// This constant represents the value `1023`.
-        const TEXTURE_MASK = 0b1111111111 << 22;
+        /// This constant value represents the value 7.
+        const OFFSET_MASK = 0b111 << 22;
     }
 }
 
-impl QuadInstance {
+impl QuadFlags {
     /// Creates a new [`QuadInstance`] from the provided local X position.
     ///
     /// # Remarks
@@ -144,25 +174,10 @@ impl QuadInstance {
     pub fn from_chunk_index(index: usize) -> Self {
         Self::from_bits_retain((index as u32) << 7)
     }
-
-    /// The maximum number of textures that can be represented by a [`QuadInstance`].
-    pub const MAX_TEXTURES: u32 = 1024;
-
-    /// Creates a new [`QuadInstance`] from the provided texture index.
-    ///
-    /// # Remarks
-    ///
-    /// This function may return an invalid value if the provided texture index is larger
-    /// than [`QuadInstance::MAX_TEXTURES`].
-    #[inline]
-    #[track_caller]
-    pub fn from_texture(texture: u32) -> Self {
-        Self::from_bits_retain(texture << 22)
-    }
 }
 
-unsafe impl Zeroable for QuadInstance {}
-unsafe impl Pod for QuadInstance {}
+unsafe impl Zeroable for QuadFlags {}
+unsafe impl Pod for QuadFlags {}
 
 /// Contains information about a chunk.
 ///

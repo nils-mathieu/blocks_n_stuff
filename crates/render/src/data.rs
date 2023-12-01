@@ -3,7 +3,7 @@ use crate::Gpu;
 
 pub use crate::shaders::common::FrameUniforms;
 pub use crate::shaders::line::{LineInstance, LineVertexFlags};
-pub use crate::shaders::quad::{ChunkUniforms, QuadInstance};
+pub use crate::shaders::quad::{ChunkUniforms, QuadFlags, QuadInstance};
 
 /// The data required to render a frame.
 pub struct RenderData<'res> {
