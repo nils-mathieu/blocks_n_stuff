@@ -29,6 +29,8 @@ struct Interpolator {
     @location(0) tex_coords: vec2<f32>,
     // The index of the texture to use.
     @location(1) @interpolate(flat) tex_index: u32,
+    // The normal of the vertex.
+    @location(2) @interpolate(flat) normals: vec3<f32>,
 }
 
 @vertex
@@ -74,6 +76,15 @@ fn vs_main(
         vec2(0.0, 0.0),
         vec2(1.0, 1.0),
         vec2(1.0, 0.0),
+    );
+
+    var NORMALS: array<vec3<f32>, 6> = array(
+        vec3(1.0, 0.0, 0.0),
+        vec3(-1.0, 0.0, 0.0),
+        vec3(0.0, 1.0, 0.0),
+        vec3(0.0, -1.0, 0.0),
+        vec3(0.0, 0.0, 1.0),
+        vec3(0.0, 0.0, -1.0),
     );
 
     // OPTIMIZE: not really an optimization but it would be nice to use constants here.
@@ -122,6 +133,7 @@ fn vs_main(
     output.position = frame.projection * frame.view * vec4(world_pos, 1.0);
     output.tex_coords = tex_coords;
     output.tex_index = tex_index;
+    output.normals = NORMALS[face];
     return output;
 }
 
@@ -130,12 +142,19 @@ var texture_atlas: texture_2d_array<f32>;
 @group(2) @binding(1)
 var texture_atlas_sampler: sampler;
 
+const LIGHT_DIRECTION: vec3<f32> = vec3<f32>(1.73205080757, -1.73205080757, 1.73205080757);
+const LIGHT_INTENCITY: f32 = 0.5;
+
 @fragment
 fn fs_main(input: Interpolator) -> @location(0) vec4<f32> {
-    return textureSample(
+    let base_color = textureSample(
         texture_atlas,
         texture_atlas_sampler,
         input.tex_coords,
         input.tex_index,
     );
+
+    let light = (1.0 - LIGHT_INTENCITY) + LIGHT_INTENCITY * max(0.0, dot(input.normals, LIGHT_DIRECTION));
+
+    return vec4<f32>(base_color.rgb * light, base_color.a);
 }
