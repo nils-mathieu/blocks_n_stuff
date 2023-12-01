@@ -5,7 +5,7 @@
 - [ ] Right now, we're leaking memory. The world never unloads the chunks it doesn't need anymore.
 - [ ] Chunk do not seem to actually load using the requested priority. Close chunks sometimes
       appear after far chunks.
-- [ ] Update package to optimize dependencies & not the current package.
+- [x] Update package to optimize dependencies & not the current package.
 - [ ] The chunk building algorithm seems to be missing chunk corners.
 
 # Other
@@ -23,6 +23,7 @@
   - [x] Skybox.
   - [x] Reloadable texture atlas.
   - [ ] Ambiant Occlusion
+  - [ ] Distance fog.
   - [ ] Text rendering.
   - [ ] Debug UI.
 - [ ] Basic gameplay.
@@ -33,6 +34,7 @@
   - [ ] Dynamic lighting.
   - [ ] Shadows.
   - [ ] Animated water.
+  - [ ] Ambiant particles.
 - [ ] Advanced gameplay.
   - [ ] Multiplayer.
   - [ ] Monsters AI.

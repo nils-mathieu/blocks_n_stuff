@@ -14,7 +14,12 @@ pub struct ChunkGeometry {
     ///
     /// When `None`, the vertex buffer has not been created, either because the chunk was never
     /// built, or because it is empty.
-    quads: Option<DynamicVertexBuffer<QuadInstance>>,
+    opaque_quads: Option<DynamicVertexBuffer<QuadInstance>>,
+    /// The quad instances of the chunk.
+    ///
+    /// When `None`, the vertex buffer has not been created, either because the chunk was never
+    /// built, or because it is empty.
+    transparent_quads: Option<DynamicVertexBuffer<QuadInstance>>,
 }
 
 impl ChunkGeometry {
@@ -22,13 +27,28 @@ impl ChunkGeometry {
     /// empty.)
     #[inline]
     pub fn new() -> Self {
-        Self { quads: None }
+        Self {
+            opaque_quads: None,
+            transparent_quads: None,
+        }
+    }
+
+    /// Returns whether the chunk contains no geometry.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.opaque_quads.is_none() && self.transparent_quads.is_none()
     }
 
     /// Returns the quad instances of the chunk, if any.
     #[inline]
-    pub fn quad_instances(&self) -> Option<&DynamicVertexBuffer<QuadInstance>> {
-        self.quads.as_ref()
+    pub fn opaque_quad_instances(&self) -> Option<&DynamicVertexBuffer<QuadInstance>> {
+        self.opaque_quads.as_ref()
+    }
+
+    /// Returns the quad instances of the chunk, if any.
+    #[inline]
+    pub fn transparent_quad_instances(&self) -> Option<&DynamicVertexBuffer<QuadInstance>> {
+        self.transparent_quads.as_ref()
     }
 }
 
@@ -37,7 +57,8 @@ impl ChunkGeometry {
 /// This mostly includes temporary buffers.
 pub struct ChunkBuildContext {
     gpu: Arc<Gpu>,
-    quads: Vec<QuadInstance>,
+    opaque_quads: Vec<QuadInstance>,
+    transparent_quads: Vec<QuadInstance>,
 }
 
 impl ChunkBuildContext {
@@ -45,7 +66,8 @@ impl ChunkBuildContext {
     pub fn new(gpu: Arc<Gpu>) -> Self {
         Self {
             gpu,
-            quads: Vec::new(),
+            opaque_quads: Vec::new(),
+            transparent_quads: Vec::new(),
         }
     }
 
@@ -54,7 +76,8 @@ impl ChunkBuildContext {
     /// This allows to reuse the same context for multiple chunks to save on allocations.
     #[inline]
     pub fn reset(&mut self) {
-        self.quads.clear();
+        self.opaque_quads.clear();
+        self.transparent_quads.clear();
     }
 
     /// Builds the inner geometry of the provided chunk based on its content.
@@ -244,13 +267,21 @@ impl ChunkBuildContext {
     ///
     /// The old geometry of the chunk is kept!
     pub fn append_to(&self, geometry: &mut ChunkGeometry) {
-        if !self.quads.is_empty() {
+        if !self.opaque_quads.is_empty() {
             geometry
-                .quads
+                .opaque_quads
                 .get_or_insert_with(|| {
-                    DynamicVertexBuffer::new(self.gpu.clone(), self.quads.len() as u32)
+                    DynamicVertexBuffer::new(self.gpu.clone(), self.opaque_quads.len() as u32)
                 })
-                .extend(&self.quads);
+                .extend(&self.opaque_quads);
+        }
+        if !self.transparent_quads.is_empty() {
+            geometry
+                .transparent_quads
+                .get_or_insert_with(|| {
+                    DynamicVertexBuffer::new(self.gpu.clone(), self.transparent_quads.len() as u32)
+                })
+                .extend(&self.transparent_quads);
         }
     }
 }
@@ -380,41 +411,46 @@ fn build_chunk_boundary(
 fn build_voxel(pos: LocalPos, block: BlockId, culled: CulledFaces, ctx: &mut ChunkBuildContext) {
     let base_flags = QuadFlags::from_chunk_index(pos.index());
 
+    let buffer = match block.info().visibility {
+        BlockVisibility::SemiOpaque | BlockVisibility::Opaque => &mut ctx.opaque_quads,
+        BlockVisibility::Invisible | BlockVisibility::Transparent => &mut ctx.transparent_quads,
+    };
+
     match block.info().appearance {
         BlockAppearance::Invisible => (),
         BlockAppearance::Regular { top, bottom, side } => {
             if !culled.contains(CulledFaces::X) {
-                ctx.quads.push(QuadInstance {
+                buffer.push(QuadInstance {
                     flags: base_flags | QuadFlags::X,
                     texture: side as u32,
                 });
             }
             if !culled.contains(CulledFaces::NEG_X) {
-                ctx.quads.push(QuadInstance {
+                buffer.push(QuadInstance {
                     flags: base_flags | QuadFlags::NEG_X,
                     texture: side as u32,
                 });
             }
             if !culled.contains(CulledFaces::Y) {
-                ctx.quads.push(QuadInstance {
+                buffer.push(QuadInstance {
                     flags: base_flags | QuadFlags::Y,
                     texture: top as u32,
                 });
             }
             if !culled.contains(CulledFaces::NEG_Y) {
-                ctx.quads.push(QuadInstance {
+                buffer.push(QuadInstance {
                     flags: base_flags | QuadFlags::NEG_Y,
                     texture: bottom as u32,
                 });
             }
             if !culled.contains(CulledFaces::Z) {
-                ctx.quads.push(QuadInstance {
+                buffer.push(QuadInstance {
                     flags: base_flags | QuadFlags::Z,
                     texture: side as u32,
                 });
             }
             if !culled.contains(CulledFaces::NEG_Z) {
-                ctx.quads.push(QuadInstance {
+                buffer.push(QuadInstance {
                     flags: base_flags | QuadFlags::NEG_Z,
                     texture: side as u32,
                 });
@@ -422,7 +458,7 @@ fn build_voxel(pos: LocalPos, block: BlockId, culled: CulledFaces, ctx: &mut Chu
         }
         BlockAppearance::Liquid(surface) => {
             if !culled.contains(CulledFaces::Y) {
-                ctx.quads.push(QuadInstance {
+                buffer.push(QuadInstance {
                     flags: base_flags | QuadFlags::Y | QuadFlags::OFFSET_1,
                     texture: surface as u32,
                 });
@@ -433,10 +469,15 @@ fn build_voxel(pos: LocalPos, block: BlockId, culled: CulledFaces, ctx: &mut Chu
 
 /// Builds a single face of a block.
 fn build_single_face_side(block: BlockId, flags: QuadFlags, ctx: &mut ChunkBuildContext) {
+    let buffer = match block.info().visibility {
+        BlockVisibility::SemiOpaque | BlockVisibility::Opaque => &mut ctx.opaque_quads,
+        BlockVisibility::Invisible | BlockVisibility::Transparent => &mut ctx.transparent_quads,
+    };
+
     match block.info().appearance {
         BlockAppearance::Invisible => (),
         BlockAppearance::Regular { side, .. } => {
-            ctx.quads.push(QuadInstance {
+            buffer.push(QuadInstance {
                 flags,
                 texture: side as u32,
             });
@@ -447,16 +488,21 @@ fn build_single_face_side(block: BlockId, flags: QuadFlags, ctx: &mut ChunkBuild
 
 /// Builds a single face of a block.
 fn build_single_face_top(block: BlockId, flags: QuadFlags, ctx: &mut ChunkBuildContext) {
+    let buffer = match block.info().visibility {
+        BlockVisibility::SemiOpaque | BlockVisibility::Opaque => &mut ctx.opaque_quads,
+        BlockVisibility::Invisible | BlockVisibility::Transparent => &mut ctx.transparent_quads,
+    };
+
     match block.info().appearance {
         BlockAppearance::Invisible => (),
         BlockAppearance::Regular { top, .. } => {
-            ctx.quads.push(QuadInstance {
+            buffer.push(QuadInstance {
                 flags,
                 texture: top as u32,
             });
         }
         BlockAppearance::Liquid(surface) => {
-            ctx.quads.push(QuadInstance {
+            buffer.push(QuadInstance {
                 flags: flags | QuadFlags::OFFSET_1,
                 texture: surface as u32,
             });
@@ -466,9 +512,14 @@ fn build_single_face_top(block: BlockId, flags: QuadFlags, ctx: &mut ChunkBuildC
 
 /// Builds a single face of a block.
 fn build_single_face_bottom(block: BlockId, flags: QuadFlags, ctx: &mut ChunkBuildContext) {
+    let buffer = match block.info().visibility {
+        BlockVisibility::SemiOpaque | BlockVisibility::Opaque => &mut ctx.opaque_quads,
+        BlockVisibility::Invisible | BlockVisibility::Transparent => &mut ctx.transparent_quads,
+    };
+
     match block.info().appearance {
         BlockAppearance::Invisible => (),
-        BlockAppearance::Regular { bottom, .. } => ctx.quads.push(QuadInstance {
+        BlockAppearance::Regular { bottom, .. } => buffer.push(QuadInstance {
             flags,
             texture: bottom as u32,
         }),

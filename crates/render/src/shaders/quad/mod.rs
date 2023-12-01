@@ -1,12 +1,12 @@
 mod instance;
 pub use instance::*;
+
 use wgpu::util::DeviceExt;
 
 use std::mem::size_of;
 
-use crate::{Gpu, Vertices};
-
 use super::common::CommonResources;
+use crate::{Gpu, Vertices};
 
 /// Returns the alignment of [`ChunkUniforms`] for the provided [`Gpu`].
 fn get_chunk_alignment(gpu: &Gpu) -> usize {
@@ -23,9 +23,7 @@ struct QuadBuffer<'res> {
     /// This is the offset within the chunk uniforms buffer to use when setting the bind group.
     chunk_idx: u32,
     /// The quad instances of the chunk.
-    ///
-    /// This is expected to be a collection of `len` instances of [`QuadInstance`].
-    vertices: wgpu::BufferSlice<'res>,
+    buffer: wgpu::BufferSlice<'res>,
     /// The number of [`QuadInstance`] instances in the buffer slice.
     len: u32,
 }
@@ -47,7 +45,13 @@ pub struct Quads<'res> {
     /// 64 and 256 bytes).
     chunks: Vec<u8>,
     /// The quad instances that are used by the quads in the buffer.
-    buffers: Vec<QuadBuffer<'res>>,
+    ///
+    /// Those instances must be drawn using the opaque-specialized pipeline.
+    opaque_buffers: Vec<QuadBuffer<'res>>,
+    /// The quad instances that are used by the quads in the buffer.
+    ///
+    /// Those instances must be drawn in order by the transparent-specialized pipeline.
+    transparent_buffers: Vec<QuadBuffer<'res>>,
 }
 
 impl<'res> Quads<'res> {
@@ -56,30 +60,34 @@ impl<'res> Quads<'res> {
         Self {
             chunk_align: get_chunk_alignment(gpu),
             chunks: Vec::new(),
-            buffers: Vec::new(),
+            opaque_buffers: Vec::new(),
+            transparent_buffers: Vec::new(),
         }
     }
 
     /// Resets the [`Quads`] instance with a potentially longer lifetime, allowing it to be used
     /// again without having to reallocate the buffers.
     pub fn reset<'res2>(mut self) -> Quads<'res2> {
-        self.buffers.clear();
+        self.opaque_buffers.clear();
+        self.transparent_buffers.clear();
 
         // SAFETY:
         //  1. The buffer is empty, meaning that no references are actually being transmuted into
         //     a potentially longer lifetime.
         //  2. Two types that only differ in lifetime always have the same memory layout.
-        let buffers = unsafe { std::mem::transmute(self.buffers) };
+        let opaque_buffers = unsafe { std::mem::transmute(self.opaque_buffers) };
+        let transparent_buffers = unsafe { std::mem::transmute(self.transparent_buffers) };
 
         Quads {
             chunk_align: self.chunk_align,
             chunks: self.chunks,
-            buffers,
+            opaque_buffers,
+            transparent_buffers,
         }
     }
 
     /// Registers a [`ChunkUniforms`] instance to be used.
-    fn add_chunk_uniforms(&mut self, chunk: &ChunkUniforms) -> u32 {
+    pub fn reigster_chunk(&mut self, chunk: &ChunkUniforms) -> u32 {
         let index = self.chunks.len() / self.chunk_align;
 
         self.chunks.extend_from_slice(bytemuck::bytes_of(chunk));
@@ -88,23 +96,33 @@ impl<'res> Quads<'res> {
         index as u32
     }
 
-    /// Registers a new chunk to be rendered.
-    pub fn register(
+    /// Registers a new instance buffer that's ready to be rendered by the [`QuadPipeline`].
+    ///
+    /// The instances stored in the provided buffer are assumed to be opaque.
+    pub fn register_opaque_quads(
         &mut self,
-        chunk: &ChunkUniforms,
-        buffer: &'res dyn Vertices<Vertex = QuadInstance>,
+        chunk_idx: u32,
+        quads: &'res dyn Vertices<Vertex = QuadInstance>,
     ) {
-        let len = buffer.len();
-
-        if len == 0 {
-            return;
-        }
-
-        let chunk_idx = self.add_chunk_uniforms(chunk);
-        self.buffers.push(QuadBuffer {
+        self.opaque_buffers.push(QuadBuffer {
             chunk_idx,
-            vertices: buffer.slice(),
-            len,
+            buffer: quads.slice(),
+            len: quads.len(),
+        });
+    }
+
+    /// Registers a new instance buffer that's ready to be rendered by the [`QuadPipeline`].
+    ///
+    /// The instances stored in the provided buffer are assumed to be transparent.
+    pub fn register_transparent_quads(
+        &mut self,
+        chunk_idx: u32,
+        quads: &'res dyn Vertices<Vertex = QuadInstance>,
+    ) {
+        self.transparent_buffers.push(QuadBuffer {
+            chunk_idx,
+            buffer: quads.slice(),
+            len: quads.len(),
         });
     }
 }
@@ -126,17 +144,15 @@ pub struct QuadPipeline {
     /// The bind group that's used to bind `chunk_uniforms_buffer`.
     chunk_uniforms_bind_group: wgpu::BindGroup,
 
-    /// The render pipeline.
-    pipeline: wgpu::RenderPipeline,
+    /// The render pipeline responsible for rendering opaque geometry.
+    opaque_pipeline: wgpu::RenderPipeline,
+    /// The render pipeline responsible for rendering transparent geometry.
+    transparent_pipeline: wgpu::RenderPipeline,
 }
 
 impl QuadPipeline {
     /// Creates a new [`QuadPipeline`] instance.
-    pub fn new(
-        gpu: &Gpu,
-        common_resources: &CommonResources,
-        output_format: wgpu::TextureFormat,
-    ) -> Self {
+    pub fn new(gpu: &Gpu, resources: &CommonResources, output_format: wgpu::TextureFormat) -> Self {
         let chunk_align = get_chunk_alignment(gpu);
         let chunk_uniforms_layout = create_chunk_uniforms_bind_group_layout(gpu, chunk_align);
         let (chunk_uniforms_buffer, chunk_uniforms_bind_group) = create_chunk_uniforms_buffer(
@@ -145,15 +161,30 @@ impl QuadPipeline {
             chunk_align as wgpu::BufferAddress * 64,
             chunk_align,
         );
-        let pipeline =
-            create_pipeline(gpu, common_resources, &chunk_uniforms_layout, output_format);
+        let pipeline_layout = create_pipeline_layout(gpu, resources, &chunk_uniforms_layout);
+        let shader_module = create_shader_module(gpu);
+        let opaque_pipeline = create_pipeline(
+            gpu,
+            &pipeline_layout,
+            &shader_module,
+            output_format,
+            PipelineFlavor::Opaque,
+        );
+        let transparent_pipeline = create_pipeline(
+            gpu,
+            &pipeline_layout,
+            &shader_module,
+            output_format,
+            PipelineFlavor::Transparent,
+        );
 
         Self {
             chunk_uniforms_layout,
             chunk_uniforms_bind_group,
             chunk_uniforms_buffer,
             chunk_align,
-            pipeline,
+            opaque_pipeline,
+            transparent_pipeline,
         }
     }
 
@@ -196,14 +227,25 @@ impl QuadPipeline {
 
         // Draw each instance buffer registered, binding it to the correct chunk uniforms
         // using dynamic offsets.
-        rp.set_pipeline(&self.pipeline);
-        for buf in &quads.buffers {
+        rp.set_pipeline(&self.opaque_pipeline);
+        for buf in &quads.opaque_buffers {
             rp.set_bind_group(
                 1,
                 &self.chunk_uniforms_bind_group,
                 &[buf.chunk_idx * self.chunk_align as u32],
             );
-            rp.set_vertex_buffer(0, buf.vertices);
+            rp.set_vertex_buffer(0, buf.buffer);
+            rp.draw(0..4, 0..buf.len);
+        }
+
+        rp.set_pipeline(&self.transparent_pipeline);
+        for buf in &quads.transparent_buffers {
+            rp.set_bind_group(
+                1,
+                &self.chunk_uniforms_bind_group,
+                &[buf.chunk_idx * self.chunk_align as u32],
+            );
+            rp.set_vertex_buffer(0, buf.buffer);
             rp.draw(0..4, 0..buf.len);
         }
     }
@@ -265,36 +307,59 @@ fn create_chunk_uniforms_bind_group(
     })
 }
 
-/// Creates the [`wgpu::RenderPipeline`] responsible for rendering axis-aligned quad instances.
-fn create_pipeline(
-    gpu: &Gpu,
-    common_resources: &CommonResources,
-    chunk_uniforms_layout: &wgpu::BindGroupLayout,
-    output_format: wgpu::TextureFormat,
-) -> wgpu::RenderPipeline {
-    let shader_module = gpu
-        .device
-        .create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Quad Pipeline Shader Module"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("quad.wgsl").into()),
-        });
+/// A way of creating a [`wgpu::RenderPipeline`].
+///
+/// This is needed because some of the geometry we're rendering is opaque, and some of it
+/// is transparent.
+///
+/// Transparent geometry has to be rendered after opaque geometry, and transparent geometry
+/// has to be sorted by distance to the camera.
+enum PipelineFlavor {
+    /// The opaque pipeline writes to the depth buffer but does not use blending when writing
+    /// to the color buffer.
+    Opaque,
+    /// The transparent pipeline does not write to the depth buffer, but uses blending
+    /// when writing colors.
+    Transparent,
+}
 
-    let layout = gpu
-        .device
+fn create_pipeline_layout(
+    gpu: &Gpu,
+    resources: &CommonResources,
+    chunk_uniforms_layout: &wgpu::BindGroupLayout,
+) -> wgpu::PipelineLayout {
+    gpu.device
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Quad Pipeline Layout"),
             bind_group_layouts: &[
-                &common_resources.frame_uniforms_layout,
+                &resources.frame_uniforms_layout,
                 chunk_uniforms_layout,
-                &common_resources.texture_atlas_layout,
+                &resources.texture_atlas_layout,
             ],
             push_constant_ranges: &[],
-        });
+        })
+}
 
+fn create_shader_module(gpu: &Gpu) -> wgpu::ShaderModule {
+    gpu.device
+        .create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Quad Pipeline Shader Module"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("quad.wgsl").into()),
+        })
+}
+
+/// Creates the [`wgpu::RenderPipeline`] responsible for rendering axis-aligned quad instances.
+fn create_pipeline(
+    gpu: &Gpu,
+    layout: &wgpu::PipelineLayout,
+    shader_module: &wgpu::ShaderModule,
+    output_format: wgpu::TextureFormat,
+    flavor: PipelineFlavor,
+) -> wgpu::RenderPipeline {
     gpu.device
         .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Quad Pipeline"),
-            layout: Some(&layout),
+            layout: Some(layout),
             vertex: wgpu::VertexState {
                 buffers: &[wgpu::VertexBufferLayout {
                     array_stride: size_of::<QuadInstance>() as wgpu::BufferAddress,
@@ -315,7 +380,7 @@ fn create_pipeline(
                     step_mode: wgpu::VertexStepMode::Instance,
                 }],
                 entry_point: "vs_main",
-                module: &shader_module,
+                module: shader_module,
             },
             primitive: wgpu::PrimitiveState {
                 conservative: false,
@@ -328,9 +393,12 @@ fn create_pipeline(
             },
             fragment: Some(wgpu::FragmentState {
                 entry_point: "fs_main",
-                module: &shader_module,
+                module: shader_module,
                 targets: &[Some(wgpu::ColorTargetState {
-                    blend: Some(wgpu::BlendState::REPLACE),
+                    blend: Some(match flavor {
+                        PipelineFlavor::Opaque => wgpu::BlendState::REPLACE,
+                        PipelineFlavor::Transparent => wgpu::BlendState::ALPHA_BLENDING,
+                    }),
                     format: output_format,
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
@@ -338,7 +406,10 @@ fn create_pipeline(
             depth_stencil: Some(wgpu::DepthStencilState {
                 bias: wgpu::DepthBiasState::default(),
                 depth_compare: wgpu::CompareFunction::LessEqual,
-                depth_write_enabled: true,
+                depth_write_enabled: match flavor {
+                    PipelineFlavor::Opaque => true,
+                    PipelineFlavor::Transparent => false,
+                },
                 format: crate::DEPTH_FORMAT,
                 stencil: wgpu::StencilState::default(),
             }),

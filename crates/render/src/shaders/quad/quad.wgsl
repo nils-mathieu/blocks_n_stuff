@@ -156,6 +156,13 @@ fn fs_main(input: Interpolator) -> @location(0) vec4<f32> {
         input.tex_coords,
         input.tex_index,
     );
+
+    // This is important for semi-opaque blocks. Their transparent parts
+    // must not be written to the depth buffer.
+    if base_color.a == 0.0 {
+        discard;
+    }
+
     let light = (1.0 - LIGHT_INTENCITY) + LIGHT_INTENCITY * max(0.0, dot(input.normal, LIGHT_DIRECTION));
 
     return vec4<f32>(base_color.rgb * light, base_color.a);

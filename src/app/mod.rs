@@ -227,13 +227,21 @@ impl App {
         };
         chunks_in_frustum(&self.camera, self.render_distance, |chunk_pos, _| {
             if let Some(chunk) = self.world.get_existing_chunk(chunk_pos) {
-                if let Some(buffer) = chunk.geometry.quad_instances() {
-                    render_data.quads.register(
-                        &ChunkUniforms {
-                            position: chunk_pos,
-                        },
-                        buffer,
-                    );
+                if chunk.geometry.is_empty() {
+                    return;
+                }
+
+                let chunk_idx = render_data.quads.reigster_chunk(&ChunkUniforms {
+                    position: chunk_pos,
+                });
+
+                if let Some(buffer) = chunk.geometry.opaque_quad_instances() {
+                    render_data.quads.register_opaque_quads(chunk_idx, buffer);
+                }
+                if let Some(buffer) = chunk.geometry.transparent_quad_instances() {
+                    render_data
+                        .quads
+                        .register_transparent_quads(chunk_idx, buffer);
                 }
             }
         });
