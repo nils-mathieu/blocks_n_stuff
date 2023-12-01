@@ -108,7 +108,7 @@ fn vs_main(
     let normal = NORMALS[face];
 
     // The position of the vertex relative to the voxel, origin.
-    let vertex_pos = VERTICES[face * 4u + vertex_index] + normal * f32(offset)/8.0;
+    let vertex_pos = VERTICES[face * 4u + vertex_index] - normal * f32(offset)/8.0;
     // The position of the voxel within its chunk.
     let chunk_local = vec3<i32>(i32(local_x), i32(local_y), i32(local_z));
     // The position of the vertex in world-space coordinates.

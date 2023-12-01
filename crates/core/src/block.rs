@@ -28,6 +28,7 @@ pub enum BlockId {
     Sand,
     Sandstone,
     RedSandstone,
+    Water,
 }
 
 // SAFETY:
@@ -134,6 +135,11 @@ impl BlockId {
                 },
                 visibility: BlockVisibility::Opaque,
             },
+            // Water
+            BlockInfo {
+                appearance: BlockAppearance::Liquid(TextureId::Water),
+                visibility: BlockVisibility::Transparent,
+            },
         ];
 
         unsafe { INFOS.get_unchecked(self as usize) }
@@ -165,6 +171,8 @@ pub enum BlockAppearance {
         /// The texture that should be applied to the side faces of the block (X and Y axis).
         side: TextureId,
     },
+    /// The block has the appearance of a liquid.
+    Liquid(TextureId),
 }
 
 impl BlockAppearance {

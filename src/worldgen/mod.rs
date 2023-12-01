@@ -50,6 +50,8 @@ impl WorldGenerator for StandardWorldGenerator {
                     3..=16 => BlockId::Grass,
                     _ => BlockId::Stone,
                 };
+            } else if world_pos.y <= 0 {
+                *ret.get_block_mut(local_pos) = BlockId::Water;
             }
         }
 

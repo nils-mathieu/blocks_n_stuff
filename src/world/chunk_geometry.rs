@@ -283,10 +283,8 @@ impl CulledFaces {
             //
             // The provided coordinates must be in bounds.
             let vis_at = |x: i32, y: i32, z: i32| {
-                chunk
-                    .get_block(LocalPos::from_xyz_unchecked(x, y, z))
-                    .info()
-                    .visibility
+                let block = chunk.get_block(LocalPos::from_xyz_unchecked(x, y, z));
+                (block, block.info().visibility)
             };
 
             // SAFETY:
@@ -322,8 +320,13 @@ impl CulledFaces {
 
 /// Returns whether a face of `me` against `other` should be culled.
 #[inline]
-fn is_face_culled(me: BlockVisibility, other: BlockVisibility) -> bool {
-    me == BlockVisibility::Invisible || other == BlockVisibility::Opaque
+fn is_face_culled(
+    (me_id, me_vis): (BlockId, BlockVisibility),
+    (other_id, other_vis): (BlockId, BlockVisibility),
+) -> bool {
+    me_vis == BlockVisibility::Invisible
+        || other_vis == BlockVisibility::Opaque
+        || (me_id == other_id)
 }
 
 /// Builds the geometry of one of the inner voxels of the provided chunk.
@@ -366,7 +369,7 @@ fn build_chunk_boundary(
             let (pos, other_pos) = coords(a, b);
             let me = data.get_block(pos);
             let other = other.get_block(other_pos);
-            if !is_face_culled(me.info().visibility, other.info().visibility) {
+            if !is_face_culled((me, me.info().visibility), (other, other.info().visibility)) {
                 build(pos)
             }
         }
@@ -417,6 +420,14 @@ fn build_voxel(pos: LocalPos, block: BlockId, culled: CulledFaces, ctx: &mut Chu
                 });
             }
         }
+        BlockAppearance::Liquid(surface) => {
+            if !culled.contains(CulledFaces::Y) {
+                ctx.quads.push(QuadInstance {
+                    flags: base_flags | QuadFlags::Y | QuadFlags::OFFSET_1,
+                    texture: surface as u32,
+                });
+            }
+        }
     }
 }
 
@@ -430,6 +441,7 @@ fn build_single_face_side(block: BlockId, flags: QuadFlags, ctx: &mut ChunkBuild
                 texture: side as u32,
             });
         }
+        BlockAppearance::Liquid(_) => (),
     }
 }
 
@@ -443,6 +455,12 @@ fn build_single_face_top(block: BlockId, flags: QuadFlags, ctx: &mut ChunkBuildC
                 texture: top as u32,
             });
         }
+        BlockAppearance::Liquid(surface) => {
+            ctx.quads.push(QuadInstance {
+                flags: flags | QuadFlags::OFFSET_1,
+                texture: surface as u32,
+            });
+        }
     }
 }
 
@@ -454,6 +472,7 @@ fn build_single_face_bottom(block: BlockId, flags: QuadFlags, ctx: &mut ChunkBui
             flags,
             texture: bottom as u32,
         }),
+        BlockAppearance::Liquid(_) => (),
     }
 }
 
