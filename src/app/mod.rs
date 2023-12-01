@@ -100,8 +100,11 @@ impl App {
             .expect("failed to grab the mouse cursor");
         window.set_cursor_visible(false);
 
-        let mut camera = Camera::default();
-        camera.teleport(Vec3::new(0.0, 32.0, 0.0));
+        const INITIAL_RENDER_DISTANCE: i32 = 16;
+        let camera = Camera::new(
+            Vec3::new(0.0, 64.0, 0.0),
+            render_distance_to_far(INITIAL_RENDER_DISTANCE),
+        );
 
         Self {
             render_data: Some(RenderData::new(renderer.gpu())),
@@ -110,7 +113,7 @@ impl App {
             renderer,
             camera,
             world,
-            render_distance: 16,
+            render_distance: INITIAL_RENDER_DISTANCE,
             debug_chunk_state: DebugChunkState::Hidden,
         }
     }
@@ -159,6 +162,8 @@ impl App {
 
         if event.state.is_pressed() && event.physical_key == KeyCode::ArrowUp {
             self.render_distance += 2;
+            self.camera
+                .set_far(render_distance_to_far(self.render_distance));
             println!("Render distance: {}", self.render_distance);
         }
 
@@ -167,6 +172,8 @@ impl App {
             && self.render_distance > 2
         {
             self.render_distance -= 2;
+            self.camera
+                .set_far(render_distance_to_far(self.render_distance));
             println!("Render distance: {}", self.render_distance);
         }
 
@@ -307,6 +314,11 @@ impl App {
             self.world.request_chunk(chunk_pos, priority);
         });
     }
+}
+
+/// Converts a render distance measured in chunks to a far plane for the camera.
+fn render_distance_to_far(render_distance: i32) -> f32 {
+    (render_distance as f32 + 2.0) * Chunk::SIDE as f32
 }
 
 /// Calls the provided function for every visible chunk from the camera.

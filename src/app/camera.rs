@@ -2,8 +2,93 @@ use glam::{Mat4, Quat, Vec2, Vec3};
 use winit::event::KeyEvent;
 use winit::keyboard::KeyCode;
 
+/// Contains the state required to construct a perspective projection matrix.
+pub struct Perspective {
+    /// The nearest any object may approach the camera.
+    ///
+    /// The near plane is derived from this value and the field of view.
+    nearest_distance: f32,
+
+    /// The aspect ratio of the output display.
+    ///
+    /// This is the width divided by the height.
+    aspect_ratio: f32,
+
+    /// The field of view of the camera, in *radians*.
+    fov_y: f32,
+
+    /// The near plane of the camera.
+    ///
+    /// This value should generally not be modified directly. It is computed from other values.
+    near: f32,
+    /// The far plane of the camera.
+    far: f32,
+}
+
+impl Perspective {
+    /// Creates a new [`Perspective`] instance.
+    pub fn new(nearest_distance: f32, aspect_ratio: f32, fov_y: f32, far: f32) -> Self {
+        let cached_near = compute_near_plane(nearest_distance, aspect_ratio, fov_y);
+
+        Self {
+            nearest_distance,
+            aspect_ratio,
+            fov_y,
+            near: cached_near,
+            far,
+        }
+    }
+
+    /// Returns the vertical field of view of the projection, in radians.
+    #[inline]
+    pub fn fov_y(&self) -> f32 {
+        self.fov_y
+    }
+
+    /// Returns the horizontal field of view of the projection, in radians.
+    #[inline]
+    pub fn fov_x(&self) -> f32 {
+        self.fov_y * self.aspect_ratio
+    }
+
+    /// Returns the near plane of the projection.
+    #[inline]
+    pub fn near(&self) -> f32 {
+        self.near
+    }
+
+    /// Returns the far plane of the projection.
+    #[inline]
+    pub fn far(&self) -> f32 {
+        self.far
+    }
+
+    /// Sets the far plane of the projection.
+    pub fn set_far(&mut self, far: f32) {
+        self.far = far;
+    }
+
+    /// Sets the aspect ratio of the projection.
+    pub fn set_aspect_ratio(&mut self, aspect_ratio: f32) {
+        self.aspect_ratio = aspect_ratio;
+        self.near = compute_near_plane(self.nearest_distance, aspect_ratio, self.fov_y);
+    }
+
+    /// Returns the projection matrix of the camera.
+    #[inline]
+    pub fn projection(&self) -> Mat4 {
+        Mat4::perspective_lh(self.fov_y, self.aspect_ratio, self.near, self.far)
+    }
+}
+
+/// Computes the ideal near plane distance from the provided parameters.
+fn compute_near_plane(nearest_distance: f32, aspect_ratio: f32, fov_y: f32) -> f32 {
+    // nearPlane = nearestApproachToPlayer / sqrt(1 + tan(fov/2)^2 * (aspectRatio^2 + 1)))
+    let tan_fov_y = (fov_y * 0.5).tan();
+    nearest_distance / (1.0 + tan_fov_y * tan_fov_y * (aspect_ratio * aspect_ratio + 1.0)).sqrt()
+}
+
 /// Stores the state of the camera.
-#[derive(Default)]
 pub struct Camera {
     /// Whether the user is currently pressing the "forward" key.
     pressing_forward: bool,
@@ -27,8 +112,9 @@ pub struct Camera {
     yaw: f32,
     /// The pitch of the camera, in radians.
     pitch: f32,
-    /// The aspect ratio of the output display.
-    aspect_ratio: f32,
+
+    /// The projection matrix of the camera.
+    perspective: Perspective,
 }
 
 // OPTIMIZE:
@@ -40,28 +126,40 @@ impl Camera {
     pub const SPEED: f32 = 10.0;
     /// The speed at which the camera flies up/down.
     pub const FLY_SPEED: f32 = 10.0;
-    /// The vertical field of view of the camera, in degrees.
-    pub const FOV_Y: f32 = 60.0;
     /// The sensitivity of the mouse.
     pub const MOUSE_SENSITIVITY: f32 = 0.002;
     /// The maximum pitch value of the camera.
     pub const MAX_PITCH: f32 = std::f32::consts::FRAC_PI_2 - 0.01;
-    /// The distance of the near plane from the camera.
-    pub const NEAR: f32 = 0.1;
-    /// The distance of the far plane from the camera.
-    pub const FAR: f32 = 1000.0;
     /// The amount of speed to add when sprinting.
     pub const SPRINT_FACTOR: f32 = 4.0;
 
-    /// Teleports the camera to the provided position.
+    /// Creates a new [`Camera`] instance.
+    pub fn new(pos: Vec3, far: f32) -> Self {
+        Self {
+            yaw: 0.0,
+            pitch: 0.0,
+            position: pos,
+            pressing_backward: false,
+            pressing_forward: false,
+            pressing_left: false,
+            pressing_right: false,
+            pressing_fly_up: false,
+            pressing_fly_down: false,
+            perspective: Perspective::new(0.1, 1.0, 60f32.to_radians(), far),
+            sprinting: false,
+        }
+    }
+
+    /// Sets the far plane of the camera.
     #[inline]
-    pub fn teleport(&mut self, position: Vec3) {
-        self.position = position;
+    pub fn set_far(&mut self, far: f32) {
+        self.perspective.set_far(far);
     }
 
     /// Notifies the camera that the size of the output display has changed.
     pub fn notify_resized(&mut self, width: u32, height: u32) {
-        self.aspect_ratio = width as f32 / height as f32;
+        let aspect_ratio = width as f32 / height as f32;
+        self.perspective.set_aspect_ratio(aspect_ratio);
     }
 
     /// Notifies the camera that a keyboard event has been received.
@@ -146,12 +244,7 @@ impl Camera {
 
     /// Computes the projection matrix of the camera.
     pub fn projection_matrix(&self) -> Mat4 {
-        Mat4::perspective_lh(
-            Self::FOV_Y.to_radians(),
-            self.aspect_ratio,
-            Self::NEAR,
-            Self::FAR,
-        )
+        self.perspective.projection()
     }
 
     /// Determines whether the provided sphere is in the camera's frustum.
@@ -168,12 +261,12 @@ impl Camera {
         let forward = rotation * Vec3::Z;
         let up = rotation * Vec3::Y;
         let right = rotation * Vec3::X;
-        let half_fov_y = 0.5 * Self::FOV_Y.to_radians();
-        let half_fov_x = self.aspect_ratio * half_fov_y;
+        let half_fov_y = self.perspective.fov_y() * 0.5;
+        let half_fov_x = self.perspective.fov_x() * 0.5;
 
         // near/far planes
         let dist_z = forward.dot(relative_position);
-        if Self::NEAR - radius > dist_z || dist_z > Self::FAR + radius {
+        if self.perspective.near() - radius > dist_z || dist_z > self.perspective.far() + radius {
             return false;
         }
 
