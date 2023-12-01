@@ -6,7 +6,7 @@
 - [ ] Chunk do not seem to actually load using the requested priority. Close chunks sometimes
       appear after far chunks.
 - [x] Update package to optimize dependencies & not the current package.
-- [ ] The chunk building algorithm seems to be missing chunk corners.
+- [x] The chunk building algorithm seems to be missing chunk corners.
 
 # Other
 

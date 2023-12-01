@@ -129,6 +129,17 @@ impl ChunkBuildContext {
             build_block(data, a, coord::Max, coord::Min, self);
             build_block(data, a, coord::Max, coord::Max, self);
         }
+
+        // 4. The eight corner voxels of the chunk are built, minus the faces that are
+        //    culled by the neighboring chunks.
+        build_block(data, coord::Min, coord::Min, coord::Min, self);
+        build_block(data, coord::Min, coord::Min, coord::Max, self);
+        build_block(data, coord::Min, coord::Max, coord::Min, self);
+        build_block(data, coord::Min, coord::Max, coord::Max, self);
+        build_block(data, coord::Max, coord::Min, coord::Min, self);
+        build_block(data, coord::Max, coord::Min, coord::Max, self);
+        build_block(data, coord::Max, coord::Max, coord::Min, self);
+        build_block(data, coord::Max, coord::Max, coord::Max, self);
     }
 
     /// Builds the boundary of the provided chunk based on its content and the content of the
