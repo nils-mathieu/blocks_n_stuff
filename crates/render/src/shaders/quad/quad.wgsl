@@ -1,4 +1,4 @@
-#include <frame_uniforms.wgsl>
+#include <../frame_uniforms.wgsl>
 
 @group(0) @binding(0)
 var<uniform> frame: FrameUniforms;

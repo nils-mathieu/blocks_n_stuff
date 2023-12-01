@@ -5,7 +5,8 @@ use std::sync::Arc;
 use wgpu::util::DeviceExt;
 use wgpu::TextureFormat;
 
-use crate::data::{ChunkUniforms, FrameUniforms, LineInstance};
+use crate::data::{FrameUniforms, LineInstance};
+use crate::shaders::quad::QuadPipeline;
 use crate::{shaders, Gpu};
 
 /// A target on which things can be rendered.
@@ -70,9 +71,6 @@ pub struct Renderer {
     /// A reference to the GPU.
     gpu: Arc<Gpu>,
 
-    /// The alignment of the chunk uniforms buffer.
-    pub(crate) chunk_uniforms_alignment: u32,
-
     /// A view into the depth buffer texture.
     depth_buffer: wgpu::TextureView,
 
@@ -80,13 +78,6 @@ pub struct Renderer {
     frame_uniforms_buffer: wgpu::Buffer,
     /// A bind group that includes `frame_uniforms_buffer`.
     frame_uniforms_bind_group: wgpu::BindGroup,
-
-    /// The layout of `chunk_uniforms_bind_group`.
-    chunk_uniforms_layout: wgpu::BindGroupLayout,
-    /// The buffer responsible for storing an instance of [`ChunkUniforms`].
-    chunk_uniforms_buffer: wgpu::Buffer,
-    /// A bind group that includes the `chunk_uniforms_bind_group`.
-    chunk_uniforms_bind_group: wgpu::BindGroup,
 
     /// The sampler responsible for sampling pixels from the texture atlas.
     pixel_sampler: wgpu::Sampler,
@@ -101,38 +92,22 @@ pub struct Renderer {
     /// More information in [`shaders::skybox::create_shader`].
     skybox_pipeline: wgpu::RenderPipeline,
 
-    /// The pipeline responsible for rendering axis-aligned quads.
-    ///
-    /// More information in [`shaders::quad::create_shader`].
-    quad_pipeline: wgpu::RenderPipeline,
-
     /// The pipeline responsible for rendering lines.
     line_pipeline: wgpu::RenderPipeline,
     /// The buffer responsible for storing the line instances.
     line_instances: wgpu::Buffer,
+
+    /// The pipeline responsible for rendering lines.
+    quad_pipeline: QuadPipeline,
 }
 
 impl Renderer {
     /// Creates a new [`Renderer`] instance.
     pub fn new(gpu: Arc<Gpu>, config: RendererConfig) -> Self {
-        let limits = gpu.device.limits();
-
-        let chunk_uniforms_alignment = wgpu::util::align_to(
-            size_of::<ChunkUniforms>() as u32,
-            limits.min_uniform_buffer_offset_alignment,
-        );
-
         let depth_buffer = create_depth_buffer(&gpu, 1, 1);
         let frame_uniforms_layout = create_frame_uniforms_layout(&gpu);
         let (frame_uniforms_buffer, frame_uniforms_bind_group) =
             create_frame_uniforms_buffer(&gpu, &frame_uniforms_layout);
-        let chunk_uniforms_layout = create_chunks_uniforms_layout(&gpu, chunk_uniforms_alignment);
-        let (chunk_uniforms_buffer, chunk_uniforms_bind_group) = create_chunks_uniforms_buffer(
-            &gpu,
-            &chunk_uniforms_layout,
-            64 * chunk_uniforms_alignment as wgpu::BufferAddress,
-            chunk_uniforms_alignment,
-        );
         let pixel_sampler = create_pixel_sampler(&gpu);
         let texture_atlas_layout = create_texture_atlas_layout(&gpu);
         let texture_atlas_bind_group = create_texture_atlas(
@@ -141,14 +116,12 @@ impl Renderer {
             &config.texture_atlas,
             &pixel_sampler,
         );
-        let pipeline_layout = create_pipeline_layout(
+        let quad_pipeline = QuadPipeline::new(
             &gpu,
             &frame_uniforms_layout,
-            &chunk_uniforms_layout,
             &texture_atlas_layout,
+            config.output_format,
         );
-        let quad_pipeline =
-            shaders::quad::create_shader(&gpu, &pipeline_layout, config.output_format);
         let skybox_pipeline =
             shaders::skybox::create_shader(&gpu, &frame_uniforms_layout, config.output_format);
         let line_pipeline =
@@ -158,12 +131,8 @@ impl Renderer {
         Self {
             gpu,
             depth_buffer,
-            chunk_uniforms_alignment,
             frame_uniforms_buffer,
             frame_uniforms_bind_group,
-            chunk_uniforms_layout,
-            chunk_uniforms_bind_group,
-            chunk_uniforms_buffer,
             texture_atlas_bind_group,
             texture_atlas_layout,
             pixel_sampler,
@@ -261,52 +230,6 @@ fn create_frame_uniforms_buffer(
     (buffer, bind_group)
 }
 
-fn create_chunks_uniforms_layout(gpu: &Gpu, alignment: u32) -> wgpu::BindGroupLayout {
-    gpu.device
-        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Chunks Uniforms Bind Group Layout"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                count: None,
-                ty: wgpu::BindingType::Buffer {
-                    has_dynamic_offset: true,
-                    min_binding_size: wgpu::BufferSize::new(alignment as wgpu::BufferAddress),
-                    ty: wgpu::BufferBindingType::Uniform,
-                },
-                visibility: wgpu::ShaderStages::VERTEX,
-            }],
-        })
-}
-
-fn create_chunks_uniforms_buffer(
-    gpu: &Gpu,
-    layout: &wgpu::BindGroupLayout,
-    total_size: wgpu::BufferAddress,
-    alignment: u32,
-) -> (wgpu::Buffer, wgpu::BindGroup) {
-    let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("Chunks Uniforms Buffer"),
-        mapped_at_creation: false,
-        size: total_size,
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-    });
-
-    let bind_group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("Chunks Uniforms Bind Group"),
-        layout,
-        entries: &[wgpu::BindGroupEntry {
-            binding: 0,
-            resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                buffer: &buffer,
-                offset: 0,
-                size: wgpu::BufferSize::new(alignment as wgpu::BufferAddress),
-            }),
-        }],
-    });
-
-    (buffer, bind_group)
-}
-
 fn create_pixel_sampler(gpu: &Gpu) -> wgpu::Sampler {
     gpu.device.create_sampler(&wgpu::SamplerDescriptor {
         label: Some("Pixel Sampler"),
@@ -393,20 +316,6 @@ fn create_texture_atlas(
     });
 
     bind_group
-}
-
-fn create_pipeline_layout(
-    gpu: &Gpu,
-    frame_uniforms_layout: &wgpu::BindGroupLayout,
-    chunk_uniforms_layout: &wgpu::BindGroupLayout,
-    texture_atlas: &wgpu::BindGroupLayout,
-) -> wgpu::PipelineLayout {
-    gpu.device
-        .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Pipeline Layout"),
-            bind_group_layouts: &[frame_uniforms_layout, chunk_uniforms_layout, texture_atlas],
-            push_constant_ranges: &[],
-        })
 }
 
 fn create_line_instance_buffer(gpu: &Gpu) -> wgpu::Buffer {

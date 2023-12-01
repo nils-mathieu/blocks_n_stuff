@@ -3,9 +3,7 @@
 use std::sync::Arc;
 
 use bns_core::{Chunk, TextureId};
-use bns_render::data::{
-    ChunkUniforms, FrameUniforms, LineInstance, LineVertexFlags, RenderDataStorage,
-};
+use bns_render::data::{ChunkUniforms, FrameUniforms, LineInstance, LineVertexFlags, RenderData};
 use bns_render::{Renderer, RendererConfig, Surface, TextureAtlasConfig, TextureFormat};
 use bns_rng::{DefaultRng, FromRng};
 
@@ -63,7 +61,7 @@ pub struct App {
     /// The renderer contains the resources required to render things using GPU resources.
     renderer: Renderer,
     /// Some storage to efficiently create [`RenderData`](bns_render::data::RenderData) instances.
-    render_data_storage: RenderDataStorage,
+    render_data: Option<RenderData<'static>>,
 
     /// The current state of the camera.
     camera: Camera,
@@ -106,7 +104,7 @@ impl App {
         camera.teleport(Vec3::new(0.0, 32.0, 0.0));
 
         Self {
-            render_data_storage: RenderDataStorage::new(&renderer),
+            render_data: Some(RenderData::new(renderer.gpu())),
             window,
             surface,
             renderer,
@@ -205,7 +203,8 @@ impl App {
             return;
         };
 
-        let mut render_data = self.render_data_storage.build();
+        let mut render_data = self.render_data.take().unwrap();
+
         let view = self.camera.view_matrix();
         let projection = self.camera.projection_matrix();
         render_data.frame_uniforms(FrameUniforms {
@@ -223,7 +222,7 @@ impl App {
             if let Some(chunk) = self.world.get_existing_chunk(chunk_pos) {
                 if let Some(buffer) = chunk.geometry.quad_instances() {
                     render_data.add_quad_instances(
-                        ChunkUniforms {
+                        &ChunkUniforms {
                             position: chunk_pos,
                         },
                         buffer,
@@ -292,8 +291,10 @@ impl App {
             }
         }
 
-        self.renderer.render(frame.target(), render_data);
+        self.renderer.render(frame.target(), &mut render_data);
         frame.present();
+
+        self.render_data = Some(render_data.reset());
     }
 
     /// Advances the state of the application by one tick.

@@ -7,7 +7,7 @@ use crate::{RenderTarget, Renderer};
 
 impl Renderer {
     /// Renders to the provided [`RenderTarget`] using the provided [`RenderData`].
-    pub fn render(&mut self, target: RenderTarget, data: RenderData) {
+    pub fn render(&mut self, target: RenderTarget, data: &mut RenderData) {
         // The first step is to upload the data that we have to the GPU.
         // This data is expected to change on every frame, so we can't just upload it once and be
         // done with it.
@@ -17,34 +17,15 @@ impl Renderer {
             bytemuck::bytes_of(&data.frame_uniforms),
         );
 
-        // The number of chunks visible from the camera is expected to change roughly every frame.
-        // Detecting whether chunks have changed is not trivial anyway, so just re-upload all this
-        // data is probably the best option.
-        // Because this number can change, we need to make sure that the buffer is big enough to
-        // store all the data.
-        if self.chunk_uniforms_buffer.size() < data.chunk_uniforms.len() as u64 {
-            (self.chunk_uniforms_buffer, self.chunk_uniforms_bind_group) =
-                super::create_chunks_uniforms_buffer(
-                    &self.gpu,
-                    &self.chunk_uniforms_layout,
-                    data.chunk_uniforms.len() as wgpu::BufferAddress,
-                    self.chunk_uniforms_alignment,
-                );
-        }
-
-        self.gpu.queue.write_buffer(
-            &self.chunk_uniforms_buffer,
-            0,
-            bytemuck::cast_slice(data.chunk_uniforms),
-        );
+        let prepared_quad = self.quad_pipeline.prepare(&self.gpu, &data.quads);
 
         // Upload the line instances to the GPU.
-        if self.line_instances.size() < size_of_val(&**data.line_instances) as u64 {
+        if self.line_instances.size() < size_of_val(&data.line_instances) as u64 {
             self.line_instances =
                 self.gpu
                     .device
                     .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                        contents: bytemuck::cast_slice(data.line_instances),
+                        contents: bytemuck::cast_slice(&data.line_instances),
                         label: Some("Line Vertices Buffer"),
                         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                     });
@@ -52,7 +33,7 @@ impl Renderer {
             self.gpu.queue.write_buffer(
                 &self.line_instances,
                 0,
-                bytemuck::cast_slice(data.line_instances),
+                bytemuck::cast_slice(&data.line_instances),
             );
         }
 
@@ -95,19 +76,7 @@ impl Renderer {
         rp.set_pipeline(&self.skybox_pipeline);
         rp.draw(0..4, 0..1);
 
-        // The quad pipeline is responsible for rendering axis-aligned quads (the faces of voxels).
-        // Every time a new instance buffer is drawn, the pipeline must be bound to the correct
-        // chunk uniform (using the dynamic offset of the bind group).
-        rp.set_pipeline(&self.quad_pipeline);
-        for quad_vertices in data.quad_vertices.iter() {
-            rp.set_vertex_buffer(0, quad_vertices.vertices);
-            rp.set_bind_group(
-                1,
-                &self.chunk_uniforms_bind_group,
-                &[quad_vertices.chunk_index * self.chunk_uniforms_alignment],
-            );
-            rp.draw(0..4, 0..quad_vertices.len);
-        }
+        self.quad_pipeline.render(&mut rp, prepared_quad);
 
         // The line pipeline is responsible for drawing lines in world-space.
         if !data.line_instances.is_empty() {
@@ -115,7 +84,7 @@ impl Renderer {
             rp.set_vertex_buffer(
                 0,
                 self.line_instances
-                    .slice(..size_of_val(&**data.line_instances) as u64),
+                    .slice(..size_of_val(&data.line_instances) as u64),
             );
             rp.draw(0..4, 0..data.line_instances.len() as u32);
         }

@@ -1,4 +1,5 @@
 #include <frame_uniforms.wgsl>
+#include <utils.wgsl>
 
 @group(0) @binding(0)
 var<uniform> frame: FrameUniforms;
@@ -10,14 +11,6 @@ struct Interpolator {
     @builtin(position) position: vec4<f32>,
     // The direction that the camera is facing in world-space coordinates.
     @location(0) eye_direction: vec3<f32>,
-}
-
-fn extract_rotation_scale(m: mat4x4<f32>) -> mat3x3<f32> {
-    return mat3x3<f32>(
-        vec3<f32>(m[0].xyz),
-        vec3<f32>(m[1].xyz),
-        vec3<f32>(m[2].xyz),
-    );
 }
 
 @vertex

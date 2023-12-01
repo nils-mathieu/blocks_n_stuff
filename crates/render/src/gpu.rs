@@ -7,6 +7,9 @@ use thread_local::ThreadLocal;
 /// Specifically, this handle can be used to create new GPU resources and to submit commands to
 /// the GPU, such as transfer commands to copy data from the CPU to the GPU.
 pub struct Gpu {
+    /// The limits that have been imposed on the GPU.
+    pub(crate) limits: wgpu::Limits,
+
     /// The device that is used to communicate with the GPU.
     ///
     /// This is the actual open connection to the GPU. When this is dropped, the connection
@@ -27,6 +30,7 @@ impl Gpu {
     /// Creates a new [`Gpu`] instance.
     pub(crate) fn new(device: wgpu::Device, queue: wgpu::Queue) -> Self {
         Self {
+            limits: device.limits(),
             device,
             queue,
             temp_command_encoders: ThreadLocal::new(),

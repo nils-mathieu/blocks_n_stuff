@@ -1,4 +1,5 @@
 #include <frame_uniforms.wgsl>
+#include <util.wgsl>
 
 @group(0) @binding(0)
 var<uniform> frame: FrameUniforms;
@@ -33,15 +34,6 @@ struct Interpolator {
 
 // This flag indicates that the line should be drawn above everything else (i.e. depth = 0.0).
 const FLAG_ABOVE: u32 = 1u;
-
-// Extracts the rotation and scale components of a matrix.
-fn extract_rotation_scale(m: mat4x4<f32>) -> mat3x3<f32> {
-    return mat3x3<f32>(
-        vec3<f32>(m[0].xyz),
-        vec3<f32>(m[1].xyz),
-        vec3<f32>(m[2].xyz),
-    );
-}
 
 // Computes the clip-space position of the vertex required to draw a line starting at `start` and
 // finishing at `end`, with a width of `width`.
