@@ -85,7 +85,7 @@ impl<'w> Surface<'w> {
                         min_uniform_buffer_offset_alignment: 64,
                         ..Default::default()
                     },
-                    features: wgpu::Features::POLYGON_MODE_LINE,
+                    features: wgpu::Features::empty(),
                     label: Some("GPU Device"),
                 },
                 None,

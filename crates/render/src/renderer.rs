@@ -5,7 +5,7 @@ use std::sync::Arc;
 use wgpu::util::DeviceExt;
 use wgpu::TextureFormat;
 
-use crate::data::{ChunkUniforms, FrameUniforms, LineVertex};
+use crate::data::{ChunkUniforms, FrameUniforms, LineInstance};
 use crate::{shaders, Gpu};
 
 /// A target on which things can be rendered.
@@ -108,8 +108,8 @@ pub struct Renderer {
 
     /// The pipeline responsible for rendering lines.
     line_pipeline: wgpu::RenderPipeline,
-    /// The buffer responsible for storing the vertices of the lines.
-    line_vertices: wgpu::Buffer,
+    /// The buffer responsible for storing the line instances.
+    line_instances: wgpu::Buffer,
 }
 
 impl Renderer {
@@ -153,7 +153,7 @@ impl Renderer {
             shaders::skybox::create_shader(&gpu, &frame_uniforms_layout, config.output_format);
         let line_pipeline =
             shaders::line::create_shader(&gpu, &frame_uniforms_layout, config.output_format);
-        let line_vertices = create_line_vertices_buffer(&gpu);
+        let line_vertices = create_line_instance_buffer(&gpu);
 
         Self {
             gpu,
@@ -170,7 +170,7 @@ impl Renderer {
             quad_pipeline,
             skybox_pipeline,
             line_pipeline,
-            line_vertices,
+            line_instances: line_vertices,
         }
     }
 
@@ -409,11 +409,11 @@ fn create_pipeline_layout(
         })
 }
 
-fn create_line_vertices_buffer(gpu: &Gpu) -> wgpu::Buffer {
+fn create_line_instance_buffer(gpu: &Gpu) -> wgpu::Buffer {
     gpu.device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("Line Vertices Buffer"),
+        label: Some("Line Instance Buffer"),
         mapped_at_creation: false,
-        size: 64 * size_of::<LineVertex>() as wgpu::BufferAddress,
+        size: 64 * size_of::<LineInstance>() as wgpu::BufferAddress,
         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
     })
 }

@@ -38,21 +38,21 @@ impl Renderer {
             bytemuck::cast_slice(data.chunk_uniforms),
         );
 
-        // Upload the line vertices to the GPU.
-        if self.line_vertices.size() < size_of_val(&**data.line_vertices) as u64 {
-            self.line_vertices =
+        // Upload the line instances to the GPU.
+        if self.line_instances.size() < size_of_val(&**data.line_instances) as u64 {
+            self.line_instances =
                 self.gpu
                     .device
                     .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                        contents: bytemuck::cast_slice(data.line_vertices),
+                        contents: bytemuck::cast_slice(data.line_instances),
                         label: Some("Line Vertices Buffer"),
                         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                     });
         } else {
             self.gpu.queue.write_buffer(
-                &self.line_vertices,
+                &self.line_instances,
                 0,
-                bytemuck::cast_slice(data.line_vertices),
+                bytemuck::cast_slice(data.line_instances),
             );
         }
 
@@ -110,14 +110,14 @@ impl Renderer {
         }
 
         // The line pipeline is responsible for drawing lines in world-space.
-        if !data.line_vertices.is_empty() {
+        if !data.line_instances.is_empty() {
             rp.set_pipeline(&self.line_pipeline);
             rp.set_vertex_buffer(
                 0,
-                self.line_vertices
-                    .slice(..size_of_val(&**data.line_vertices) as u64),
+                self.line_instances
+                    .slice(..size_of_val(&**data.line_instances) as u64),
             );
-            rp.draw(0..data.line_vertices.len() as u32, 0..1)
+            rp.draw(0..4, 0..data.line_instances.len() as u32);
         }
 
         // Now that everything is recorded, we can submit the commands to the GPU.

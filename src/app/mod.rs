@@ -3,11 +3,13 @@
 use std::sync::Arc;
 
 use bns_core::{Chunk, TextureId};
-use bns_render::data::{ChunkUniforms, FrameUniforms, LineVertexFlags, RenderDataStorage};
+use bns_render::data::{
+    ChunkUniforms, FrameUniforms, LineInstance, LineVertexFlags, RenderDataStorage,
+};
 use bns_render::{Renderer, RendererConfig, Surface, TextureAtlasConfig, TextureFormat};
 use bns_rng::{DefaultRng, FromRng};
 
-use glam::{IVec3, Vec3, Vec4};
+use glam::{IVec3, Vec2, Vec3, Vec4};
 
 use winit::event::KeyEvent;
 use winit::event_loop::EventLoopWindowTarget;
@@ -211,6 +213,11 @@ impl App {
             projection,
             inverse_view: view.inverse(),
             view,
+            resolution: Vec2::new(
+                self.surface.config().width as f32,
+                self.surface.config().height as f32,
+            ),
+            _padding: [0; 2],
         });
         chunks_in_frustum(&self.camera, self.render_distance, |chunk_pos, _| {
             if let Some(chunk) = self.world.get_existing_chunk(chunk_pos) {
@@ -239,24 +246,27 @@ impl App {
                     for b in -count..=count {
                         let b = b as f32 * S;
 
-                        render_data.gizmos_line(
-                            chunk_pos + Vec3::new(bound, a, b),
-                            chunk_pos + Vec3::new(-bound, a, b),
-                            OTHER_CHUNK_COLOR,
-                            LineVertexFlags::empty(),
-                        );
-                        render_data.gizmos_line(
-                            chunk_pos + Vec3::new(a, bound, b),
-                            chunk_pos + Vec3::new(a, -bound, b),
-                            OTHER_CHUNK_COLOR,
-                            LineVertexFlags::empty(),
-                        );
-                        render_data.gizmos_line(
-                            chunk_pos + Vec3::new(a, b, bound),
-                            chunk_pos + Vec3::new(a, b, -bound),
-                            OTHER_CHUNK_COLOR,
-                            LineVertexFlags::empty(),
-                        );
+                        render_data.gizmos_line(LineInstance {
+                            start: chunk_pos + Vec3::new(bound, a, b),
+                            end: chunk_pos + Vec3::new(-bound, a, b),
+                            color: OTHER_CHUNK_COLOR,
+                            width: 1.0,
+                            flags: LineVertexFlags::empty(),
+                        });
+                        render_data.gizmos_line(LineInstance {
+                            start: chunk_pos + Vec3::new(a, bound, b),
+                            end: chunk_pos + Vec3::new(a, -bound, b),
+                            color: OTHER_CHUNK_COLOR,
+                            flags: LineVertexFlags::empty(),
+                            width: 1.0,
+                        });
+                        render_data.gizmos_line(LineInstance {
+                            start: chunk_pos + Vec3::new(a, b, bound),
+                            end: chunk_pos + Vec3::new(a, b, -bound),
+                            color: OTHER_CHUNK_COLOR,
+                            flags: LineVertexFlags::empty(),
+                            width: 1.0,
+                        });
                     }
                 }
 
@@ -264,6 +274,7 @@ impl App {
                     chunk_pos,
                     chunk_pos + Vec3::splat(S),
                     CURRENT_CHUNK_COLOR,
+                    3.0,
                     LineVertexFlags::ABOVE,
                 );
             }
@@ -275,6 +286,7 @@ impl App {
                     chunk_pos,
                     chunk_pos + Vec3::splat(S),
                     CURRENT_CHUNK_COLOR,
+                    2.0,
                     LineVertexFlags::ABOVE,
                 );
             }

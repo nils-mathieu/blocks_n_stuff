@@ -1,6 +1,6 @@
 use std::mem::size_of;
 
-use crate::data::LineVertex;
+use crate::data::LineInstance;
 use crate::Gpu;
 
 /// Creates the render pipeline that's responsible for drawing lines.
@@ -47,9 +47,9 @@ pub fn create_shader(
             primitive: wgpu::PrimitiveState {
                 conservative: false,
                 cull_mode: None,
-                polygon_mode: wgpu::PolygonMode::Line,
+                polygon_mode: wgpu::PolygonMode::Fill,
                 front_face: wgpu::FrontFace::Cw,
-                topology: wgpu::PrimitiveTopology::LineList,
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
                 strip_index_format: None,
                 unclipped_depth: false,
             },
@@ -61,23 +61,38 @@ pub fn create_shader(
             multiview: None,
             vertex: wgpu::VertexState {
                 buffers: &[wgpu::VertexBufferLayout {
-                    array_stride: size_of::<LineVertex>() as wgpu::BufferAddress,
-                    step_mode: wgpu::VertexStepMode::Vertex,
+                    array_stride: size_of::<LineInstance>() as wgpu::BufferAddress,
+                    step_mode: wgpu::VertexStepMode::Instance,
                     attributes: &[
+                        // start
                         wgpu::VertexAttribute {
                             format: wgpu::VertexFormat::Float32x3,
                             offset: 0,
                             shader_location: 0,
                         },
+                        // width
                         wgpu::VertexAttribute {
-                            format: wgpu::VertexFormat::Uint32,
+                            format: wgpu::VertexFormat::Float32,
                             offset: 12,
                             shader_location: 1,
                         },
+                        // end
                         wgpu::VertexAttribute {
-                            format: wgpu::VertexFormat::Float32x4,
+                            format: wgpu::VertexFormat::Float32x3,
                             offset: 16,
                             shader_location: 2,
+                        },
+                        // flags
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Uint32,
+                            offset: 28,
+                            shader_location: 3,
+                        },
+                        // color
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Float32x4,
+                            offset: 32,
+                            shader_location: 4,
                         },
                     ],
                 }],
