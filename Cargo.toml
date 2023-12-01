@@ -9,6 +9,13 @@ repository.workspace = true
 license.workspace = true
 publish.workspace = true
 
+# Optimize dependencies, but not the finaly bianry to avoid impacting compile times too much.
+[profile.dev.package.'*']
+opt-level = 3
+
+[profile.dev]
+opt-level = 1
+
 [workspace.package]
 edition = "2021"
 authors = ["Nils Mathieu <contact@nils-mathieu.fr>"]
