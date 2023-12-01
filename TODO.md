@@ -17,7 +17,6 @@
 - [ ] Infinite terrain generation.
   - [ ] Base terrain.
   - [ ] Structures (trees, big rocks, etc).
-  - [ ] Caves.
 - [ ] Basic graphics.
   - [x] Optimized voxel renderer.
   - [x] Skybox.
@@ -35,8 +34,5 @@
   - [ ] Shadows.
   - [ ] Animated water.
   - [ ] Ambiant particles.
-- [ ] Advanced gameplay.
-  - [ ] Multiplayer.
-  - [ ] Monsters AI.
 - [ ] Misc
   - [ ] Screenshots.
