@@ -12,3 +12,7 @@ publish.workspace = true
 bns-core = { path = "../core" }
 bns-worldgen-core = { path = "../worldgen-core" }
 bns-rng = { path = "../rng" }
+
+glam = "0.24"
+bytemuck = { version = "1", features = ["derive"] }
+smallvec = "1"

@@ -15,6 +15,7 @@
 # Features
 
 - [ ] Infinite terrain generation.
+  - [ ] Modular biomes.
   - [ ] Base terrain.
   - [ ] Structures (trees, big rocks, etc).
 - [ ] Basic graphics.
@@ -23,6 +24,7 @@
   - [x] Reloadable texture atlas.
   - [ ] Ambiant occlusion.
   - [ ] Distance fog.
+  - [ ] Underwater fog.
   - [ ] Text rendering.
   - [ ] Debug UI.
   - [ ] Mipmaps.

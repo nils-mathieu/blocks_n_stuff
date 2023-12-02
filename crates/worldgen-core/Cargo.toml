@@ -10,3 +10,5 @@ publish.workspace = true
 
 [dependencies]
 bns-core = { path = "../core" }
+
+glam = "0.24"

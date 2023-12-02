@@ -1,39 +1,51 @@
 //! The standard world generator.
 
 use bns_core::{BlockId, Chunk, ChunkPos, LocalPos};
-use bns_rng::noises::{Mixer, Voronoi};
-use bns_rng::{FromRng, Noise, Rng};
+use bns_rng::{FromRng, Noise};
 use bns_worldgen_core::WorldGenerator;
 
-/// The standard [`WorldGenerator`] implementation.
-#[derive(Clone)]
-pub struct StandardWorldGenerator {
-    voronoi: Voronoi,
-    height: Mixer<2>,
-}
+use glam::Vec3Swizzles;
 
-impl FromRng for StandardWorldGenerator {
-    fn from_rng(rng: &mut impl Rng) -> Self {
-        Self {
-            voronoi: Voronoi::from_rng(rng),
-            height: Mixer::from_rng(rng),
-        }
-    }
+mod biome;
+use biome::BiomeId;
+
+mod biomemap;
+use biomemap::BiomeMap;
+
+/// The standard [`WorldGenerator`] implementation.
+#[derive(Clone, FromRng)]
+pub struct StandardWorldGenerator {
+    /// The map used to determine what biome should generate at a given position.
+    biomemap: BiomeMap,
 }
 
 impl WorldGenerator for StandardWorldGenerator {
     fn generate(&mut self, chunk_pos: ChunkPos) -> Chunk {
         let mut ret = Chunk::empty();
 
-        for local_pos in LocalPos::iter_all() {
-            let world_pos = chunk_pos * Chunk::SIDE + local_pos.to_ivec3();
-            let noise = self
-                .voronoi
-                .sample([world_pos.x as f32 / 32.0, world_pos.z as f32 / 32.0]);
-            let height = self.height.sample([noise[0] as u64, noise[1] as u64]) % 32;
+        if chunk_pos.y != 0 {
+            return ret;
+        }
 
-            if world_pos.y < height as i32 {
-                *ret.get_block_mut(local_pos) = BlockId::Stone;
+        for local_pos in LocalPos::iter_surface(0) {
+            let world_pos = chunk_pos * Chunk::SIDE + local_pos.to_ivec3();
+            match self.biomemap.sample(world_pos.xz()) {
+                BiomeId::Void => (),
+                BiomeId::Plains => {
+                    *ret.get_block_mut(local_pos) = BlockId::Grass;
+                }
+                BiomeId::Desert => {
+                    *ret.get_block_mut(local_pos) = BlockId::Sand;
+                }
+                BiomeId::OakForest => {
+                    *ret.get_block_mut(local_pos) = BlockId::Gravel;
+                }
+                BiomeId::PineForest => {
+                    *ret.get_block_mut(local_pos) = BlockId::Diorite;
+                }
+                BiomeId::DeepOcean | BiomeId::ShallowOcean => {
+                    *ret.get_block_mut(local_pos) = BlockId::Water;
+                }
             }
         }
 

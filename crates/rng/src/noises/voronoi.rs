@@ -4,12 +4,12 @@ use crate::{FromRng, Noise};
 
 /// Implementation of voronoi noise.
 #[derive(Debug, Clone, FromRng)]
-pub struct Voronoi {
+pub struct Voronoi2 {
     x: Mixer<2>,
     y: Mixer<2>,
 }
 
-impl Voronoi {
+impl Voronoi2 {
     /// Computes the position of the point in the provided voronoi cell.
     pub fn voronoi_point(&self, [x, y]: [i32; 2]) -> [f32; 2] {
         [
@@ -19,7 +19,7 @@ impl Voronoi {
     }
 }
 
-impl Noise<[f32; 2]> for Voronoi {
+impl Noise<[f32; 2]> for Voronoi2 {
     type Output = [i32; 2];
 
     fn sample(&self, coords: [f32; 2]) -> Self::Output {

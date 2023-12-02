@@ -2,6 +2,8 @@
 
 use bns_core::{Chunk, ChunkPos};
 
+use glam::IVec3;
+
 /// Describes how to generate new chunks for a world.
 pub trait WorldGenerator: Send + Clone {
     /// Generates a chunk for the provided position.
@@ -15,5 +17,14 @@ pub trait WorldGenerator: Send + Clone {
     /// Prints debug information about the world generator using the provided buffer.
     ///
     /// This information will be displayed on the debug UI in-game.
-    fn debug_info(&self, buf: &mut String);
+    fn debug_info(&self, buf: &mut String) {
+        let _ = buf;
+    }
+
+    /// Prints debug information about a particular position in the world using the provided
+    /// buffer.
+    fn debug_info_pos(&self, buf: &mut String, pos: IVec3) {
+        let _ = buf;
+        let _ = pos;
+    }
 }
