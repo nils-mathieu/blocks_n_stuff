@@ -5,20 +5,17 @@ use std::sync::atomic::Ordering::Relaxed;
 use std::sync::Arc;
 
 use bitflags::bitflags;
-use bns_core::Chunk;
-use bns_render::Gpu;
-use bns_worldgen_core::WorldGenerator;
 use glam::IVec3;
-
 use hashbrown::HashMap;
-
-mod chunk_geometry;
-pub use chunk_geometry::*;
 use parking_lot::{Condvar, Mutex, MutexGuard};
 use smallvec::SmallVec;
 
-/// The position of a chunk.
-pub type ChunkPos = IVec3;
+use bns_core::{Chunk, ChunkPos};
+use bns_render::Gpu;
+use bns_worldgen_core::WorldGenerator;
+
+mod chunk_geometry;
+pub use chunk_geometry::*;
 
 bitflags! {
     /// Some flags associated with a [`LoadedChunk`].

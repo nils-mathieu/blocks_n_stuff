@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use bns_core::{Chunk, TextureId};
+use bns_core::{Chunk, ChunkPos, TextureId};
 use bns_render::data::{ChunkUniforms, FrameUniforms, LineInstance, LineVertexFlags, RenderData};
 use bns_render::{Renderer, RendererConfig, Surface, TextureAtlasConfig, TextureFormat};
 use bns_rng::{DefaultRng, FromRng};
@@ -16,7 +16,7 @@ use winit::keyboard::KeyCode;
 use winit::window::{CursorGrabMode, Fullscreen, Window};
 
 use crate::window::UserEvent;
-use crate::world::{ChunkPos, Priority, World};
+use crate::world::{Priority, World};
 
 mod camera;
 
