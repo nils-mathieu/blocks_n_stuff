@@ -1,6 +1,7 @@
 //! A renderer abstraction that provides access to the GPU in a more convenient way.
 //! The rendering abstraction used by the Blocks 'n Stuff client.
 
+mod color;
 mod shaders;
 
 mod gpu;

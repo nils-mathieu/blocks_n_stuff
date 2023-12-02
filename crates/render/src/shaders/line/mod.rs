@@ -148,7 +148,7 @@ fn create_pipeline(
                         },
                         // color
                         wgpu::VertexAttribute {
-                            format: wgpu::VertexFormat::Float32x4,
+                            format: wgpu::VertexFormat::Uint32,
                             offset: 32,
                             shader_location: 4,
                         },

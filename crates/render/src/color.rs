@@ -1,0 +1,71 @@
+use std::ops::{Deref, DerefMut};
+
+use bytemuck::{Pod, Zeroable};
+
+#[doc(hidden)]
+#[derive(Clone, Copy, PartialEq, Eq, Zeroable, Pod)]
+#[repr(C)]
+pub struct ColorDeref {
+    /// The red component of the color.
+    pub r: u8,
+    /// The green component of the color.
+    pub g: u8,
+    /// The blue component of the color.
+    pub b: u8,
+    /// The alpha component of the color.
+    pub a: u8,
+}
+
+/// A color, represented as four 8-bit unsigned bytes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Zeroable, Pod)]
+#[repr(transparent)]
+pub struct Color(u32);
+
+impl Color {
+    /// (0, 0, 0, 255)
+    pub const BLACK: Self = Self::rgb(0, 0, 0);
+    /// (255, 255, 255, 255)
+    pub const WHITE: Self = Self::rgb(255, 255, 255);
+    /// (255, 0, 0, 255)
+    pub const RED: Self = Self::rgb(255, 0, 0);
+    /// (0, 255, 0, 255)
+    pub const GREEN: Self = Self::rgb(0, 255, 0);
+    /// (0, 0, 255, 255)
+    pub const BLUE: Self = Self::rgb(0, 0, 255);
+    /// (0, 0, 0, 0)
+    pub const TRANSPARENT: Self = Self::rgba(0, 0, 0, 0);
+    /// (255, 255, 0, 255)
+    pub const YELLOW: Self = Self::rgb(255, 255, 0);
+    /// (0, 255, 255, 255)
+    pub const CYAN: Self = Self::rgb(0, 255, 255);
+    /// (255, 0, 255, 255)
+    pub const MAGENTA: Self = Self::rgb(255, 0, 255);
+
+    /// Creates a new [`Color`] from its RGB components.
+    #[inline]
+    pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
+        Self::rgba(r, g, b, 255)
+    }
+
+    /// Creates a new [`Color`] from its RGBA components.
+    #[inline]
+    pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
+        Self(u32::from_be_bytes([r, g, b, a]))
+    }
+}
+
+impl Deref for Color {
+    type Target = ColorDeref;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*(self as *const Self as *const ColorDeref) }
+    }
+}
+
+impl DerefMut for Color {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *(self as *mut Self as *mut ColorDeref) }
+    }
+}

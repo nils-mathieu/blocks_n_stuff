@@ -1,6 +1,7 @@
 use crate::shaders::quad::Quads;
 use crate::Gpu;
 
+pub use crate::color::Color;
 pub use crate::shaders::common::FrameUniforms;
 pub use crate::shaders::line::{LineInstance, LineVertexFlags};
 pub use crate::shaders::quad::{ChunkUniforms, QuadFlags, QuadInstance};

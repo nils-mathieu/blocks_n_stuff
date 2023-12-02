@@ -3,12 +3,14 @@
 use std::sync::Arc;
 
 use bns_core::{Chunk, ChunkPos, TextureId};
-use bns_render::data::{ChunkUniforms, FrameUniforms, LineInstance, LineVertexFlags, RenderData};
+use bns_render::data::{
+    ChunkUniforms, Color, FrameUniforms, LineInstance, LineVertexFlags, RenderData,
+};
 use bns_render::{Renderer, RendererConfig, Surface, TextureAtlasConfig, TextureFormat};
 use bns_rng::{DefaultRng, FromRng};
-
 use bns_worldgen_std::StandardWorldGenerator;
-use glam::{IVec3, Vec2, Vec3, Vec4};
+
+use glam::{IVec3, Vec2, Vec3};
 
 use winit::event::KeyEvent;
 use winit::event_loop::EventLoopWindowTarget;
@@ -246,8 +248,8 @@ impl App {
             }
         });
 
-        const CURRENT_CHUNK_COLOR: Vec4 = Vec4::new(1.0, 0.0, 0.0, 1.0);
-        const OTHER_CHUNK_COLOR: Vec4 = Vec4::new(1.0, 1.0, 0.0, 1.0);
+        const CURRENT_CHUNK_COLOR: Color = Color::RED;
+        const OTHER_CHUNK_COLOR: Color = Color::YELLOW;
         match self.debug_chunk_state {
             DebugChunkState::Hidden => (),
             DebugChunkState::ShowAllChunks => {
@@ -425,7 +427,7 @@ pub fn add_aabb_lines(
     render_data: &mut RenderData,
     min: Vec3,
     max: Vec3,
-    color: Vec4,
+    color: Color,
     width: f32,
     flags: LineVertexFlags,
 ) {

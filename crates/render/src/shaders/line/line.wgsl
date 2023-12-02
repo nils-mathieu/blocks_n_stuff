@@ -22,7 +22,7 @@ struct Instance {
     // Some flags associated with the vertex.
     @location(3) flags: u32,
     // The color associated with the vertex.
-    @location(4) color: vec4<f32>,
+    @location(4) color: u32,
 }
 
 // The position of the vertex after the vertex shader has been run.
@@ -30,7 +30,7 @@ struct Interpolator {
     // The clip-space position of the vertex.
     @builtin(position) position: vec4<f32>,
     // The color of the vertex.
-    @location(0) @interpolate(flat) color: vec4<f32>,
+    @location(0) @interpolate(flat) color: u32,
 }
 
 // This flag indicates that the line should be drawn above everything else (i.e. depth = 0.0).
@@ -92,7 +92,17 @@ fn vs_main(in: Instance, @builtin(vertex_index) vertex_index: u32) -> Interpolat
     return out;
 }
 
+// Unpacks the provided color.
+fn unpack_color(color: u32) -> vec4<f32> {
+    return vec4<f32>(
+        f32((color >> 24u) & 0xFFu) / 255.0,
+        f32((color >> 16u) & 0xFFu) / 255.0,
+        f32((color >> 8u) & 0xFFu) / 255.0,
+        f32(color & 0xFFu) / 255.0,
+    );
+}
+
 @fragment
 fn fs_main(in: Interpolator) -> @location(0) vec4<f32> {
-    return in.color;
+    return unpack_color(in.color);
 }
