@@ -32,6 +32,8 @@ pub enum BlockId {
     Bedrock,
     Daffodil,
     Pebbles,
+    Cobblestone,
+    MossyCobblestone,
 }
 
 // SAFETY:
@@ -157,6 +159,16 @@ impl BlockId {
             BlockInfo {
                 appearance: BlockAppearance::Flat(TextureId::Pebbles),
                 visibility: BlockVisibility::SemiOpaque,
+            },
+            // Cobblestone
+            BlockInfo {
+                appearance: BlockAppearance::uniform(TextureId::Cobblestone),
+                visibility: BlockVisibility::Opaque,
+            },
+            // MossyCobblestone
+            BlockInfo {
+                appearance: BlockAppearance::uniform(TextureId::MossyCobblestone),
+                visibility: BlockVisibility::Opaque,
             },
         ];
 

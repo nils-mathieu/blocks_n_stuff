@@ -37,6 +37,8 @@ pub enum TextureId {
     Bedrock,
     Daffodil,
     Pebbles,
+    Cobblestone,
+    MossyCobblestone,
 }
 
 impl TextureId {
@@ -84,6 +86,8 @@ impl TextureId {
             "bedrock",
             "daffodil",
             "pebbles",
+            "cobblestone",
+            "mossy_cobblestone",
         ];
         unsafe { NAMES.get_unchecked(self as usize) }
     }
