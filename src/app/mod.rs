@@ -76,9 +76,15 @@ pub struct App {
 
     /// The current state of the chunk debug display.
     debug_chunk_state: DebugChunkState,
+
+    /// The next tick at which the world should be cleaned up.
+    next_cleanup: usize,
 }
 
 impl App {
+    /// The next tick at which the world should be cleaned up.
+    pub const CLEANUP_PERIOD: usize = 200;
+
     /// Creates a new [`App`] instance.
     pub fn new(window: Arc<Window>) -> Self {
         let surface = Surface::new(window.clone());
@@ -117,6 +123,7 @@ impl App {
             world,
             render_distance: INITIAL_RENDER_DISTANCE,
             debug_chunk_state: DebugChunkState::Hidden,
+            next_cleanup: Self::CLEANUP_PERIOD,
         }
     }
 
@@ -318,6 +325,16 @@ impl App {
 
     /// Advances the state of the application by one tick.
     pub fn tick(&mut self, _target: &Ctx, dt: f32) {
+        self.next_cleanup -= 1;
+        if self.next_cleanup == 0 {
+            self.world.request_cleanup(
+                chunk_of(self.camera.position()),
+                self.render_distance as u32 + 3,
+                VERTICAL_RENDER_DISTANCE as u32 + 3,
+            );
+            self.next_cleanup = Self::CLEANUP_PERIOD;
+        }
+
         self.camera.tick(dt);
 
         chunks_in_frustum(&self.camera, self.render_distance, |chunk_pos, priority| {

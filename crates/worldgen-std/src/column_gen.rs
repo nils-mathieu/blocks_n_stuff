@@ -331,4 +331,27 @@ impl Columns {
             .or_insert_with(|| Arc::new(ColumnGen::new(pos)))
             .clone()
     }
+
+    /// Hints the collection that some columns are unlikely to be used anymore, and can therefor
+    /// be unloaded.
+    pub fn request_cleanup(&self, center: IVec2, radius: u32) {
+        let mut to_remove = SmallVec::<[IVec2; 16]>::new();
+
+        // Only acquire a read to
+        //  Don't block everyone while we're computing the distances.
+        //  Don't block anything if there's nothing to remove.
+        let guard = self.columns.read();
+
+        for pos in guard.keys() {
+            if pos.distance_squared(center) as u32 > radius * radius {
+                to_remove.push(*pos);
+            }
+        }
+
+        drop(guard);
+
+        let mut guard = self.columns.write();
+        to_remove.iter().for_each(|pos| drop(guard.remove(pos)));
+        guard.shrink_to_fit();
+    }
 }

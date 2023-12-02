@@ -6,7 +6,7 @@ use std::sync::atomic::Ordering::Relaxed;
 use std::sync::Arc;
 
 use bitflags::bitflags;
-use glam::IVec3;
+use glam::{IVec3, Vec3Swizzles};
 use hashbrown::HashMap;
 use parking_lot::{Condvar, Mutex, MutexGuard};
 use smallvec::SmallVec;
@@ -159,6 +159,12 @@ impl TaskPool {
         self.should_stop.load(Relaxed)
     }
 
+    /// Returns a reference to the [`WorldGenerator`] used by the [`TaskPool`].
+    #[inline]
+    pub fn generator(&self) -> &dyn WorldGenerator {
+        &*self.generator
+    }
+
     /// Fetches a new task to be executed.
     ///
     /// This function returns [`None`] if the worker thread should stop.
@@ -304,6 +310,25 @@ impl World {
     #[inline]
     pub fn chunks_in_flight(&self) -> usize {
         self.task_pool.task_count()
+    }
+
+    /// Returns the generator used by the [`World`].
+    #[inline]
+    pub fn generator(&self) -> &dyn WorldGenerator {
+        self.task_pool.generator()
+    }
+
+    /// Hints the [`World`] that the player is currently at the provided position, requesting
+    /// chunks to be loaded around the player.
+    pub fn request_cleanup(&mut self, center: ChunkPos, h_radius: u32, v_radius: u32) {
+        self.generator().request_cleanup(center, h_radius, v_radius);
+
+        self.chunks.retain(|&pos, _| {
+            let hd = pos.xz().distance_squared(center.xz()) as u32;
+            let vd = (pos.y - center.y).unsigned_abs();
+            hd < h_radius * h_radius && vd < v_radius
+        });
+        self.chunks.shrink_to_fit();
     }
 
     /// Returns an existing chunk at the provided position.

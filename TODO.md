@@ -1,19 +1,6 @@
-# Bugs
-
-- [ ] The line renderer seems to be slightly bugged. This is especially visible when the line is
-      huge. This might just be floating point precision errors.
-- [ ] Right now, we're leaking memory. The world never unloads the chunks it doesn't need anymore.
-- [ ] Chunk do not seem to actually load using the requested priority. Close chunks sometimes
-      appear after far chunks.
-- [x] The chunk building algorithm seems to be missing chunk corners.
-
 # Other
 
 - [ ] Add profiling options & display in the debug UI.
-- [x] Update package to optimize dependencies & not the current package.
-- [ ] Add workspace dependencies to avoid having to update every package manually.
-- [x] Use `std::thread::available_parallelism` instead `num_cpus`.
-- [x] Add bedrock.
 - [ ] Target web.
 
 # Features

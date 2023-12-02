@@ -14,17 +14,13 @@ pub trait WorldGenerator: Send + Sync {
     /// should produce the same exact chunk.
     fn generate(&self, pos: ChunkPos) -> Chunk;
 
-    /// Prints debug information about the world generator using the provided buffer.
+    /// Requests the world generator to cleanup any unused memory.
     ///
-    /// This information will be displayed on the debug UI in-game.
-    fn debug_info(&self, buf: &mut String) {
-        let _ = buf;
-    }
+    /// The provided cylinder describes the area that should be kept in memory. Any chunks that
+    /// are outside of this cylinder can be unloaded.
+    fn request_cleanup(&self, center: ChunkPos, h_radius: u32, v_radius: u32);
 
     /// Prints debug information about a particular position in the world using the provided
     /// buffer.
-    fn debug_info_pos(&self, buf: &mut String, pos: IVec3) {
-        let _ = buf;
-        let _ = pos;
-    }
+    fn debug_info(&self, buf: &mut String, pos: IVec3);
 }

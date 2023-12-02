@@ -41,10 +41,17 @@ impl FromRng for GenCtx {
 }
 
 /// The standard [`WorldGenerator`] implementation.
-#[derive(FromRng)]
 pub struct StandardWorldGenerator {
     /// The context required to generate new chunks.
     ctx: GenCtx,
+}
+
+impl FromRng for StandardWorldGenerator {
+    fn from_rng(rng: &mut impl Rng) -> Self {
+        Self {
+            ctx: GenCtx::from_rng(rng),
+        }
+    }
 }
 
 impl WorldGenerator for StandardWorldGenerator {
@@ -71,5 +78,13 @@ impl WorldGenerator for StandardWorldGenerator {
         }
 
         ret
+    }
+
+    fn request_cleanup(&self, center: ChunkPos, h_radius: u32, _v_radius: u32) {
+        self.ctx.columns.request_cleanup(center.xz(), h_radius);
+    }
+
+    fn debug_info(&self, buf: &mut String, pos: glam::IVec3) {
+        let _ = (buf, pos);
     }
 }
