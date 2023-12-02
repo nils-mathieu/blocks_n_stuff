@@ -2,6 +2,7 @@ use std::ops::Index;
 
 use bns_core::{Chunk, ChunkPos};
 use bns_rng::{FromRng, Rng};
+
 use bytemuck::{Contiguous, Zeroable};
 use glam::{IVec2, IVec3};
 

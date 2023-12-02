@@ -14,6 +14,7 @@
 - [ ] Add workspace dependencies to avoid having to update every package manually.
 - [x] Use `std::thread::available_parallelism` instead `num_cpus`.
 - [x] Add bedrock.
+- [ ] Target web.
 
 # Features
 

@@ -63,6 +63,7 @@ impl WorldGenerator for StandardWorldGenerator {
                 .geological_stage(chunk_pos, &col, &self.ctx, &mut ret);
         }
 
+        // Add a layer of bedrock at the bottom of the world.
         if chunk_pos.y == -4 {
             for pos in LocalPos::iter_surface(0) {
                 unsafe { *ret.get_block_mut(pos) = BlockId::Bedrock };
