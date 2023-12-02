@@ -1,9 +1,11 @@
 use std::fmt::Debug;
+use std::mem::MaybeUninit;
+use std::ops::{Index, IndexMut};
 
 use bytemuck::Zeroable;
 use glam::IVec3;
 
-use crate::BlockId;
+use crate::{AppearanceMetadata, BlockId};
 
 const X_MASK: u16 = 0b11111;
 const Y_MASK: u16 = 0b11111 << 5;
@@ -192,12 +194,26 @@ impl Debug for LocalPos {
     }
 }
 
-/// The inner chunk data.
-///
-/// This type is ***huge*** and should basically never be instanciated on the stack.
-#[derive(Zeroable)]
-struct ChunkData {
-    blocks: [BlockId; Chunk::SIZE],
+/// A simple wrapper around a static array that can be indexed with a [`LocalPos`] with
+/// no bound checking.
+#[derive(Clone, Copy, Hash, Zeroable)]
+#[repr(transparent)]
+struct ChunkStore<T>([T; Chunk::SIZE]);
+
+impl<T> Index<LocalPos> for ChunkStore<T> {
+    type Output = T;
+
+    #[inline]
+    fn index(&self, index: LocalPos) -> &Self::Output {
+        unsafe { self.0.get_unchecked(index.index()) }
+    }
+}
+
+impl<T> IndexMut<LocalPos> for ChunkStore<T> {
+    #[inline]
+    fn index_mut(&mut self, index: LocalPos) -> &mut Self::Output {
+        unsafe { self.0.get_unchecked_mut(index.index()) }
+    }
 }
 
 /// Represents the content of a chunk.
@@ -210,11 +226,16 @@ struct ChunkData {
 ///
 /// Those should instead be stored in a separate structure defined in downstream crates.
 pub struct Chunk {
-    /// The inner data of the chunk.
+    /// The inner blocks of the chunk.
+    blocks: Option<Box<ChunkStore<BlockId>>>,
+    /// Metadata about the chunk's appearance.
     ///
-    /// This `Option<T>` is set to [`None`] when the chunk is empty to avoid allocating a huge
-    /// chunk of memory for nothing.
-    data: Option<Box<ChunkData>>,
+    /// # Note
+    ///
+    /// I'm not sure if the `MaybeUninit` really is necessary for soundness as `AppearanceMetadata`
+    /// already is an union with a zero-sized field. But because it's a lang item, rustc might do
+    /// something special with it.
+    appearances: Option<Box<ChunkStore<MaybeUninit<AppearanceMetadata>>>>,
 }
 
 impl Chunk {
@@ -231,15 +252,29 @@ impl Chunk {
     /// Creates a new [`Chunk`] instance with the provided data.
     #[inline]
     pub fn empty() -> Self {
-        Self { data: None }
+        Self {
+            blocks: None,
+            appearances: None,
+        }
     }
 
     /// Returns the block at the provided position.
     #[inline]
     pub fn get_block(&self, pos: LocalPos) -> BlockId {
-        match &self.data {
-            Some(data) => unsafe { *data.blocks.get_unchecked(pos.index()) },
+        match &self.blocks {
+            Some(data) => data[pos],
             None => BlockId::Air,
+        }
+    }
+
+    /// Returns the [`AppearanceMetadata`] of the block at the provided position.
+    pub fn get_appearance(&self, pos: LocalPos) -> AppearanceMetadata {
+        match &self.appearances {
+            // SAFETY:
+            //  An `AppearanceMetadata` instance is always initialized, even if it's because of a
+            //  zero-sized field in the union.
+            Some(data) => unsafe { data[pos].assume_init() },
+            None => AppearanceMetadata { no_metadata: () },
         }
     }
 
@@ -250,16 +285,81 @@ impl Chunk {
     /// This function forces the chunk to allocate its data if it was empty. If you know
     /// that the value you're trying to insert is [`BlockId::Air`], you should skip calling
     /// the function.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it allows the caller to change the block at the provided
+    /// location without updating related metadata.
+    ///
+    /// If the inserted block requires additional metadata, it must be added manually.
     #[inline]
-    pub fn get_block_mut(&mut self, pos: LocalPos) -> &mut BlockId {
-        let data = self.data.get_or_insert_with(bytemuck::zeroed_box);
-        unsafe { data.blocks.get_unchecked_mut(pos.index()) }
+    pub unsafe fn get_block_mut(&mut self, pos: LocalPos) -> &mut BlockId {
+        &mut self.blocks.get_or_insert_with(bytemuck::zeroed_box)[pos]
+    }
+
+    /// Sets the block at the provided position.
+    ///
+    /// # Safety
+    ///
+    /// This function assumes that the inserted block requires no additional metadata to be
+    /// valid.
+    ///
+    /// If the inserted block requires additional metadata, the [`Chunk::get_block_mut`] function
+    /// msut be used directly.
+    ///
+    /// # Panics
+    ///
+    /// In debug builds, this function panics if `block` requires some metadata.
+    #[inline]
+    pub unsafe fn set_block_unchecked(&mut self, pos: LocalPos, block: BlockId) {
+        if block == BlockId::Air {
+            return;
+        }
+
+        debug_assert!(!block.info().appearance.has_metadata());
+
+        *self.get_block_mut(pos) = block;
+    }
+
+    /// Sets a block at the provided position.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if `block` requires some metadata to be complete.
+    #[inline]
+    pub fn set_block(&mut self, pos: LocalPos, block: BlockId) {
+        if block == BlockId::Air {
+            return;
+        }
+
+        assert!(!block.info().appearance.has_metadata());
+
+        unsafe { *self.get_block_mut(pos) = block };
+    }
+
+    /// Returns a mutable reference to the [`AppearanceMetadata`] of the block at the provided
+    /// position.
+    ///
+    /// # Remarks
+    ///
+    /// This function forces the chunk to allocate its data if it was empty. If you know
+    /// that the value you're trying to insert represents no metadata, you should skip calling
+    /// the function.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it allows the caller to change the metadata of an existing
+    /// block without updating the block itself.
+    #[inline]
+    pub unsafe fn get_appearance_mut(&mut self, pos: LocalPos) -> &mut AppearanceMetadata {
+        self.appearances.get_or_insert_with(new_uninit_store)[pos].assume_init_mut()
     }
 
     /// Returns whether the chunk is empty.
+    #[inline]
     pub fn is_empty(&self) -> bool {
-        match self.data.as_ref() {
-            Some(data) => data.blocks.iter().all(|&id| id == BlockId::Air),
+        match self.blocks.as_ref() {
+            Some(data) => data.0.iter().all(|&id| id == BlockId::Air),
             None => true,
         }
     }
@@ -267,3 +367,13 @@ impl Chunk {
 
 /// The 3D position of a chunk in the world.
 pub type ChunkPos = IVec3;
+
+/// Creates a new uninitialized [`ChunkStore`] of `T`s.
+fn new_uninit_store<T>() -> Box<ChunkStore<MaybeUninit<T>>> {
+    let layout = std::alloc::Layout::new::<ChunkStore<MaybeUninit<T>>>();
+    let ptr = unsafe { std::alloc::alloc_zeroed(layout) };
+    if ptr.is_null() {
+        std::alloc::handle_alloc_error(layout);
+    }
+    unsafe { Box::from_raw(ptr as *mut ChunkStore<MaybeUninit<T>>) }
+}

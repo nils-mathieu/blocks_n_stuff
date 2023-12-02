@@ -24,7 +24,6 @@ impl Biome for Desert {
             max_dirt_depth: 5,
             grass: BlockId::Sand,
             dirt: BlockId::Sand,
-            stone: BlockId::Stone,
             dirt_noise: &self.dirt_noise,
         })
         .execute(pos, column, ctx, chunk);

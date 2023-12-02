@@ -65,7 +65,7 @@ impl WorldGenerator for StandardWorldGenerator {
 
         if chunk_pos.y == -4 {
             for pos in LocalPos::iter_surface(0) {
-                *ret.get_block_mut(pos) = BlockId::Bedrock;
+                unsafe { *ret.get_block_mut(pos) = BlockId::Bedrock };
             }
         }
 

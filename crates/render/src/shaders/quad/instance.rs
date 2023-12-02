@@ -31,6 +31,7 @@ bitflags! {
     /// | 17-21 | `z`        | The local Z position of the quad. |
     /// | 22-24 | `offset`   | The offset of the block.          |
     /// | 25-28 | `occluded` | Whether the quad is occluded.     |
+    /// | 29    | `overlay`  | Whether the quad is an overlay.   |
     ///
     /// - `facing` can be one of the following values:
     ///
@@ -64,6 +65,9 @@ bitflags! {
     ///    - `0b0010`: The "bottom" of the quad is occluded.
     ///    - `0b0100`: The "left" of the quad is occluded.
     ///    - `0b1000`: The "right" of the quad is occluded.
+    ///
+    /// - `overlay`: whether the quad is an overlay. If this bit is set, the quad will be rendered
+    ///   with a slight offset in the direction of its normal.
     #[derive(Debug, Clone, Copy)]
     #[repr(transparent)]
     pub struct QuadFlags: u32 {
@@ -145,6 +149,11 @@ bitflags! {
         ///
         /// This constant represents the value `15`.
         const OCCLUDED_MASK = 0b1111 << 25;
+
+        /// The quad is not an overlay.
+        ///
+        /// When set, the quad will be rendered with a slight offset in the direction of its normal.
+        const OVERLAY = 1 << 29;
     }
 }
 

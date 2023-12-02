@@ -25,7 +25,6 @@ impl Biome for PineForest {
             max_dirt_depth: 6,
             grass: BlockId::Podzol,
             dirt: BlockId::Dirt,
-            stone: BlockId::Stone,
             dirt_noise: &self.dirt_noise,
         })
         .execute(pos, column, ctx, chunk);

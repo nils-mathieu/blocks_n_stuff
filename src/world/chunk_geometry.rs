@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bitflags::bitflags;
-use bns_core::{BlockAppearance, BlockId, BlockVisibility, Chunk, LocalPos};
+use bns_core::{BlockAppearance, BlockId, BlockVisibility, Chunk, Face, LocalPos};
 use bns_render::data::{QuadFlags, QuadInstance};
 use bns_render::{DynamicVertexBuffer, Gpu};
 
@@ -156,7 +156,8 @@ impl ChunkBuildContext {
             },
             |pos| {
                 build_single_face_side(
-                    data.get_block(pos),
+                    pos,
+                    data,
                     QuadFlags::from_chunk_index(pos.index()) | QuadFlags::X,
                     self,
                 )
@@ -178,7 +179,8 @@ impl ChunkBuildContext {
             },
             |pos| {
                 build_single_face_side(
-                    data.get_block(pos),
+                    pos,
+                    data,
                     QuadFlags::from_chunk_index(pos.index()) | QuadFlags::NEG_X,
                     self,
                 )
@@ -200,7 +202,8 @@ impl ChunkBuildContext {
             },
             |pos| {
                 build_single_face_top(
-                    data.get_block(pos),
+                    pos,
+                    data,
                     QuadFlags::from_chunk_index(pos.index()) | QuadFlags::Y,
                     self,
                 )
@@ -222,7 +225,8 @@ impl ChunkBuildContext {
             },
             |pos| {
                 build_single_face_bottom(
-                    data.get_block(pos),
+                    pos,
+                    data,
                     QuadFlags::from_chunk_index(pos.index()) | QuadFlags::NEG_Y,
                     self,
                 )
@@ -244,7 +248,8 @@ impl ChunkBuildContext {
             },
             |pos| {
                 build_single_face_side(
-                    data.get_block(pos),
+                    pos,
+                    data,
                     QuadFlags::from_chunk_index(pos.index()) | QuadFlags::Z,
                     self,
                 )
@@ -266,7 +271,8 @@ impl ChunkBuildContext {
             },
             |pos| {
                 build_single_face_side(
-                    data.get_block(pos),
+                    pos,
+                    data,
                     QuadFlags::from_chunk_index(pos.index()) | QuadFlags::NEG_Z,
                     self,
                 )
@@ -392,7 +398,7 @@ fn build_block(
     let pos = unsafe { LocalPos::from_xyz_unchecked(x.value(), y.value(), z.value()) };
 
     let culled = CulledFaces::of(chunk, x, y, z);
-    build_voxel(pos, chunk.get_block(pos), culled, ctx);
+    build_voxel(pos, chunk, culled, ctx);
 }
 
 /// Builds the boundary of the provided chunk based on its content and the content of the
@@ -419,8 +425,11 @@ fn build_chunk_boundary(
 }
 
 /// Builds the quad instance for a singel voxel.
-fn build_voxel(pos: LocalPos, block: BlockId, culled: CulledFaces, ctx: &mut ChunkBuildContext) {
-    let base_flags = QuadFlags::from_chunk_index(pos.index());
+fn build_voxel(pos: LocalPos, chunk: &Chunk, culled: CulledFaces, ctx: &mut ChunkBuildContext) {
+    let block = chunk.get_block(pos);
+    let metadata = chunk.get_appearance(pos);
+
+    let mut base_flags = QuadFlags::from_chunk_index(pos.index());
     let buffer = match block.info().visibility {
         BlockVisibility::SemiOpaque | BlockVisibility::Opaque => &mut ctx.opaque_quads,
         BlockVisibility::Invisible | BlockVisibility::Transparent => &mut ctx.transparent_quads,
@@ -474,11 +483,64 @@ fn build_voxel(pos: LocalPos, block: BlockId, culled: CulledFaces, ctx: &mut Chu
                 });
             }
         }
+        BlockAppearance::Flat(texture) => {
+            // SAFETY:
+            //  The block apperance is `Flat`.
+            let face = unsafe { metadata.flat };
+            base_flags |= QuadFlags::OVERLAY;
+
+            match face {
+                Face::X if !culled.contains(CulledFaces::X) => {
+                    buffer.push(QuadInstance {
+                        flags: base_flags | QuadFlags::X,
+                        texture: texture as u32,
+                    });
+                }
+                Face::NegX if !culled.contains(CulledFaces::NEG_X) => {
+                    buffer.push(QuadInstance {
+                        flags: base_flags | QuadFlags::NEG_X,
+                        texture: texture as u32,
+                    });
+                }
+                Face::Y if !culled.contains(CulledFaces::Y) => {
+                    buffer.push(QuadInstance {
+                        flags: base_flags | QuadFlags::Y,
+                        texture: texture as u32,
+                    });
+                }
+                Face::NegY if !culled.contains(CulledFaces::NEG_Y) => {
+                    buffer.push(QuadInstance {
+                        flags: base_flags | QuadFlags::NEG_Y,
+                        texture: texture as u32,
+                    });
+                }
+                Face::Z if !culled.contains(CulledFaces::Z) => {
+                    buffer.push(QuadInstance {
+                        flags: base_flags | QuadFlags::Z,
+                        texture: texture as u32,
+                    });
+                }
+                Face::NegZ if !culled.contains(CulledFaces::NEG_Z) => {
+                    buffer.push(QuadInstance {
+                        flags: base_flags | QuadFlags::NEG_Z,
+                        texture: texture as u32,
+                    });
+                }
+                _ => (),
+            }
+        }
     }
 }
 
 /// Builds a single face of a block.
-fn build_single_face_side(block: BlockId, flags: QuadFlags, ctx: &mut ChunkBuildContext) {
+fn build_single_face_side(
+    pos: LocalPos,
+    chunk: &Chunk,
+    flags: QuadFlags,
+    ctx: &mut ChunkBuildContext,
+) {
+    let block = chunk.get_block(pos);
+
     let buffer = match block.info().visibility {
         BlockVisibility::SemiOpaque | BlockVisibility::Opaque => &mut ctx.opaque_quads,
         BlockVisibility::Invisible | BlockVisibility::Transparent => &mut ctx.transparent_quads,
@@ -493,11 +555,20 @@ fn build_single_face_side(block: BlockId, flags: QuadFlags, ctx: &mut ChunkBuild
             });
         }
         BlockAppearance::Liquid(_) => (),
+        BlockAppearance::Flat(_) => (),
     }
 }
 
 /// Builds a single face of a block.
-fn build_single_face_top(block: BlockId, flags: QuadFlags, ctx: &mut ChunkBuildContext) {
+fn build_single_face_top(
+    pos: LocalPos,
+    chunk: &Chunk,
+    flags: QuadFlags,
+    ctx: &mut ChunkBuildContext,
+) {
+    let block = chunk.get_block(pos);
+    let metadata = chunk.get_appearance(pos);
+
     let buffer = match block.info().visibility {
         BlockVisibility::SemiOpaque | BlockVisibility::Opaque => &mut ctx.opaque_quads,
         BlockVisibility::Invisible | BlockVisibility::Transparent => &mut ctx.transparent_quads,
@@ -517,11 +588,30 @@ fn build_single_face_top(block: BlockId, flags: QuadFlags, ctx: &mut ChunkBuildC
                 texture: surface as u32,
             });
         }
+        BlockAppearance::Flat(texture) => {
+            // SAFETY:
+            //  The block apperance is `Flat`.
+            let face = unsafe { metadata.flat };
+
+            if face == Face::Y {
+                buffer.push(QuadInstance {
+                    flags: flags | QuadFlags::OVERLAY,
+                    texture: texture as u32,
+                });
+            }
+        }
     }
 }
 
 /// Builds a single face of a block.
-fn build_single_face_bottom(block: BlockId, flags: QuadFlags, ctx: &mut ChunkBuildContext) {
+fn build_single_face_bottom(
+    pos: LocalPos,
+    chunk: &Chunk,
+    flags: QuadFlags,
+    ctx: &mut ChunkBuildContext,
+) {
+    let block = chunk.get_block(pos);
+
     let buffer = match block.info().visibility {
         BlockVisibility::SemiOpaque | BlockVisibility::Opaque => &mut ctx.opaque_quads,
         BlockVisibility::Invisible | BlockVisibility::Transparent => &mut ctx.transparent_quads,
@@ -534,6 +624,7 @@ fn build_single_face_bottom(block: BlockId, flags: QuadFlags, ctx: &mut ChunkBui
             texture: bottom as u32,
         }),
         BlockAppearance::Liquid(_) => (),
+        BlockAppearance::Flat(_) => (),
     }
 }
 

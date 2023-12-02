@@ -110,11 +110,12 @@ fn vs_main(
     let occluded_bottom: u32 = (instance.flags >> 26u) & 1u;
     let occluded_left: u32 = (instance.flags >> 27u) & 1u;
     let occluded_right: u32 = (instance.flags >> 28u) & 1u;
+    let overlay: u32 = (instance.flags >> 29u) & 1u;
 
     let normal = NORMALS[face];
 
     // The position of the vertex relative to the voxel, origin.
-    let vertex_pos = VERTICES[face * 4u + vertex_index] - normal * f32(offset)/8.0;
+    let vertex_pos = VERTICES[face * 4u + vertex_index] - normal * f32(offset)/8.0 - normal * f32(overlay) * 0.999;
     // The position of the voxel within its chunk.
     let chunk_local = vec3<i32>(i32(local_x), i32(local_y), i32(local_z));
     // The position of the vertex in world-space coordinates.

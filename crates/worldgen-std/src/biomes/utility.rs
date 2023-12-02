@@ -13,7 +13,6 @@ pub struct BasicGeologicalStage<'a> {
     pub dirt: BlockId,
     pub min_dirt_depth: i32,
     pub max_dirt_depth: i32,
-    pub stone: BlockId,
     pub dirt_noise: &'a Simplex2,
 }
 
@@ -39,14 +38,16 @@ impl BasicGeologicalStage<'_> {
 
             if world_pos.y <= height {
                 if world_pos.y < height - dirt_depth {
-                    *chunk.get_block_mut(local_pos) = self.stone;
+                    chunk.set_block(local_pos, BlockId::Stone);
+                } else if world_pos.y <= 2 {
+                    chunk.set_block(local_pos, BlockId::Sand);
                 } else if world_pos.y < height {
-                    *chunk.get_block_mut(local_pos) = self.dirt;
+                    chunk.set_block(local_pos, self.dirt);
                 } else {
-                    *chunk.get_block_mut(local_pos) = self.grass;
+                    chunk.set_block(local_pos, self.grass);
                 }
             } else if world_pos.y <= 0 {
-                *chunk.get_block_mut(local_pos) = BlockId::Water;
+                chunk.set_block(local_pos, BlockId::Water);
             }
         }
     }

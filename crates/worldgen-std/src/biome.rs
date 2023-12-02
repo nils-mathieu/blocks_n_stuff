@@ -127,7 +127,7 @@ impl FromRng for BiomeRegistry {
                     continentality_range: (0.0, 1.0),
                     temperature_range: (-1.0, 1.0),
                     humidity_range: (-1.0, 1.0),
-                    weight: 100,
+                    weight: 50,
                     implementation: Box::new(crate::biomes::PineForest::from_rng(rng)),
                 },
                 // Ocean

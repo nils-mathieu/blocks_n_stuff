@@ -30,6 +30,8 @@ pub enum BlockId {
     RedSandstone,
     Water,
     Bedrock,
+    Daffodil,
+    Pebbles,
 }
 
 // SAFETY:
@@ -146,10 +148,48 @@ impl BlockId {
                 appearance: BlockAppearance::uniform(TextureId::Bedrock),
                 visibility: BlockVisibility::Opaque,
             },
+            // Daffodil
+            BlockInfo {
+                appearance: BlockAppearance::Flat(TextureId::Daffodil),
+                visibility: BlockVisibility::SemiOpaque,
+            },
+            // Pebbles
+            BlockInfo {
+                appearance: BlockAppearance::Flat(TextureId::Pebbles),
+                visibility: BlockVisibility::SemiOpaque,
+            },
         ];
 
         unsafe { INFOS.get_unchecked(self as usize) }
     }
+}
+
+/// The specific face of a bloc.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Face {
+    /// The face is facing the positive X axis.
+    X,
+    /// The face is facing the negative X axis.
+    NegX,
+    /// The face is facing the positive Y axis.
+    Y,
+    /// The face is facing the negative Y axis.
+    NegY,
+    /// The face is facing the positive Z axis.
+    Z,
+    /// The face is facing the negative Z axis.
+    NegZ,
+}
+
+/// Some metadata about the appearance of a block.
+#[derive(Clone, Copy)]
+pub union AppearanceMetadata {
+    /// The block has no associated metadata.
+    pub no_metadata: (),
+    /// The block has a flat appearance.
+    ///
+    /// This metadata indicates which direction of the block is facing.
+    pub flat: Face,
 }
 
 /// Describes the appearance of a block.
@@ -179,6 +219,11 @@ pub enum BlockAppearance {
     },
     /// The block has the appearance of a liquid.
     Liquid(TextureId),
+    /// The block has a flat appearance.
+    ///
+    /// When this appearance is used, an appearance metadata is stored in the chunk that contains
+    /// the block.
+    Flat(TextureId),
 }
 
 impl BlockAppearance {
@@ -189,6 +234,17 @@ impl BlockAppearance {
             top: texture,
             bottom: texture,
             side: texture,
+        }
+    }
+
+    /// Returns whether this [`BlockAppearance`] instance requires some metadata.
+    #[inline]
+    pub const fn has_metadata(&self) -> bool {
+        match self {
+            Self::Invisible => false,
+            Self::Regular { .. } => false,
+            Self::Liquid(..) => false,
+            Self::Flat(..) => true,
         }
     }
 }
