@@ -3,6 +3,8 @@ use std::panic::PanicInfo;
 /// Displays a message box to the user with the provided message.
 ///
 /// If the current platform does not support message boxes, this function does nothing.
+///
+/// This function is expected to block until the user closes the message box.
 #[allow(unused_variables)]
 #[cfg(not(debug_assertions))]
 fn display_message_box(message: &str) {
@@ -68,7 +70,15 @@ fn custom_panic_hook(info: &PanicInfo) {
     // Display the message to the user using a message box.
     // Only do that in release though, because it's a bit annoying when debugging.
     #[cfg(not(debug_assertions))]
-    display_message_box(&message);
+    {
+        // This `Once` is used to avoid showing multiple message boxes if multiple threads panic
+        // at the same time.
+        // The `call_once` method will block if another thread is already calling it, and will
+        // only unblock (but not call the closure) when the other thread is done (the user
+        // closed the message box).
+        static WINDOW_SHOWED_UP: parking_lot::Once = parking_lot::Once::new();
+        WINDOW_SHOWED_UP.call_once(|| display_message_box(&message));
+    }
 }
 
 /// Installs the custom panic hook.
