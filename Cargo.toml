@@ -30,6 +30,8 @@ members = [
     "crates/image",
     "crates/rng",
     "crates/rng/derive",
+    "crates/worldgen-core",
+    "crates/worldgen-std",
 ]
 
 [dependencies]
@@ -37,6 +39,8 @@ bns-core = { path = "crates/core" }
 bns-render = { path = "crates/render" }
 bns-image = { path = "crates/image" }
 bns-rng = { path = "crates/rng" }
+bns-worldgen-core = { path = "crates/worldgen-core" }
+bns-worldgen-std = { path = "crates/worldgen-std" }
 
 winit = "0.29"
 glam = { version = "0.24", features = ["bytemuck"] }

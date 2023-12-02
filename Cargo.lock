@@ -203,6 +203,8 @@ dependencies = [
  "bns-image",
  "bns-render",
  "bns-rng",
+ "bns-worldgen-core",
+ "bns-worldgen-std",
  "bytemuck",
  "getrandom",
  "glam",
@@ -259,6 +261,22 @@ version = "0.1.0"
 dependencies = [
  "quote",
  "syn 2.0.39",
+]
+
+[[package]]
+name = "bns-worldgen-core"
+version = "0.1.0"
+dependencies = [
+ "bns-core",
+]
+
+[[package]]
+name = "bns-worldgen-std"
+version = "0.1.0"
+dependencies = [
+ "bns-core",
+ "bns-rng",
+ "bns-worldgen-core",
 ]
 
 [[package]]

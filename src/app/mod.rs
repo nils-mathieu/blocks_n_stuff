@@ -7,6 +7,7 @@ use bns_render::data::{ChunkUniforms, FrameUniforms, LineInstance, LineVertexFla
 use bns_render::{Renderer, RendererConfig, Surface, TextureAtlasConfig, TextureFormat};
 use bns_rng::{DefaultRng, FromRng};
 
+use bns_worldgen_std::StandardWorldGenerator;
 use glam::{IVec3, Vec2, Vec3, Vec4};
 
 use winit::event::KeyEvent;
@@ -16,7 +17,6 @@ use winit::window::{CursorGrabMode, Fullscreen, Window};
 
 use crate::window::UserEvent;
 use crate::world::{ChunkPos, Priority, World};
-use crate::worldgen::StandardWorldGenerator;
 
 mod camera;
 

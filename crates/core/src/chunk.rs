@@ -264,3 +264,6 @@ impl Chunk {
         }
     }
 }
+
+/// The 3D position of a chunk in the world.
+pub type ChunkPos = IVec3;

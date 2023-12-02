@@ -1,10 +1,9 @@
 //! The standard world generator.
 
-use bns_core::{BlockId, Chunk, LocalPos};
+use bns_core::{BlockId, Chunk, ChunkPos, LocalPos};
 use bns_rng::noises::{Mixer, Voronoi};
 use bns_rng::{FromRng, Noise, Rng};
-
-use crate::world::{ChunkPos, WorldGenerator};
+use bns_worldgen_core::WorldGenerator;
 
 /// The standard [`WorldGenerator`] implementation.
 #[derive(Clone)]
@@ -40,4 +39,6 @@ impl WorldGenerator for StandardWorldGenerator {
 
         ret
     }
+
+    fn debug_info(&self, _buf: &mut String) {}
 }

@@ -7,6 +7,7 @@ use std::sync::Arc;
 use bitflags::bitflags;
 use bns_core::Chunk;
 use bns_render::Gpu;
+use bns_worldgen_core::WorldGenerator;
 use glam::IVec3;
 
 use hashbrown::HashMap;
@@ -18,17 +19,6 @@ use smallvec::SmallVec;
 
 /// The position of a chunk.
 pub type ChunkPos = IVec3;
-
-/// Describes how to generate a [`World`].
-pub trait WorldGenerator: Send + Clone {
-    /// Generates a chunk for the provided position.
-    ///
-    /// # Purity
-    ///
-    /// This function is expected to be pure. Calling it multiple times with the same `pos` value
-    /// should produce the same exact chunk.
-    fn generate(&mut self, pos: ChunkPos) -> Chunk;
-}
 
 bitflags! {
     /// Some flags associated with a [`LoadedChunk`].
