@@ -13,6 +13,7 @@
 - [x] Update package to optimize dependencies & not the current package.
 - [ ] Add workspace dependencies to avoid having to update every package manually.
 - [x] Use `std::thread::available_parallelism` instead `num_cpus`.
+- [ ] Add bedrock.
 
 # Features
 

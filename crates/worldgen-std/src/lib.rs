@@ -1,20 +1,19 @@
 //! The standard world generator.
 
-use bns_core::{BlockId, Chunk, ChunkPos, LocalPos};
+use bns_core::{Chunk, ChunkPos};
 use bns_rng::noises::Mixer;
 use bns_rng::{FromRng, Rng};
 use bns_worldgen_core::WorldGenerator;
 
 use glam::Vec3Swizzles;
 
-use biome::{BiomeId, BiomeRegistry};
+use biome::BiomeRegistry;
 use biomemap::BiomeMap;
-use column_gen::{ColumnPos, Columns};
+use column_gen::Columns;
 
 mod biome;
 mod biomemap;
 mod biomes;
-mod chunk_gen;
 mod column_gen;
 
 /// Contains the context required to generate new chunks.
@@ -52,36 +51,16 @@ impl WorldGenerator for StandardWorldGenerator {
     fn generate(&self, chunk_pos: ChunkPos) -> Chunk {
         let mut ret = Chunk::empty();
 
-        // only generate chunks betweens -4 and 4
+        // Only generate chunks betweens -4 and 4.
         if chunk_pos.y < -4 || chunk_pos.y > 4 {
             return ret;
         }
 
         let col = self.ctx.columns.get(chunk_pos.xz());
-
-        for local_pos in LocalPos::iter_all() {
-            let world_pos = chunk_pos * Chunk::SIDE + local_pos.to_ivec3();
-
-            let block = match col.biome_map(&self.ctx)[ColumnPos::from_local_pos(local_pos)] {
-                BiomeId::Void => BlockId::Air,
-                BiomeId::Plains => BlockId::Grass,
-                BiomeId::OakForest => BlockId::Stone,
-                BiomeId::Desert => BlockId::Sand,
-                BiomeId::Ocean => BlockId::Gravel,
-                BiomeId::PineForest => BlockId::Podzol,
-            };
-
-            let height = col.height_map(&self.ctx)[ColumnPos::from_local_pos(local_pos)] as i32;
-
-            if world_pos.y == 0 {
-                *ret.get_block_mut(local_pos) = block;
-            }
-
-            if world_pos.y <= height {
-                *ret.get_block_mut(local_pos) = block;
-            } else if world_pos.y <= 0 {
-                *ret.get_block_mut(local_pos) = BlockId::Water;
-            }
+        for &biome in &col.biome_stage(&self.ctx).unique_biomes {
+            self.ctx.biome_registry[biome]
+                .implementation
+                .geological_stage(chunk_pos, &col, &self.ctx, &mut ret);
         }
 
         ret

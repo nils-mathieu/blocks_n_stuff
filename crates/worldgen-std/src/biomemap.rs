@@ -44,16 +44,16 @@ impl ClimateMap {
     ///
     /// This scale is applied multiplicatively to the scale of the [`BiomeCellMap`], meaning that
     /// the overall scale of the biome map is `ClimateMap::SCALE * BiomeCellMap::SCALE`.
-    pub const SCALE: f32 = 1.0 / 8.0;
+    pub const SCALE: f32 = 1.0 / 14.0;
 
     /// The individual scale of the continentality map.
     pub const CONTINENTALITY_SCALE: f32 = 1.0;
 
     /// The individual scale of the temperature map.
-    pub const TEMPERATURE_SCALE: f32 = 2.0;
+    pub const TEMPERATURE_SCALE: f32 = 3.0;
 
     /// The individual scale of the humidity map.
-    pub const HUMIDITY_SCALE: f32 = 2.0;
+    pub const HUMIDITY_SCALE: f32 = 4.0;
 }
 
 impl Noise<BiomeCell> for ClimateMap {
@@ -139,12 +139,13 @@ impl BiomeMap {
         let mut biome_value =
             self.hasher.sample([cell.x as u64, cell.y as u64]) as u32 % total_weight;
 
-        let mut iter = biomes.iter();
+        let mut index = 0;
         while biome_value > 0 {
             // SAFETY:
             //  The biome value is non-zero, meaning that some biome must have existed to
             //  increase the total weight.
-            let biome = unsafe { *iter.next().unwrap_unchecked() };
+            let biome = unsafe { *biomes.get_unchecked(index) };
+            index += 1;
 
             if biome_value < registry[biome].weight {
                 return biome;

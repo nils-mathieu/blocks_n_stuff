@@ -9,6 +9,7 @@ use glam::IVec2;
 use hashbrown::HashMap;
 use parking_lot::RwLock;
 use rustc_hash::FxHasher;
+use smallvec::SmallVec;
 
 use crate::biome::BiomeId;
 use crate::GenCtx;
@@ -142,14 +143,29 @@ impl ColumnPos {
     }
 }
 
+impl From<LocalPos> for ColumnPos {
+    #[inline]
+    fn from(value: LocalPos) -> Self {
+        Self::from_local_pos(value)
+    }
+}
+
+/// Contains the result of the biome stage of a particular [`ColumnGen`].
+pub struct BiomeStage {
+    /// The individual biome values for each column of the [`ColumnGen`].
+    pub ids: ColumnStore<BiomeId>,
+    /// The unique biomes that are present in the [`ColumnGen`].
+    pub unique_biomes: SmallVec<[BiomeId; 4]>,
+}
+
 /// Caches (potentially partial) information about a particular column of chunks.
 pub struct ColumnGen {
     /// The position of the column.
     pos: IVec2,
     /// The ID of the biomes generated in the chunk.
-    biome_map: OnceLock<ColumnStore<BiomeId>>,
+    biome_stage: OnceLock<BiomeStage>,
     /// The heightmap of the chunk at that particular position.
-    height_map: OnceLock<ColumnStore<f32>>,
+    height_stage: OnceLock<ColumnStore<i32>>,
 }
 
 impl ColumnGen {
@@ -158,29 +174,35 @@ impl ColumnGen {
     pub fn new(pos: IVec2) -> Self {
         Self {
             pos,
-            biome_map: OnceLock::new(),
-            height_map: OnceLock::new(),
+            biome_stage: OnceLock::new(),
+            height_stage: OnceLock::new(),
         }
     }
 
-    /// Gets the biome map of the column, or initializes it if it's not present.
-    pub fn biome_map(&self, ctx: &GenCtx) -> &ColumnStore<BiomeId> {
-        self.biome_map.get_or_init(|| {
-            let mut ret = ColumnStore::new(BiomeId::Void);
+    /// Gets the biome stage of the column, or initializes it if it's not present.
+    pub fn biome_stage(&self, ctx: &GenCtx) -> &BiomeStage {
+        self.biome_stage.get_or_init(|| {
+            let mut ids = ColumnStore::new(BiomeId::Void);
+            let mut unique_biomes = SmallVec::new();
 
             for pos in ColumnPos::iter_all() {
                 let world_pos = self.pos * Chunk::SIDE + pos.to_vec2();
-                ret[pos] = ctx.biomes.sample(world_pos, &ctx.biome_registry);
+                let biome = ctx.biomes.sample(world_pos, &ctx.biome_registry);
+                ids[pos] = biome;
+
+                if !unique_biomes.contains(&biome) {
+                    unique_biomes.push(biome);
+                }
             }
 
-            ret
+            BiomeStage { ids, unique_biomes }
         })
     }
 
     /// Gets the height map of the column, or initializes it if it's not present.
-    pub fn height_map(&self, ctx: &GenCtx) -> &ColumnStore<f32> {
-        self.height_map.get_or_init(|| {
-            let mut ret = ColumnStore::new(0.0);
+    pub fn height_stage(&self, ctx: &GenCtx) -> &ColumnStore<i32> {
+        self.height_stage.get_or_init(|| {
+            let mut ret = ColumnStore::new(0);
 
             let chunk_origin = self.pos * Chunk::SIDE;
 
@@ -220,9 +242,9 @@ impl ColumnGen {
                     let biome = if sampled_chunk != self.pos {
                         // We need to query the heightmap of the column at that position.
                         let col = ctx.columns.get(sampled_chunk);
-                        col.biome_map(ctx)[ColumnPos::from_world_pos(sampled_pos)]
+                        col.biome_stage(ctx).ids[ColumnPos::from_world_pos(sampled_pos)]
                     } else {
-                        self.biome_map(ctx)[ColumnPos::from_world_pos(sampled_pos)]
+                        self.biome_stage(ctx).ids[ColumnPos::from_world_pos(sampled_pos)]
                     };
 
                     // Compute the weight from the distance between the sampled position and the
@@ -266,7 +288,11 @@ impl ColumnGen {
                     a * (1.0 - f) + b * f
                 }
 
-                ret[pos] = interpolate(interpolate(h00, h10, x), interpolate(h01, h11, x), z);
+                ret[pos] = bns_rng::utility::floor_i32(interpolate(
+                    interpolate(h00, h10, x),
+                    interpolate(h01, h11, x),
+                    z,
+                ));
             }
 
             ret
