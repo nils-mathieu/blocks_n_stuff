@@ -49,6 +49,8 @@ pub enum Format {
 /// The color space of a loaded image.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ColorSpace {
+    /// The color space is not known, better no touch this.
+    Unknown,
     /// The image is encoded in the sRGB color space.
     Srgb,
     /// The image is encoded in the linear color space.
@@ -173,7 +175,7 @@ impl Image {
     /// eventually converting it if needed.
     pub fn ensure_srgb(&mut self) {
         match self.metadata.color_space {
-            ColorSpace::Srgb => (),
+            ColorSpace::Srgb | ColorSpace::Unknown => (),
             ColorSpace::Linear => {
                 for channel in &mut self.pixels {
                     *channel = linear_to_srgb(*channel);

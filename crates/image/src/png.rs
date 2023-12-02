@@ -23,7 +23,7 @@ pub fn load(reader: impl io::Read) -> Result<crate::Image, crate::Error> {
     let color_space = if reader.info().srgb.is_some() {
         crate::ColorSpace::Srgb
     } else {
-        crate::ColorSpace::Linear
+        crate::ColorSpace::Unknown
     };
 
     let mut pixels = vec![0; reader.output_buffer_size()];

@@ -407,6 +407,7 @@ fn load_texture_atlas() -> TextureAtlasConfig<'static> {
         mip_level_count: 1,
         format: match metadata.color_space {
             bns_image::ColorSpace::Srgb => TextureFormat::Rgba8UnormSrgb,
+            bns_image::ColorSpace::Unknown => TextureFormat::Rgba8Unorm,
             bns_image::ColorSpace::Linear => TextureFormat::Rgba8Unorm,
         },
     }
