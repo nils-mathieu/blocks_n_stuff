@@ -60,6 +60,10 @@ pub struct FrameUniforms {
 pub struct CommonResources {
     /// The depth buffer texture.
     pub depth_buffer: wgpu::TextureView,
+    /// A bind group that includes the depth buffer.
+    pub depth_buffer_bind_group: wgpu::BindGroup,
+    /// The bind group layout used to bind the depth buffer to the shaders.
+    pub depth_buffer_layout: wgpu::BindGroupLayout,
     /// A non-filtering sampler that can be used to sample pixels from a texture.
     pub pixel_sampler: wgpu::Sampler,
     /// The bind group layout used to bind the texture atlas to the shaders.
@@ -73,6 +77,8 @@ pub struct CommonResources {
     /// The bind group (created from the `frame_uniforms_layout`) that includes the buffer
     /// responsible for storing the frame uniforms.
     pub frame_uniforms_bind_group: wgpu::BindGroup,
+    /// A linear sampler that can be used to sample pixels from a texture.
+    pub linear_sampler: wgpu::Sampler,
 }
 
 impl CommonResources {
@@ -89,7 +95,10 @@ impl CommonResources {
         let frame_uniforms_layout = create_frame_uniforms_layout(gpu);
         let (frame_uniforms_buffer, frame_uniforms_bind_group) =
             create_frame_uniforms_buffer(gpu, &frame_uniforms_layout);
-        let depth_buffer = create_depth_buffer(gpu, 1, 1);
+        let depth_buffer_layout = create_depth_buffer_layout(gpu);
+        let linear_sampler = create_linear_sampler(gpu);
+        let (depth_buffer, depth_buffer_bind_group) =
+            create_depth_buffer(gpu, &depth_buffer_layout, &linear_sampler, 1, 1);
 
         Self {
             pixel_sampler,
@@ -98,7 +107,10 @@ impl CommonResources {
             frame_uniforms_layout,
             frame_uniforms_bind_group,
             depth_buffer,
+            depth_buffer_bind_group,
+            depth_buffer_layout,
             frame_uniforms_buffer,
+            linear_sampler,
         }
     }
 
@@ -110,7 +122,13 @@ impl CommonResources {
 
     /// Notifies this [`CommonResources`] that the render target has been resized.
     pub fn notify_resized(&mut self, gpu: &Gpu, width: u32, height: u32) {
-        self.depth_buffer = create_depth_buffer(gpu, width, height);
+        (self.depth_buffer, self.depth_buffer_bind_group) = create_depth_buffer(
+            gpu,
+            &self.depth_buffer_layout,
+            &self.linear_sampler,
+            width,
+            height,
+        );
     }
 }
 
@@ -242,8 +260,55 @@ fn create_texture_atlas(
     bind_group
 }
 
-/// Creates a new depth buffer texture.
-fn create_depth_buffer(gpu: &Gpu, width: u32, height: u32) -> wgpu::TextureView {
+fn create_depth_buffer_layout(gpu: &Gpu) -> wgpu::BindGroupLayout {
+    gpu.device
+        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Depth Buffer Bind Group Layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    count: None,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        sample_type: wgpu::TextureSampleType::Depth,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                    },
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    count: None,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                },
+            ],
+        })
+}
+
+fn create_linear_sampler(gpu: &Gpu) -> wgpu::Sampler {
+    gpu.device.create_sampler(&wgpu::SamplerDescriptor {
+        label: Some("Regular Sampler"),
+        address_mode_u: wgpu::AddressMode::Repeat,
+        address_mode_v: wgpu::AddressMode::Repeat,
+        address_mode_w: wgpu::AddressMode::Repeat,
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Linear,
+        lod_min_clamp: 0.0,
+        lod_max_clamp: 32.0,
+        compare: None,
+        anisotropy_clamp: 1,
+        border_color: None,
+    })
+}
+
+fn create_depth_buffer(
+    gpu: &Gpu,
+    layout: &wgpu::BindGroupLayout,
+    sampler: &wgpu::Sampler,
+    width: u32,
+    height: u32,
+) -> (wgpu::TextureView, wgpu::BindGroup) {
     let depth_buffer = gpu.device.create_texture(&wgpu::TextureDescriptor {
         label: Some("Depth Buffer"),
         size: wgpu::Extent3d {
@@ -255,9 +320,26 @@ fn create_depth_buffer(gpu: &Gpu, width: u32, height: u32) -> wgpu::TextureView 
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
         format: wgpu::TextureFormat::Depth32Float,
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
         view_formats: &[],
     });
 
-    depth_buffer.create_view(&wgpu::TextureViewDescriptor::default())
+    let view = depth_buffer.create_view(&wgpu::TextureViewDescriptor::default());
+
+    let bind_group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("Depth Buffer Bind Group"),
+        layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&view),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: wgpu::BindingResource::Sampler(sampler),
+            },
+        ],
+    });
+
+    (view, bind_group)
 }

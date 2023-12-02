@@ -3,6 +3,7 @@ use std::sync::Arc;
 use wgpu::TextureFormat;
 
 use crate::shaders::common::CommonResources;
+use crate::shaders::fog::FogPipeline;
 use crate::shaders::line::LinePipeline;
 use crate::shaders::quad::QuadPipeline;
 use crate::shaders::skybox::SkyboxPipeline;
@@ -52,6 +53,9 @@ pub struct Renderer {
     quad_pipeline: QuadPipeline,
     /// The pipeline responsible for rendering lines.
     line_pipeline: LinePipeline,
+
+    /// The pipeline responsible for rendering fog.
+    fog_pipeline: FogPipeline,
 }
 
 impl Renderer {
@@ -61,6 +65,7 @@ impl Renderer {
         let quad_pipeline = QuadPipeline::new(&gpu, &resources, config.output_format);
         let skybox_pipeline = SkyboxPipeline::new(&gpu, &resources, config.output_format);
         let line_pipeline = LinePipeline::new(&gpu, &resources, config.output_format);
+        let fog_pipeline = FogPipeline::new(&gpu, &resources, config.output_format);
 
         Self {
             gpu,
@@ -68,6 +73,7 @@ impl Renderer {
             quad_pipeline,
             skybox_pipeline,
             line_pipeline,
+            fog_pipeline,
         }
     }
 

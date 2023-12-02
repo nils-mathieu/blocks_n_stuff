@@ -110,7 +110,7 @@ impl App {
 
         const INITIAL_RENDER_DISTANCE: i32 = 16;
         let camera = Camera::new(
-            Vec3::new(0.0, 64.0, 0.0),
+            Vec3::new(0.0, 32.0, 0.0),
             render_distance_to_far(INITIAL_RENDER_DISTANCE),
         );
 
