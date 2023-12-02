@@ -5,14 +5,14 @@ use bns_core::{Chunk, ChunkPos};
 use glam::IVec3;
 
 /// Describes how to generate new chunks for a world.
-pub trait WorldGenerator: Send + Clone {
+pub trait WorldGenerator: Send + Sync {
     /// Generates a chunk for the provided position.
     ///
     /// # Purity
     ///
     /// This function is expected to be pure. Calling it multiple times with the same `pos` value
     /// should produce the same exact chunk.
-    fn generate(&mut self, pos: ChunkPos) -> Chunk;
+    fn generate(&self, pos: ChunkPos) -> Chunk;
 
     /// Prints debug information about the world generator using the provided buffer.
     ///

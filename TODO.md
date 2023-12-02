@@ -5,12 +5,14 @@
 - [ ] Right now, we're leaking memory. The world never unloads the chunks it doesn't need anymore.
 - [ ] Chunk do not seem to actually load using the requested priority. Close chunks sometimes
       appear after far chunks.
-- [x] Update package to optimize dependencies & not the current package.
 - [x] The chunk building algorithm seems to be missing chunk corners.
 
 # Other
 
 - [ ] Add profiling options & display in the debug UI.
+- [x] Update package to optimize dependencies & not the current package.
+- [ ] Add workspace dependencies to avoid having to update every package manually.
+- [ ] Use `std::thread::available_parallelism` instead `num_cpus`.
 
 # Features
 

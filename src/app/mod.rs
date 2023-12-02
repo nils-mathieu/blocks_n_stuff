@@ -91,7 +91,7 @@ impl App {
         println!("Seed: {seed}");
         let world = World::new(
             renderer.gpu().clone(),
-            StandardWorldGenerator::from_seed::<DefaultRng>(seed),
+            Box::new(StandardWorldGenerator::from_seed::<DefaultRng>(seed)),
         );
 
         window
@@ -182,7 +182,7 @@ impl App {
             println!("Seed: {seed}");
             self.world = World::new(
                 self.renderer.gpu().clone(),
-                StandardWorldGenerator::from_seed::<DefaultRng>(seed),
+                Box::new(StandardWorldGenerator::from_seed::<DefaultRng>(seed)),
             );
         }
 

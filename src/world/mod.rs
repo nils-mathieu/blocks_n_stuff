@@ -122,6 +122,8 @@ impl Ord for Task {
 
 /// A shared pool of tasks to be executed by worker threads.
 struct TaskPool {
+    /// The world generator.
+    generator: Box<dyn WorldGenerator>,
     /// The task that must be executed.
     tasks: Mutex<BinaryHeap<Task>>,
     /// Whether the worker threads should be stopping.
@@ -134,8 +136,9 @@ struct TaskPool {
 
 impl TaskPool {
     /// Creates a new [`TaskPool`].
-    pub fn new() -> Self {
+    pub fn new(generator: Box<dyn WorldGenerator>) -> Self {
         Self {
+            generator,
             tasks: Mutex::new(BinaryHeap::new()),
             results: Mutex::new(Vec::new()),
             should_stop: AtomicBool::new(false),
@@ -262,17 +265,16 @@ pub struct World {
 
 impl World {
     /// Creates a new [`World`] that uses the provided [`WorldGenerator`] to generate chunks.
-    pub fn new<W: 'static + WorldGenerator>(gpu: Arc<Gpu>, generator: W) -> Self {
-        let task_pool = Arc::new(TaskPool::new());
+    pub fn new(gpu: Arc<Gpu>, generator: Box<dyn WorldGenerator>) -> Self {
+        let task_pool = Arc::new(TaskPool::new(generator));
 
-        for _ in 0..num_cpus::get().saturating_sub(3).max(1) {
+        for _ in 0..1 {
             let task_pool = task_pool.clone();
-            let mut generator = generator.clone();
             let gpu = gpu.clone();
             std::thread::spawn(move || {
                 let mut build_context = ChunkBuildContext::new(gpu);
                 while let Some(task) = task_pool.fetch_task() {
-                    let chunk = generator.generate(task.pos);
+                    let chunk = task_pool.generator.generate(task.pos);
                     let mut entry = LoadedChunk::new(chunk);
 
                     // Build the inner geometry of the chunk.

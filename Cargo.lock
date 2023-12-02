@@ -280,6 +280,9 @@ dependencies = [
  "bns-worldgen-core",
  "bytemuck",
  "glam",
+ "hashbrown",
+ "parking_lot",
+ "rustc-hash",
  "smallvec",
 ]
 

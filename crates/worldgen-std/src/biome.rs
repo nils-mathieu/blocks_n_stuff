@@ -1,4 +1,7 @@
-use bytemuck::Contiguous;
+use std::ops::Index;
+
+use bns_rng::{FromRng, Rng};
+use bytemuck::{Contiguous, Zeroable};
 use glam::{IVec2, IVec3};
 
 use crate::biomemap::Climate;
@@ -9,91 +12,29 @@ use crate::biomemap::Climate;
 #[allow(dead_code)] // biomes are generally constructed through transmutation
 pub enum BiomeId {
     #[default]
-    Void,
+    Void = 0,
     Plains,
     OakForest,
     Desert,
     PineForest,
-    ShallowOcean,
-    DeepOcean,
+    Ocean,
 }
+
+// SAFETY:
+//  0 is the value of BiomeId::Void.
+unsafe impl Zeroable for BiomeId {}
 
 impl BiomeId {
     /// The total number of [`BiomeId`] instances.
     pub const COUNT: usize = <Self as Contiguous>::MAX_VALUE as usize + 1;
 
-    /// Returns information about the biome.
-    #[inline]
-    pub fn info(self) -> &'static BiomeInfo {
-        const INFOS: [BiomeInfo; BiomeId::COUNT] = [
-            // Void
-            BiomeInfo {
-                continentality_range: (0.0, 0.0),
-                temperature_range: (0.0, 0.0),
-                humidity_range: (0.0, 0.0),
-                weight: 0,
-            },
-            // Plains
-            BiomeInfo {
-                continentality_range: (0.0, 1.0),
-                temperature_range: (-1.0, 1.0),
-                humidity_range: (-1.0, 1.0),
-                weight: 100,
-            },
-            // OakForest
-            BiomeInfo {
-                continentality_range: (0.0, 1.0),
-                temperature_range: (-1.0, 1.0),
-                humidity_range: (-1.0, 1.0),
-                weight: 100,
-            },
-            // Desert
-            BiomeInfo {
-                continentality_range: (0.0, 1.0),
-                temperature_range: (-1.0, 1.0),
-                humidity_range: (-1.0, 1.0),
-                weight: 100,
-            },
-            // PineForest
-            BiomeInfo {
-                continentality_range: (0.0, 1.0),
-                temperature_range: (-1.0, 1.0),
-                humidity_range: (-1.0, 1.0),
-                weight: 100,
-            },
-            // ShallowOcean
-            BiomeInfo {
-                continentality_range: (-1.0, 0.0),
-                temperature_range: (-1.0, 1.0),
-                humidity_range: (-1.0, 1.0),
-                weight: 100,
-            },
-            // DeepOcean
-            BiomeInfo {
-                continentality_range: (-1.0, 0.0),
-                temperature_range: (-1.0, 1.0),
-                humidity_range: (-1.0, 1.0),
-                weight: 100,
-            },
-        ];
-
-        unsafe { INFOS.get_unchecked(self as usize) }
-    }
-
     /// Returns an iterator over all possible [`BiomeId`]s, excluding [`BiomeId::Void`].
     pub fn iter_all() -> impl Clone + ExactSizeIterator<Item = Self> {
         (1..Self::COUNT as u8).map(|x| unsafe { std::mem::transmute(x) })
     }
-
-    /// Returns an iterator over the biomes that are allowed to spawn under the provided
-    /// [`Climate`].
-    pub fn iter_for_climate(climate: &Climate) -> impl '_ + Clone + Iterator<Item = Self> {
-        Self::iter_all().filter(move |&id| id.info().is_climate_allowed(climate))
-    }
 }
 
 /// Stores information about a particular biome.
-#[derive(Debug, Clone)]
 pub struct BiomeInfo {
     /// The allowed continentality range for the biome.
     pub continentality_range: (f32, f32),
@@ -104,6 +45,8 @@ pub struct BiomeInfo {
     /// A weight value used to determine how likely the biome is to spawn compared to the other
     /// biomes.
     pub weight: u32,
+    /// The [`Biome`] implementation associated with the biome.
+    pub implementation: Box<dyn Send + Sync + Biome>,
 }
 
 impl BiomeInfo {
@@ -125,5 +68,79 @@ pub trait Biome {
     fn height(&self, pos: IVec2) -> f32;
 
     /// Prints debug information about itself in the provided buffer.
-    fn debug_info(&self, buf: &mut String, pos: IVec3);
+    fn debug_info(&self, buf: &mut String, pos: IVec3) {
+        let _ = buf;
+        let _ = pos;
+    }
+}
+
+/// The registry of all available biomes.
+pub struct BiomeRegistry {
+    biomes: [BiomeInfo; BiomeId::COUNT],
+}
+
+impl FromRng for BiomeRegistry {
+    fn from_rng(_rng: &mut impl Rng) -> Self {
+        Self {
+            biomes: [
+                // Void
+                BiomeInfo {
+                    continentality_range: (0.0, 0.0),
+                    temperature_range: (0.0, 0.0),
+                    humidity_range: (0.0, 0.0),
+                    weight: 0,
+                    implementation: Box::new(crate::biomes::Void),
+                },
+                // Plains
+                BiomeInfo {
+                    continentality_range: (0.0, 1.0),
+                    temperature_range: (-1.0, 1.0),
+                    humidity_range: (-1.0, 1.0),
+                    weight: 100,
+                    implementation: Box::new(crate::biomes::Plains),
+                },
+                // OakForest
+                BiomeInfo {
+                    continentality_range: (0.0, 1.0),
+                    temperature_range: (-1.0, 1.0),
+                    humidity_range: (-1.0, 1.0),
+                    weight: 100,
+                    implementation: Box::new(crate::biomes::OakForest),
+                },
+                // Desert
+                BiomeInfo {
+                    continentality_range: (0.0, 1.0),
+                    temperature_range: (-1.0, 1.0),
+                    humidity_range: (-1.0, 1.0),
+                    weight: 100,
+                    implementation: Box::new(crate::biomes::Desert),
+                },
+                // PineForest
+                BiomeInfo {
+                    continentality_range: (0.0, 1.0),
+                    temperature_range: (-1.0, 1.0),
+                    humidity_range: (-1.0, 1.0),
+                    weight: 100,
+                    implementation: Box::new(crate::biomes::PineForest),
+                },
+                // Ocean
+                BiomeInfo {
+                    continentality_range: (-1.0, 0.0),
+                    temperature_range: (-1.0, 1.0),
+                    humidity_range: (-1.0, 1.0),
+                    weight: 100,
+                    implementation: Box::new(crate::biomes::Ocean),
+                },
+            ],
+        }
+    }
+}
+
+impl Index<BiomeId> for BiomeRegistry {
+    type Output = BiomeInfo;
+
+    #[inline(always)]
+    fn index(&self, index: BiomeId) -> &Self::Output {
+        unsafe { self.biomes.get_unchecked(index as usize) }
+    }
 }

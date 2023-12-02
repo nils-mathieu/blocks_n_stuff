@@ -4,7 +4,7 @@ use bns_rng::{FromRng, Noise};
 use glam::IVec2;
 use smallvec::SmallVec;
 
-use crate::biome::BiomeId;
+use crate::biome::{BiomeId, BiomeRegistry};
 
 /// Represents the climate of a particular tile.
 ///
@@ -90,13 +90,13 @@ pub struct BiomeCellMap {
 
 impl BiomeCellMap {
     /// The scale of the biome map.
-    pub const SCALE: f32 = 1.0 / 24.0;
+    pub const SCALE: f32 = 1.0 / 32.0;
 
     /// The roughness of the biome map.
     ///
     /// This is linked to the displacement. The higher the roughness, the more jagged the borders
     /// will be.
-    pub const ROUGHNESS: f32 = 2.0;
+    pub const ROUGHNESS: f32 = 2.5;
     /// The displacement of the biome map.
     ///
     /// This is linked to the roughness. The higher the displacement, the more amplitude the
@@ -127,14 +127,15 @@ pub struct BiomeMap {
     hasher: Mixer<2>,
 }
 
-impl Noise<IVec2> for BiomeMap {
-    type Output = BiomeId;
-
-    fn sample(&self, pos: IVec2) -> Self::Output {
+impl BiomeMap {
+    /// Returns the biome that should be placed on the tile at the provided position.
+    pub fn sample(&self, pos: IVec2, registry: &BiomeRegistry) -> BiomeId {
         let cell = self.cells.sample(pos);
         let climate = self.climate.sample(cell);
-        let biomes: SmallVec<[BiomeId; 8]> = BiomeId::iter_for_climate(&climate).collect();
-        let total_weight = biomes.iter().map(|id| id.info().weight).sum::<u32>();
+        let biomes: SmallVec<[BiomeId; 8]> = BiomeId::iter_all()
+            .filter(|&x| registry[x].is_climate_allowed(&climate))
+            .collect();
+        let total_weight = biomes.iter().map(|&id| registry[id].weight).sum::<u32>();
         let mut biome_value =
             self.hasher.sample([cell.x as u64, cell.y as u64]) as u32 % total_weight;
 
@@ -143,13 +144,13 @@ impl Noise<IVec2> for BiomeMap {
             // SAFETY:
             //  The biome value is non-zero, meaning that some biome must have existed to
             //  increase the total weight.
-            let biome = unsafe { iter.next().unwrap_unchecked() };
+            let biome = unsafe { *iter.next().unwrap_unchecked() };
 
-            if biome_value < biome.info().weight {
-                return *biome;
+            if biome_value < registry[biome].weight {
+                return biome;
             }
 
-            biome_value -= biome.info().weight;
+            biome_value -= registry[biome].weight;
         }
 
         BiomeId::Void
