@@ -125,7 +125,7 @@ impl Camera {
     /// The speed at which the camera moves, in units per second.
     pub const SPEED: f32 = 10.0;
     /// The speed at which the camera flies up/down.
-    pub const FLY_SPEED: f32 = 10.0;
+    pub const FLY_SPEED: f32 = 20.0;
     /// The sensitivity of the mouse.
     pub const MOUSE_SENSITIVITY: f32 = 0.002;
     /// The maximum pitch value of the camera.

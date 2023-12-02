@@ -1,6 +1,6 @@
 use std::hash::BuildHasherDefault;
 use std::ops::{Index, IndexMut};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use bns_core::{Chunk, LocalPos};
 use bns_rng::Noise;
@@ -142,171 +142,135 @@ impl ColumnPos {
     }
 }
 
-/// The current state of a [`ColumnGen`].
-#[derive(Clone, Copy, PartialEq, Eq, Debug, PartialOrd, Ord, Hash)]
-pub enum ColumnState {
-    /// The [`ColumnGen`] is empty, and nothing has been generated yet.
-    Empty,
-    /// The column has been generated up the biomes stage.
-    Biomes,
-    /// The column has been generated up the heightmap stage.
-    Heightmap,
-}
-
 /// Caches (potentially partial) information about a particular column of chunks.
 pub struct ColumnGen {
-    /// The current generation state of the column.
-    pub state: ColumnState,
+    /// The position of the column.
+    pos: IVec2,
     /// The ID of the biomes generated in the chunk.
-    pub biome_map: ColumnStore<BiomeId>,
+    biome_map: OnceLock<ColumnStore<BiomeId>>,
     /// The heightmap of the chunk at that particular position.
-    pub height_map: ColumnStore<f32>,
+    height_map: OnceLock<ColumnStore<f32>>,
 }
 
 impl ColumnGen {
     /// Returns a new empty instance of [`ColumnGen`], initialized with unspecified values.
     #[inline]
-    pub fn empty() -> Self {
+    pub fn new(pos: IVec2) -> Self {
         Self {
-            state: ColumnState::Empty,
-            biome_map: ColumnStore::new(BiomeId::Void),
-            height_map: ColumnStore::new(0.0),
+            pos,
+            biome_map: OnceLock::new(),
+            height_map: OnceLock::new(),
         }
     }
 
-    /// Overwrites the `biome_map` field with the biomes generated at the provided position.
-    ///
-    /// This function does not update the [`state`] field to reflect the new state of the
-    /// column.
-    ///
-    /// [`state`]: ColumnGen::state
-    pub fn populate_biomes(&mut self, chunk: IVec2, ctx: &GenCtx) {
-        for pos in ColumnPos::iter_all() {
-            let world_pos = chunk * Chunk::SIDE + pos.to_vec2();
-            self.biome_map[pos] = ctx.biomes.sample(world_pos, &ctx.biome_registry);
-        }
+    /// Gets the biome map of the column, or initializes it if it's not present.
+    pub fn biome_map(&self, ctx: &GenCtx) -> &ColumnStore<BiomeId> {
+        self.biome_map.get_or_init(|| {
+            let mut ret = ColumnStore::new(BiomeId::Void);
+
+            for pos in ColumnPos::iter_all() {
+                let world_pos = self.pos * Chunk::SIDE + pos.to_vec2();
+                ret[pos] = ctx.biomes.sample(world_pos, &ctx.biome_registry);
+            }
+
+            ret
+        })
     }
 
-    /// Ensures that the biomes in this column are generated.
-    pub fn ensure_biomes(&mut self, pos: IVec2, ctx: &GenCtx) {
-        if self.state < ColumnState::Biomes {
-            self.populate_biomes(pos, ctx);
-            self.state = ColumnState::Biomes;
-        }
-    }
+    /// Gets the height map of the column, or initializes it if it's not present.
+    pub fn height_map(&self, ctx: &GenCtx) -> &ColumnStore<f32> {
+        self.height_map.get_or_init(|| {
+            let mut ret = ColumnStore::new(0.0);
 
-    /// Overwrites the `height_map` field with the heightmap generated at the provided position.
-    ///
-    /// This function does not update the [`state`] field to reflect the new state of the
-    /// column.
-    ///
-    /// This function assumes that the column is at least at the [`Biomes`] stage.
-    ///
-    /// [`state`]: ColumnGen::state
-    /// [`Biomes`]: ColumnState::Biomes
-    pub fn populate_heightmap(&mut self, chunk: IVec2, ctx: &GenCtx) {
-        let chunk_origin = chunk * Chunk::SIDE;
+            let chunk_origin = self.pos * Chunk::SIDE;
 
-        // Computes the heightmap contribution at the provided value.
-        // The result of the function is then used to interpolate between four distinct values.
-        let heightmap_contribution = |world_pos: IVec2| {
-            let mut height = 0.0; // cumulative height so far
-            let mut weight = 0.0; // cumulative weight so far, used to normalize the height value at the end
-            let mut noise_index = 0; // index within the `ctx.heightmap_noises` array
-            let mut next_sampled_pos = [world_pos.x as u64, world_pos.y as u64]; // next position to feed to the noise.
-            for _ in 0..HEIGHT_MAP_SAMPLE_COUNT {
-                // Compute the displacement value for the next sample.
-                let displacement_x = ctx.heightmap_noises[noise_index].sample(next_sampled_pos);
-                noise_index = (noise_index + 1) % ctx.heightmap_noises.len();
-                let displacement_y = ctx.heightmap_noises[noise_index].sample(next_sampled_pos);
-                noise_index = (noise_index + 1) % ctx.heightmap_noises.len();
+            // Computes the heightmap contribution at the provided value.
+            // The result of the function is then used to interpolate between four distinct values.
+            let heightmap_contribution = |world_pos: IVec2| {
+                let mut height = 0.0; // cumulative height so far
+                let mut weight = 0.0; // cumulative weight so far, used to normalize the height value at the end
+                let mut noise_index = 0; // index within the `ctx.heightmap_noises` array
+                let mut next_sampled_pos = [world_pos.x as u64, world_pos.y as u64]; // next position to feed to the noise.
+                for _ in 0..HEIGHT_MAP_SAMPLE_COUNT {
+                    // Compute the displacement value for the next sample.
+                    let displacement_x = ctx.heightmap_noises[noise_index].sample(next_sampled_pos);
+                    noise_index = (noise_index + 1) % ctx.heightmap_noises.len();
+                    let displacement_y = ctx.heightmap_noises[noise_index].sample(next_sampled_pos);
+                    noise_index = (noise_index + 1) % ctx.heightmap_noises.len();
 
-                let displacement = IVec2::new(
-                    (displacement_x % HEIGHT_MAP_SAMPLE_DISPERSE as u64) as i32
-                        - HEIGHT_MAP_SAMPLE_DISPERSE / 2,
-                    (displacement_y % HEIGHT_MAP_SAMPLE_DISPERSE as u64) as i32
-                        - HEIGHT_MAP_SAMPLE_DISPERSE / 2,
-                );
+                    let displacement = IVec2::new(
+                        (displacement_x % HEIGHT_MAP_SAMPLE_DISPERSE as u64) as i32
+                            - HEIGHT_MAP_SAMPLE_DISPERSE / 2,
+                        (displacement_y % HEIGHT_MAP_SAMPLE_DISPERSE as u64) as i32
+                            - HEIGHT_MAP_SAMPLE_DISPERSE / 2,
+                    );
 
-                let sampled_pos = world_pos + displacement;
-                next_sampled_pos = [sampled_pos.x as u64, sampled_pos.y as u64];
+                    let sampled_pos = world_pos + displacement;
+                    next_sampled_pos = [sampled_pos.x as u64, sampled_pos.y as u64];
 
-                let sampled_chunk = IVec2::new(
-                    sampled_pos.x.div_euclid(Chunk::SIDE),
-                    sampled_pos.y.div_euclid(Chunk::SIDE),
-                );
+                    let sampled_chunk = IVec2::new(
+                        sampled_pos.x.div_euclid(Chunk::SIDE),
+                        sampled_pos.y.div_euclid(Chunk::SIDE),
+                    );
 
-                // Take the height value for that position.
-                // If the position is outside of the current column, we need to query it.
-                let biome = if sampled_chunk != chunk {
-                    // We need to query the heightmap of the column at that position.
-                    let col = ctx.get_column_ensure_biomes(sampled_chunk);
-                    col.biome_map[ColumnPos::from_world_pos(sampled_pos)]
-                } else {
-                    self.biome_map[ColumnPos::from_world_pos(sampled_pos)]
-                };
+                    // Take the height value for that position.
+                    // If the position is outside of the current column, we need to query it.
+                    // Otherwise, we save a lookup by simply using the value from the current
+                    // column.
+                    let biome = if sampled_chunk != self.pos {
+                        // We need to query the heightmap of the column at that position.
+                        let col = ctx.columns.get(sampled_chunk);
+                        col.biome_map(ctx)[ColumnPos::from_world_pos(sampled_pos)]
+                    } else {
+                        self.biome_map(ctx)[ColumnPos::from_world_pos(sampled_pos)]
+                    };
 
-                // Compute the weight from the distance between the sampled position and the
-                // current position.
-                // The farther the sampled point, the less weight it has.
-                let sq_dist = sampled_pos.distance_squared(world_pos);
-                let w = 1.0 / (sq_dist as f32 + 1.0);
+                    // Compute the weight from the distance between the sampled position and the
+                    // current position.
+                    // The farther the sampled point, the less weight it has.
+                    let sq_dist = sampled_pos.distance_squared(world_pos);
+                    let w = 1.0 / (sq_dist as f32 + 1.0);
 
-                height += w * ctx.biome_registry[biome].implementation.height(sampled_pos);
-                weight += w;
+                    height += w * ctx.biome_registry[biome].implementation.height(sampled_pos);
+                    weight += w;
+                }
+
+                height / weight
+            };
+
+            for pos in ColumnPos::iter_all() {
+                let world_pos = chunk_origin + pos.to_vec2();
+
+                let c00 = world_pos.div_euclid(IVec2::splat(HEIGHT_MAP_GRANULARITY));
+                let c10 = c00 + IVec2::new(1, 0);
+                let c01 = c00 + IVec2::new(0, 1);
+                let c11 = c00 + IVec2::new(1, 1);
+
+                let h00 = heightmap_contribution(c00 * HEIGHT_MAP_GRANULARITY);
+                let h10 = heightmap_contribution(c10 * HEIGHT_MAP_GRANULARITY);
+                let h01 = heightmap_contribution(c01 * HEIGHT_MAP_GRANULARITY);
+                let h11 = heightmap_contribution(c11 * HEIGHT_MAP_GRANULARITY);
+
+                let x = world_pos.x.rem_euclid(HEIGHT_MAP_GRANULARITY) as f32
+                    * (1.0 / HEIGHT_MAP_GRANULARITY as f32);
+                let z = world_pos.y.rem_euclid(HEIGHT_MAP_GRANULARITY) as f32
+                    * (1.0 / HEIGHT_MAP_GRANULARITY as f32);
+
+                #[inline]
+                fn interpolate(a: f32, b: f32, x: f32) -> f32 {
+                    // a * (1.0 - x) + b * x
+
+                    let x2 = x * x;
+                    let x3 = x2 * x;
+                    let f = 3.0 * x2 - 2.0 * x3;
+                    a * (1.0 - f) + b * f
+                }
+
+                ret[pos] = interpolate(interpolate(h00, h10, x), interpolate(h01, h11, x), z);
             }
 
-            height / weight
-        };
-
-        for pos in ColumnPos::iter_all() {
-            let world_pos = chunk_origin + pos.to_vec2();
-
-            let c00 = world_pos.div_euclid(IVec2::splat(HEIGHT_MAP_GRANULARITY));
-            let c10 = c00 + IVec2::new(1, 0);
-            let c01 = c00 + IVec2::new(0, 1);
-            let c11 = c00 + IVec2::new(1, 1);
-
-            let h00 = heightmap_contribution(c00 * HEIGHT_MAP_GRANULARITY);
-            let h10 = heightmap_contribution(c10 * HEIGHT_MAP_GRANULARITY);
-            let h01 = heightmap_contribution(c01 * HEIGHT_MAP_GRANULARITY);
-            let h11 = heightmap_contribution(c11 * HEIGHT_MAP_GRANULARITY);
-
-            let x = world_pos.x.rem_euclid(HEIGHT_MAP_GRANULARITY) as f32
-                * (1.0 / HEIGHT_MAP_GRANULARITY as f32);
-            let z = world_pos.y.rem_euclid(HEIGHT_MAP_GRANULARITY) as f32
-                * (1.0 / HEIGHT_MAP_GRANULARITY as f32);
-
-            #[inline]
-            fn interpolate(a: f32, b: f32, x: f32) -> f32 {
-                // a * (1.0 - x) + b * x
-
-                // cubic
-                let x2 = x * x;
-                let x3 = x2 * x;
-                let f = 3.0 * x2 - 2.0 * x3;
-                a * (1.0 - f) + b * f
-            }
-
-            self.height_map[pos] =
-                interpolate(interpolate(h00, h10, x), interpolate(h01, h11, x), z);
-        }
-    }
-
-    /// Ensures that the heightmap in this column is generated.
-    pub fn ensure_heightmap(&mut self, pos: IVec2, ctx: &GenCtx) {
-        match self.state {
-            ColumnState::Empty => {
-                self.populate_biomes(pos, ctx);
-                self.populate_heightmap(pos, ctx);
-                self.state = ColumnState::Heightmap;
-            }
-            ColumnState::Biomes => {
-                self.populate_heightmap(pos, ctx);
-                self.state = ColumnState::Heightmap;
-            }
-            _ => (),
-        }
+            ret
+        })
     }
 }
 
@@ -314,13 +278,13 @@ impl ColumnGen {
 #[derive(Default)]
 pub struct Columns {
     /// The columns that have been generated so far.
-    columns: RwLock<HashMap<IVec2, Arc<RwLock<ColumnGen>>, BuildHasherDefault<FxHasher>>>,
+    columns: RwLock<HashMap<IVec2, Arc<ColumnGen>, BuildHasherDefault<FxHasher>>>,
 }
 
 impl Columns {
     /// Attempt to get a [`ColumnGen`] instance from the cache, or create a new one if it's not
     /// present.
-    pub fn get(&self, pos: IVec2) -> Arc<RwLock<ColumnGen>> {
+    pub fn get(&self, pos: IVec2) -> Arc<ColumnGen> {
         // Try to get the column from the cache.
         let lock = self.columns.read();
 
@@ -338,7 +302,7 @@ impl Columns {
         self.columns
             .write()
             .entry(pos)
-            .or_insert_with(|| Arc::new(RwLock::new(ColumnGen::empty())))
+            .or_insert_with(|| Arc::new(ColumnGen::new(pos)))
             .clone()
     }
 }
