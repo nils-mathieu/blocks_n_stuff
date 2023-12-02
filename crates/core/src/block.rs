@@ -29,6 +29,7 @@ pub enum BlockId {
     Sandstone,
     RedSandstone,
     Water,
+    Bedrock,
 }
 
 // SAFETY:
@@ -139,6 +140,11 @@ impl BlockId {
             BlockInfo {
                 appearance: BlockAppearance::Liquid(TextureId::Water),
                 visibility: BlockVisibility::Transparent,
+            },
+            // Bedrock
+            BlockInfo {
+                appearance: BlockAppearance::uniform(TextureId::Bedrock),
+                visibility: BlockVisibility::Opaque,
             },
         ];
 

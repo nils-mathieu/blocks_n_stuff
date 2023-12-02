@@ -13,13 +13,13 @@
 - [x] Update package to optimize dependencies & not the current package.
 - [ ] Add workspace dependencies to avoid having to update every package manually.
 - [x] Use `std::thread::available_parallelism` instead `num_cpus`.
-- [ ] Add bedrock.
+- [x] Add bedrock.
 
 # Features
 
 - [ ] Infinite terrain generation.
-  - [ ] Modular biomes.
-  - [ ] Base terrain.
+  - [x] Modular biomes.
+  - [x] Base terrain.
   - [ ] Structures (trees, big rocks, etc).
 - [ ] Basic graphics.
   - [x] Optimized voxel renderer.

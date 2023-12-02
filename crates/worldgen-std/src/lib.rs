@@ -1,6 +1,6 @@
 //! The standard world generator.
 
-use bns_core::{Chunk, ChunkPos};
+use bns_core::{BlockId, Chunk, ChunkPos, LocalPos};
 use bns_rng::noises::Mixer;
 use bns_rng::{FromRng, Rng};
 use bns_worldgen_core::WorldGenerator;
@@ -61,6 +61,12 @@ impl WorldGenerator for StandardWorldGenerator {
             self.ctx.biome_registry[biome]
                 .implementation
                 .geological_stage(chunk_pos, &col, &self.ctx, &mut ret);
+        }
+
+        if chunk_pos.y == -4 {
+            for pos in LocalPos::iter_surface(0) {
+                *ret.get_block_mut(pos) = BlockId::Bedrock;
+            }
         }
 
         ret

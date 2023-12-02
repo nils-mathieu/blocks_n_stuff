@@ -34,6 +34,7 @@ pub enum TextureId {
     RedSandstoneBottom,
     RedSandstoneSide,
     Water,
+    Bedrock,
 }
 
 impl TextureId {
@@ -78,6 +79,7 @@ impl TextureId {
             "red_sandstone_bottom",
             "red_sandstone_side",
             "water",
+            "bedrock",
         ];
         unsafe { NAMES.get_unchecked(self as usize) }
     }
