@@ -1,5 +1,6 @@
 use std::collections::BinaryHeap;
 use std::hash::BuildHasherDefault;
+use std::num::NonZeroUsize;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering::Relaxed;
 use std::sync::Arc;
@@ -268,7 +269,11 @@ impl World {
     pub fn new(gpu: Arc<Gpu>, generator: Box<dyn WorldGenerator>) -> Self {
         let task_pool = Arc::new(TaskPool::new(generator));
 
-        for _ in 0..1 {
+        let worker_count = std::thread::available_parallelism()
+            .map_or(1, NonZeroUsize::get)
+            .saturating_sub(3)
+            .max(1);
+        for _ in 0..worker_count {
             let task_pool = task_pool.clone();
             let gpu = gpu.clone();
             std::thread::spawn(move || {
