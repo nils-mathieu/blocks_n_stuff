@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use quanta::Clock;
 use winit::dpi::PhysicalSize;
 use winit::event::{DeviceEvent, Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
@@ -34,7 +35,8 @@ pub fn run() {
         window.set_visible(true);
     }
 
-    let mut last_tick = std::time::Instant::now();
+    let clock = Clock::new();
+    let mut last_tick = clock.now();
 
     // Start the event loop.
     event_loop
@@ -42,7 +44,7 @@ pub fn run() {
             Event::AboutToWait => {
                 // FIXME: when the user resizes the window, the `AboutToWait` event is not fired
                 // for a while and the delta time ends up being huge.
-                let now = std::time::Instant::now();
+                let now = clock.now();
                 let dt = now - last_tick;
                 last_tick = now;
 
