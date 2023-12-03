@@ -81,11 +81,11 @@ impl<'w> Surface<'w> {
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    limits: wgpu::Limits {
+                    required_limits: wgpu::Limits {
                         min_uniform_buffer_offset_alignment: 64,
                         ..Default::default()
                     },
-                    features: wgpu::Features::empty(),
+                    required_features: wgpu::Features::empty(),
                     label: Some("GPU Device"),
                 },
                 None,
