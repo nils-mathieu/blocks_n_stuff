@@ -5,7 +5,8 @@ struct FrameUniforms {
     view: mat4x4<f32>,
     inverse_view: mat4x4<f32>,
     resolution: vec2<f32>,
-    _padding: vec2<u32>,
+    fog_factor: f32,
+    _padding: u32,
 }
 
 @group(0) @binding(0)
@@ -54,12 +55,6 @@ const HIGH_SKY_COLOR: vec3<f32> = vec3<f32>(0.2, 0.6, 0.9);
 // The color the sky in low altitudes.
 const LOW_SKY_COLOR: vec3<f32> = vec3<f32>(0.6, 0.6, 1.0);
 
-/// The color of the ground.
-const GROUND_COLOR: vec3<f32> = vec3<f32>(0.2, 0.3, 0.4);
-
-// "how fast" the ground color appears. The transition goes from LOW_SKY_COLOR to ground.
-const GROUND_BLUR: f32 = 0.2;
-
 @group(1) @binding(0)
 var depth_texture: texture_depth_2d;
 @group(1) @binding(1)
@@ -70,10 +65,8 @@ fn fog(eye_dir: vec3<f32>) -> vec3<f32> {
 
     if (height > 0.0) {
         return vec3<f32>(mix(LOW_SKY_COLOR, HIGH_SKY_COLOR, height));
-    } else if (height > -GROUND_BLUR) {
-        return vec3<f32>(mix(LOW_SKY_COLOR, GROUND_COLOR, -height / GROUND_BLUR));
     } else {
-        return vec3<f32>(GROUND_COLOR);
+        return vec3<f32>(LOW_SKY_COLOR);
     }
 }
 
@@ -86,6 +79,6 @@ fn fs_main(
     let clip_space = vec4<f32>(vec2(0.0, 1.0) - in.uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
     let view_space = frame.inverse_projection * clip_space;
     depth = max(view_space.z / view_space.w, 0.0);
-    depth = 1.0 - pow(2.0, -depth / 50.0);
-    return vec4<f32>(fog_color, depth);
+    let fog_amount = 1.0 - pow(4.0, -depth * frame.fog_factor);
+    return vec4<f32>(fog_color, fog_amount);
 }

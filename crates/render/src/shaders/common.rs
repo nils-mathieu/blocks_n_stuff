@@ -39,6 +39,7 @@ impl<'a> TextureAtlasConfig<'a> {
     }
 }
 
+/// The frame uniforms passed to shaders.
 #[derive(Debug, Default, Clone, Copy, Zeroable, Pod)]
 #[repr(C)]
 pub struct FrameUniforms {
@@ -52,8 +53,12 @@ pub struct FrameUniforms {
     pub inverse_view: Mat4,
     /// The resolution of the render target.
     pub resolution: Vec2,
-    /// Some additional padding for the struct.
-    pub _padding: [u32; 2],
+    /// The fog factor.
+    ///
+    /// The lower the value (close to zero), the less fog is applied. The higher the value (close
+    /// to one), the more fog is applied.
+    pub fog_factor: f32,
+    pub _padding: u32,
 }
 
 /// Some resources commonly used through the renderer.

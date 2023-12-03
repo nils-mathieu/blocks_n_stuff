@@ -232,7 +232,8 @@ impl App {
                 self.surface.config().width as f32,
                 self.surface.config().height as f32,
             ),
-            _padding: [0; 2],
+            fog_factor: 1.0 / (self.render_distance as f32 * 12.0),
+            _padding: 0,
         };
         chunks_in_frustum(&self.camera, self.render_distance, |chunk_pos, _| {
             if let Some(chunk) = self.world.get_existing_chunk(chunk_pos) {
