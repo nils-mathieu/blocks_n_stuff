@@ -1,9 +1,8 @@
 //! A worker abstraction to create thread pools.
 
-use std::sync::Arc;
-
-#[cfg_attr(not(target_arch = "wasm32"), path = "parking_lot.rs")]
-#[cfg_attr(target_arch = "wasm32", path = "web_sys.rs")]
+// #[cfg_attr(not(target_arch = "wasm32"), path = "parking_lot.rs")]
+// #[cfg_attr(target_arch = "wasm32", path = "no_workers.rs")]
+#[path = "no_workers.rs"]
 mod imp;
 
 /// The type used to represent the priority of a task.
@@ -22,58 +21,67 @@ pub trait Worker {
     fn run(&mut self, input: Self::Input) -> Self::Output;
 }
 
-/// The inner task pool.
-#[derive(Clone)]
-pub struct TaskPool<I, O> {
-    /// The inner task pool.
-    inner: Arc<imp::TaskPool<I, O>>,
+/// A trait that requires `Send` on non-WASM targets.
+pub trait WasmNonSend {}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl<T: Send> WasmNonSend for T {}
+
+#[cfg(target_arch = "wasm32")]
+impl<T> WasmNonSend for T {}
+
+/// A task pool that allows submitting tasks to be executed by a worker.
+pub struct TaskPool<W: Worker> {
+    inner: imp::TaskPool<W>,
 }
 
-impl<I, O> TaskPool<I, O> {
-    /// Submits a new task to the task pool.
+impl<W: Worker> Default for TaskPool<W> {
     #[inline]
-    pub fn submit(&self, input: I, priority: Priority) {
-        self.inner.submit(input, priority);
+    fn default() -> Self {
+        Self {
+            inner: imp::TaskPool::default(),
+        }
     }
+}
 
-    /// Submits a batch of tasks to the task pool.
-    #[inline]
-    pub fn submit_batch(&self, iter: impl IntoIterator<Item = (I, Priority)>) {
-        self.inner.submit_batch(iter);
-    }
-
-    /// Returns the tasks that have been received from workers.
+impl<W: Worker> TaskPool<W> {
+    /// Returns the number of tasks that are currently queued.
     ///
-    /// # Remarks
-    ///
-    /// The returned iterator may hold a lock to an internal queue, so you better don't hold on to
-    /// it for too long.
-    #[inline]
-    pub fn fetch_results(&self) -> impl Iterator<Item = O> + '_ {
-        self.inner.fetch_results()
-    }
-
-    /// Returns the number of tasks that are currently in the queue.
-    #[inline]
+    /// Note that this does *not* include tasks that are currently running.
     pub fn task_count(&self) -> usize {
         self.inner.task_count()
     }
-}
 
-/// Starts a collection of worker threads and returns a handle to the task pool.
-pub fn start<W, I>(workers: I) -> TaskPool<W::Input, W::Output>
-where
-    I: IntoIterator<Item = W>,
-    W: 'static + Send + Worker,
-    W::Input: Send,
-    W::Output: Send,
-{
-    let pool = Arc::new(imp::TaskPool::default());
-
-    for worker in workers {
-        let pool = pool.clone();
-        imp::spawn_worker(pool, worker);
+    /// Submits a new task to be executed by a worker with the given priority.
+    ///
+    /// Tasks with a higher priority will be executed first.
+    pub fn submit(&self, payload: W::Input, priority: Priority) {
+        self.inner.submit(payload, priority)
     }
 
-    TaskPool { inner: pool }
+    /// Submits multiple tasks to be executed by a worker with the given priority.
+    ///
+    /// Tasks with a higher priority will be executed first.
+    pub fn submit_batch(&self, iter: impl IntoIterator<Item = (W::Input, Priority)>) {
+        self.inner.submit_batch(iter)
+    }
+
+    /// Returns an iterator over the results of the tasks that have been executed, including
+    /// their outputs.
+    ///
+    /// Note that the returned iterator might hold a lock to an internal queue, so it is
+    /// recommended to not hold on to it for too long.
+    pub fn fetch_results(&self) -> impl Iterator<Item = W::Output> + '_ {
+        self.inner.fetch_results()
+    }
+
+    /// Spawns a worker that will execute tasks from the queue.
+    pub fn spawn(&self, worker: W)
+    // where
+    //     W: Send + 'static,
+    //     W::Input: Send,
+    //     W::Output: Send,
+    {
+        self.inner.spawn(worker)
+    }
 }

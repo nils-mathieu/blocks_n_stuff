@@ -97,6 +97,7 @@ impl<'w> Surface<'w> {
             .get_default_config(&adapter, 0, 0)
             .expect("the selected GPU is not compatible with the surface");
 
+        #[allow(clippy::arc_with_non_send_sync)]
         let gpu = Arc::new(Gpu::new(device, queue));
 
         Self {

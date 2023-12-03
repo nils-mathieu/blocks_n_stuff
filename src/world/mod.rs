@@ -3,13 +3,13 @@ use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use bitflags::bitflags;
-use bns_workers::Priority;
 use glam::{IVec3, Vec3Swizzles};
 use hashbrown::HashMap;
 use smallvec::SmallVec;
 
 use bns_core::{Chunk, ChunkPos};
 use bns_render::Gpu;
+use bns_workers::{Priority, TaskPool, Worker};
 use bns_worldgen_core::WorldGenerator;
 
 mod chunk_geometry;
@@ -99,7 +99,7 @@ impl WorldWorker {
     }
 }
 
-impl bns_workers::Worker for WorldWorker {
+impl Worker for WorldWorker {
     type Input = ChunkPos;
     type Output = (ChunkPos, LoadedChunk);
 
@@ -122,7 +122,7 @@ pub struct World {
     /// The list of chunks that are currently loaded in memory.
     chunks: Chunks,
     /// The task pool used to generate new chunks.
-    task_pool: bns_workers::TaskPool<ChunkPos, (ChunkPos, LoadedChunk)>,
+    task_pool: TaskPool<WorldWorker>,
     /// The context used to build chunks.
     chunk_build_context: ChunkBuildContext,
 
@@ -138,9 +138,11 @@ impl World {
             .saturating_sub(3)
             .max(1);
 
-        let task_pool = bns_workers::start(
-            (0..worker_count).map(|_| WorldWorker::new(gpu.clone(), Arc::clone(&generator))),
-        );
+        let task_pool = TaskPool::default();
+
+        for _ in 0..worker_count {
+            task_pool.spawn(WorldWorker::new(gpu.clone(), Arc::clone(&generator)));
+        }
 
         Self {
             task_pool,
@@ -184,6 +186,16 @@ impl World {
         }
     }
 
+    /// Makes sure that the chunks that have been generated in the background are loaded and
+    /// available to the current thread.
+    pub fn fetch_available_chunks(&mut self) {
+        self.chunks.extend(
+            self.task_pool
+                .fetch_results()
+                .map(|(pos, c)| (pos, ChunkEntry::Loaded(c))),
+        );
+    }
+
     /// Requests a chunk.
     ///
     /// If the chunk is not currently available, [`None`] is returned and the chunk is queued
@@ -207,13 +219,6 @@ impl World {
     /// The built chunk, if it was already available.
     pub fn request_chunk(&mut self, pos: ChunkPos, priority: Priority) -> &mut ChunkEntry {
         use hashbrown::hash_map::Entry;
-
-        // Get the chunks that have been received so far.
-        self.chunks.extend(
-            self.task_pool
-                .fetch_results()
-                .map(|(pos, c)| (pos, ChunkEntry::Loaded(c))),
-        );
 
         let entry = match self.chunks.entry(pos) {
             Entry::Occupied(e) => e.into_mut(),

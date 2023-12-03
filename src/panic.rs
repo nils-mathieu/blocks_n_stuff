@@ -71,10 +71,16 @@ fn custom_panic_hook(info: &PanicInfo) {
     // Except on WASM, where we use the browser's console.
     #[cfg(target_arch = "wasm32")]
     {
+        use web_sys::js_sys::wasm_bindgen::JsValue;
+
         let message = format!("%cpanic%c  {}", message);
         let css1 = "color: white; font-weight: bold; background-color: red;";
         let css2 = "color: black; font-weight: normal; background-color: white;";
-        web_sys::console::error_3(&message, css1, css2);
+        web_sys::console::error_3(
+            &JsValue::from(message),
+            &JsValue::from(css1),
+            &JsValue::from(css2),
+        );
     }
 
     // Display the message to the user using a message box.
@@ -86,7 +92,7 @@ fn custom_panic_hook(info: &PanicInfo) {
         // The `call_once` method will block if another thread is already calling it, and will
         // only unblock (but not call the closure) when the other thread is done (the user
         // closed the message box).
-        static WINDOW_SHOWED_UP: parking_lot::Once = parking_lot::Once::new();
+        static WINDOW_SHOWED_UP: std::sync::Once = std::sync::Once::new();
         WINDOW_SHOWED_UP.call_once(|| display_message_box(&message));
     }
 }

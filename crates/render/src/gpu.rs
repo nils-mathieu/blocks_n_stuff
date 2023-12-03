@@ -40,7 +40,7 @@ impl Gpu {
             #[cfg(not(target_arch = "wasm32"))]
             temp_command_encoders: ThreadLocal::new(),
             #[cfg(target_arch = "wasm32")]
-            temp_command_encoder: RefCell::new(device.create_command_encoder(
+            temp_command_encoder: Mutex::new(device.create_command_encoder(
                 &wgpu::CommandEncoderDescriptor {
                     label: Some("Temporary Command Encoder"),
                 },

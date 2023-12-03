@@ -268,7 +268,6 @@ name = "bns-workers"
 version = "0.1.0"
 dependencies = [
  "parking_lot",
- "web-sys",
 ]
 
 [[package]]

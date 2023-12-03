@@ -342,6 +342,10 @@ impl App {
         chunks_in_frustum(&self.camera, self.render_distance, |chunk_pos, priority| {
             self.world.request_chunk(chunk_pos, priority);
         });
+
+        for _ in 0..10 {
+            self.world.fetch_available_chunks();
+        }
     }
 }
 

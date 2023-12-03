@@ -6,7 +6,6 @@ use std::sync::Arc;
 
 use crate::{Priority, Worker};
 
-/// A task with a payload.
 struct Task<T> {
     priority: Priority,
     payload: T,
@@ -35,8 +34,8 @@ impl<T> Ord for Task<T> {
     }
 }
 
-/// A pool of tasks that can be executed by multiple threads.
-pub struct TaskPool<I, O> {
+/// The state that's shared between all workers.
+struct Shared<I, O> {
     /// The list of tasks that have been pushed to the list, but not have been taken by a worker
     /// just yet.
     tasks: Mutex<BinaryHeap<Task<I>>>,
@@ -52,19 +51,7 @@ pub struct TaskPool<I, O> {
     should_stop: AtomicBool,
 }
 
-impl<I, O> Default for TaskPool<I, O> {
-    #[inline]
-    fn default() -> Self {
-        Self {
-            tasks: Mutex::new(BinaryHeap::new()),
-            results: Mutex::new(Vec::new()),
-            condvar: Condvar::new(),
-            should_stop: AtomicBool::new(false),
-        }
-    }
-}
-
-impl<I, O> TaskPool<I, O> {
+impl<I, O> Shared<I, O> {
     /// Determines whether a worker thread should stop.
     ///
     /// If this function returns `true`, the `workers_to_remove` counter is decremented by `1`.
@@ -73,18 +60,12 @@ impl<I, O> TaskPool<I, O> {
         self.should_stop.load(Relaxed)
     }
 
-    /// Returns the total number of tasks currently in the pool.
-    #[inline]
-    pub fn task_count(&self) -> usize {
-        self.tasks.lock().len()
-    }
-
     /// Fetches a task to execute.
     ///
     /// If no task is available, the function blocks until a new task is pushed to the list.
     ///
     /// If the thread must stop, `None` is returned.
-    pub fn fetch_task(&self) -> Option<I> {
+    fn fetch_task(&self) -> Option<I> {
         if self.should_stop() {
             return None;
         }
@@ -102,35 +83,82 @@ impl<I, O> TaskPool<I, O> {
         }
     }
 
-    /// Submits a new task to be executed.
-    pub fn submit(&self, payload: I, priority: Priority) {
-        let mut lock = self.tasks.lock();
-        lock.push(Task { payload, priority });
-        self.condvar.notify_one();
+    /// Adds a result to the list of results.
+    fn push_result(&self, output: O) {
+        self.results.lock().push(output);
+    }
+}
+
+/// A pool of tasks that can be executed by multiple threads.
+pub struct TaskPool<W: Worker> {
+    /// The shared state.
+    shared: Arc<Shared<W::Input, W::Output>>,
+}
+
+impl<W: Worker> Default for TaskPool<W> {
+    #[inline]
+    fn default() -> Self {
+        Self {
+            shared: Arc::new(Shared {
+                tasks: Mutex::new(BinaryHeap::new()),
+                results: Mutex::new(Vec::new()),
+                condvar: Condvar::new(),
+                should_stop: AtomicBool::new(false),
+            }),
+        }
+    }
+}
+
+/// Public methods that will be called by the main implementation.
+impl<W: Worker> TaskPool<W> {
+    #[inline]
+    pub fn task_count(&self) -> usize {
+        self.shared.tasks.lock().len()
     }
 
-    /// Submits a batch of tasks to be executed.
-    pub fn submit_batch(&self, iter: impl IntoIterator<Item = (I, Priority)>) {
-        self.tasks.lock().extend(
+    pub fn submit(&self, payload: W::Input, priority: Priority) {
+        let mut lock = self.shared.tasks.lock();
+        lock.push(Task { payload, priority });
+        self.shared.condvar.notify_one();
+    }
+
+    pub fn submit_batch(&self, iter: impl IntoIterator<Item = (W::Input, Priority)>) {
+        self.shared.tasks.lock().extend(
             iter.into_iter()
                 .map(|(payload, priority)| Task { payload, priority }),
         );
-        self.condvar.notify_all();
+        self.shared.condvar.notify_all();
     }
 
-    /// Adds a result to the list of results.
-    pub fn push_result(&self, output: O) {
-        self.results.lock().push(output);
+    pub fn fetch_results(&self) -> impl Iterator<Item = W::Output> + '_ {
+        Results(self.shared.results.lock())
     }
 
-    /// Returns an iterator over the results that were received by the [`TaskPool`].
-    pub fn fetch_results(&self) -> Results<'_, O> {
-        Results(self.results.lock())
+    pub fn spawn(&self, mut worker: W)
+    where
+        W: Send + 'static,
+        W::Input: Send,
+        W::Output: Send,
+    {
+        let shared = self.shared.clone();
+        std::thread::spawn(move || {
+            while let Some(input) = shared.fetch_task() {
+                let output = worker.run(input);
+                shared.push_result(output);
+            }
+        });
+    }
+}
+
+impl<W: Worker> Drop for TaskPool<W> {
+    fn drop(&mut self) {
+        self.shared.should_stop.store(true, Relaxed);
+        self.shared.condvar.notify_all();
     }
 }
 
 /// An iterator over the results that were received by a [`TaskPool`].
-pub struct Results<'a, T>(parking_lot::MutexGuard<'a, Vec<T>>);
+struct Results<'a, T>(parking_lot::MutexGuard<'a, Vec<T>>);
 
 impl<'a, T> Iterator for Results<'a, T> {
     type Item = T;
@@ -151,26 +179,4 @@ impl<'a, T> ExactSizeIterator for Results<'a, T> {
     fn len(&self) -> usize {
         self.0.len()
     }
-}
-
-impl<I, O> Drop for TaskPool<I, O> {
-    fn drop(&mut self) {
-        self.should_stop.store(true, Relaxed);
-        self.condvar.notify_all();
-    }
-}
-
-/// Spawns a new worker thread.
-pub fn spawn_worker<W>(pool: Arc<TaskPool<W::Input, W::Output>>, mut worker: W)
-where
-    W: 'static + Send + Worker,
-    W::Output: Send,
-    W::Input: Send,
-{
-    std::thread::spawn(move || {
-        while let Some(task) = pool.fetch_task() {
-            let output = worker.run(task);
-            pool.push_result(output);
-        }
-    });
 }
