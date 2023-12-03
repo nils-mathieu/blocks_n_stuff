@@ -2,6 +2,8 @@
 
 - [ ] Add profiling options & display in the debug UI.
 - [ ] Target web.
+- [ ] Check if there's a good way to generate quality random numbers on web.
+
 
 # Features
 

@@ -8,6 +8,7 @@ use bns_render::data::{
 };
 use bns_render::{Renderer, RendererConfig, Surface, TextureAtlasConfig, TextureFormat};
 use bns_rng::{DefaultRng, FromRng};
+use bns_workers::Priority;
 use bns_worldgen_std::StandardWorldGenerator;
 
 use glam::{IVec3, Vec2, Vec3};
@@ -18,7 +19,7 @@ use winit::keyboard::KeyCode;
 use winit::window::{CursorGrabMode, Fullscreen, Window};
 
 use crate::window::UserEvent;
-use crate::world::{Priority, World};
+use crate::world::World;
 
 mod camera;
 
@@ -95,11 +96,11 @@ impl App {
                 texture_atlas: load_texture_atlas(),
             },
         );
-        let seed = random_seed();
+        let seed = bns_rng::entropy();
         println!("Seed: {seed}");
         let world = World::new(
             renderer.gpu().clone(),
-            Box::new(StandardWorldGenerator::from_seed::<DefaultRng>(seed)),
+            Arc::new(StandardWorldGenerator::from_seed::<DefaultRng>(seed)),
         );
 
         window
@@ -187,11 +188,11 @@ impl App {
         }
 
         if event.state.is_pressed() && event.physical_key == KeyCode::KeyR {
-            let seed = random_seed();
+            let seed = bns_rng::entropy();
             println!("Seed: {seed}");
             self.world = World::new(
                 self.renderer.gpu().clone(),
-                Box::new(StandardWorldGenerator::from_seed::<DefaultRng>(seed)),
+                Arc::new(StandardWorldGenerator::from_seed::<DefaultRng>(seed)),
             );
         }
 
@@ -372,7 +373,7 @@ fn chunks_in_frustum(
                     - (camera.position() - camera_chunk_pos.as_vec3() * Chunk::SIDE as f32);
 
                 if camera.is_sphere_in_frustum(relative_chunk_pos_center, CHUNK_RADIUS) {
-                    let priority = usize::MAX - (x * x + y * y + z * z) as Priority;
+                    let priority = Priority::MAX - (x * x + y * y + z * z) as Priority;
                     callback(camera_chunk_pos + relative_chunk_pos, priority);
                 }
             }
@@ -431,13 +432,6 @@ fn load_texture_atlas() -> TextureAtlasConfig<'static> {
             bns_image::ColorSpace::Linear => TextureFormat::Rgba8Unorm,
         },
     }
-}
-
-/// Returns a random seed for the world generator.
-fn random_seed() -> u64 {
-    let mut bytes = [0; 8];
-    getrandom::getrandom(&mut bytes).unwrap();
-    u64::from_ne_bytes(bytes)
 }
 
 /// Adds a new axis-aligned bounding box to the gizmos list.

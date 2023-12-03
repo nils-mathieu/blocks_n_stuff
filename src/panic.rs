@@ -62,9 +62,19 @@ fn custom_panic_hook(info: &PanicInfo) {
     }
 
     // Display the message to the user using the console.
+    #[cfg(not(target_arch = "wasm32"))]
     {
         use std::io::Write;
         let _ = writeln!(std::io::stderr(), "\x1B[1;31mpanic\x1B[0m: {message}");
+    }
+
+    // Except on WASM, where we use the browser's console.
+    #[cfg(target_arch = "wasm32")]
+    {
+        let message = format!("%cpanic%c  {}", message);
+        let css1 = "color: white; font-weight: bold; background-color: red;";
+        let css2 = "color: black; font-weight: normal; background-color: white;";
+        web_sys::console::error_3(&message, css1, css2);
     }
 
     // Display the message to the user using a message box.

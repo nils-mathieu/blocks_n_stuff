@@ -203,16 +203,15 @@ dependencies = [
  "bns-image",
  "bns-render",
  "bns-rng",
+ "bns-workers",
  "bns-worldgen-core",
  "bns-worldgen-std",
- "bytemuck",
- "getrandom",
  "glam",
  "hashbrown",
- "parking_lot",
  "quanta",
  "rustc-hash",
  "smallvec",
+ "web-sys",
  "windows-sys 0.52.0",
  "winit",
 ]
@@ -252,6 +251,8 @@ name = "bns-rng"
 version = "0.1.0"
 dependencies = [
  "bns-rng-derive",
+ "getrandom",
+ "js-sys",
 ]
 
 [[package]]
@@ -260,6 +261,14 @@ version = "0.1.0"
 dependencies = [
  "quote",
  "syn 2.0.39",
+]
+
+[[package]]
+name = "bns-workers"
+version = "0.1.0"
+dependencies = [
+ "parking_lot",
+ "web-sys",
 ]
 
 [[package]]

@@ -1,4 +1,5 @@
 use parking_lot::Mutex;
+#[cfg(not(target_arch = "wasm32"))]
 use thread_local::ThreadLocal;
 
 /// Holds an open connection with a Graphics Processing Unit (GPU) and provides access to its
@@ -23,7 +24,10 @@ pub struct Gpu {
     /// The `ThredLocal` ensures that there will be no contention most of the time, but if the
     /// renderer needs to get the temporary command encoders to submit them, the mutex is used
     /// to syncronize access with background threads.
+    #[cfg(not(target_arch = "wasm32"))]
     temp_command_encoders: ThreadLocal<Mutex<wgpu::CommandEncoder>>,
+    #[cfg(target_arch = "wasm32")]
+    temp_command_encoder: Mutex<wgpu::CommandEncoder>,
 }
 
 impl Gpu {
@@ -31,22 +35,39 @@ impl Gpu {
     pub(crate) fn new(device: wgpu::Device, queue: wgpu::Queue) -> Self {
         Self {
             limits: device.limits(),
-            device,
             queue,
+
+            #[cfg(not(target_arch = "wasm32"))]
             temp_command_encoders: ThreadLocal::new(),
+            #[cfg(target_arch = "wasm32")]
+            temp_command_encoder: RefCell::new(device.create_command_encoder(
+                &wgpu::CommandEncoderDescriptor {
+                    label: Some("Temporary Command Encoder"),
+                },
+            )),
+
+            device,
         }
     }
 
     /// Returns the temporary command encoder for the current thread.
     pub(crate) fn temp_command_encoder(&self) -> &Mutex<wgpu::CommandEncoder> {
-        self.temp_command_encoders.get_or(|| {
-            Mutex::new(
-                self.device
-                    .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                        label: Some("Temporary Command Encoder"),
-                    }),
-            )
-        })
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.temp_command_encoders.get_or(|| {
+                Mutex::new(
+                    self.device
+                        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                            label: Some("Temporary Command Encoder"),
+                        }),
+                )
+            })
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            &self.temp_command_encoder
+        }
     }
 
     /// Iterates over the temporary command encoders for all threads.
@@ -54,6 +75,14 @@ impl Gpu {
     pub(crate) fn iter_temp_command_encoders(
         &self,
     ) -> impl Iterator<Item = &Mutex<wgpu::CommandEncoder>> {
-        self.temp_command_encoders.iter()
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            self.temp_command_encoders.iter()
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            std::iter::once(&self.temp_command_encoder)
+        }
     }
 }

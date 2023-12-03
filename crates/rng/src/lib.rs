@@ -7,6 +7,9 @@ pub mod rngs;
 
 pub use bns_rng_derive::FromRng;
 
+mod system;
+pub use system::entropy;
+
 /// The default pseudo-random number generator.
 ///
 /// This general purpose RNG should be sufficient in a vast majority of cases.

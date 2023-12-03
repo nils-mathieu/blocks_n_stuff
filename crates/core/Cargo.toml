@@ -9,5 +9,9 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
-bytemuck = { version = "1", features = ["derive", "extern_crate_std"] }
+bytemuck = { version = "1", features = [
+    "derive",
+    "extern_crate_std",
+    "min_const_generics",
+] }
 glam = "0.24"
