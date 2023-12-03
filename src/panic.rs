@@ -73,9 +73,9 @@ fn custom_panic_hook(info: &PanicInfo) {
     {
         use web_sys::js_sys::wasm_bindgen::JsValue;
 
-        let message = format!("%cpanic%c  {}", message);
+        let message = format!("%cPANIC%c  {}", message);
         let css1 = "color: white; font-weight: bold; background-color: red;";
-        let css2 = "color: black; font-weight: normal; background-color: white;";
+        let css2 = "color: inherit; font-weight: normal; background-color: inherit;";
         web_sys::console::error_3(
             &JsValue::from(message),
             &JsValue::from(css1),

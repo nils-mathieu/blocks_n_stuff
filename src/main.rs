@@ -12,3 +12,16 @@ fn main() {
     panic::install_custom_panic_hook();
     window::run();
 }
+
+#[cfg(target_arch = "wasm32")]
+mod wasm {
+
+    use web_sys::wasm_bindgen;
+    use web_sys::wasm_bindgen::prelude::*;
+
+    #[wasm_bindgen(start)]
+    #[allow(clippy::main_recursion)]
+    fn wasm_entrp_point() {
+        super::main();
+    }
+}

@@ -107,12 +107,21 @@ fn create_event_loop() -> EventLoop<UserEvent> {
 /// # Panics
 ///
 /// This function panics if the window cannot be created.
+#[allow(unused_mut)]
 fn create_window(event_loop: &EventLoop<UserEvent>) -> Arc<Window> {
-    WindowBuilder::new()
+    let mut builder = WindowBuilder::new()
         .with_title("Blocks 'n Stuff")
         .with_min_inner_size(PhysicalSize::new(300, 300))
         .with_inner_size(PhysicalSize::new(1280, 720))
-        .with_visible(false)
+        .with_visible(false);
+
+    #[cfg(target_arch = "wasm32")]
+    {
+        use winit::platform::web::WindowBuilderExtWebSys;
+        builder = builder.with_append(true);
+    }
+
+    builder
         .build(event_loop)
         .expect("failed to create the `winit` window")
         .into()
