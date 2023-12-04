@@ -201,6 +201,7 @@ dependencies = [
  "bitflags 2.4.1",
  "bns-core",
  "bns-image",
+ "bns-log",
  "bns-render",
  "bns-rng",
  "bns-workers",
@@ -236,10 +237,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bns-log"
+version = "0.1.0"
+dependencies = [
+ "web-sys",
+]
+
+[[package]]
 name = "bns-render"
 version = "0.1.0"
 dependencies = [
  "bitflags 2.4.1",
+ "bns-log",
  "bytemuck",
  "glam",
  "hashbrown",

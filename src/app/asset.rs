@@ -42,6 +42,7 @@ async fn load_image(asset_path: &str) -> bns_image::Image {
     #[cfg(target_arch = "wasm32")]
     {
         let url = format!("assets/{}.png", asset_path);
+        bns_log::trace!("downloading asset from '{url}'...");
         let data = fetch_api::fetch(&url).await;
         bns_image::Image::load_png(std::io::Cursor::new(data)).unwrap()
     }
@@ -49,6 +50,7 @@ async fn load_image(asset_path: &str) -> bns_image::Image {
     #[cfg(not(target_arch = "wasm32"))]
     {
         let path = format!("assets/{}.png", asset_path);
+        bns_log::trace!("loading asset from '{path}'...");
         bns_image::Image::load_png(std::fs::File::open(path).unwrap()).unwrap()
     }
 }

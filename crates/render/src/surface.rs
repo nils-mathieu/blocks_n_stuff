@@ -65,6 +65,8 @@ impl<'w> Surface<'w> {
             + raw_window_handle::HasWindowHandle
             + raw_window_handle::HasDisplayHandle,
     {
+        bns_log::trace!("initiating a connection with the GPU...");
+
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
             ..Default::default()
@@ -80,6 +82,7 @@ impl<'w> Surface<'w> {
             })
             .await
             .expect("failed to find an appropriate GPU adapter");
+
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
@@ -92,9 +95,14 @@ impl<'w> Surface<'w> {
             .await
             .expect("failed to establish a connection with the selected GPU");
 
+        bns_log::info!("established a connection with the GPU!");
+        bns_log::info!("GPU: {}", adapter.get_info().name);
+
         let config = surface
             .get_default_config(&adapter, 0, 0)
             .expect("the selected GPU is not compatible with the surface");
+
+        bns_log::info!("surface format: {:?}", config.format);
 
         #[allow(clippy::arc_with_non_send_sync)]
         let gpu = Arc::new(Gpu::new(device, queue));

@@ -99,5 +99,6 @@ fn custom_panic_hook(info: &PanicInfo) {
 
 /// Installs the custom panic hook.
 pub fn install_custom_panic_hook() {
+    bns_log::trace!("installing custom panic hook...");
     std::panic::set_hook(Box::new(custom_panic_hook));
 }

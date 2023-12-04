@@ -55,6 +55,7 @@ async fn run_async() {
     let mut last_tick = clock.now();
 
     // Start the event loop.
+    bns_log::trace!("starting the winit event loop...");
     event_loop
         .run(move |event, target| match event {
             Event::AboutToWait => {
@@ -108,6 +109,8 @@ async fn run_async() {
 ///
 /// This function panics if the event loop cannot be created.
 fn create_event_loop() -> EventLoop<UserEvent> {
+    bns_log::trace!("creating the winit event loop...");
+
     let event_loop = EventLoopBuilder::with_user_event()
         .build()
         .expect("failed to create the `winit` event loop");
@@ -133,6 +136,8 @@ fn create_event_loop() -> EventLoop<UserEvent> {
 /// This function panics if the window cannot be created.
 #[allow(unused_mut)]
 fn create_window(event_loop: &EventLoop<UserEvent>) -> Arc<Window> {
+    bns_log::trace!("creating the winit window...");
+
     let mut builder = WindowBuilder::new()
         .with_title("Blocks 'n Stuff")
         .with_visible(false);
