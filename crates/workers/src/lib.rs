@@ -2,7 +2,7 @@
 
 // #[cfg_attr(not(target_arch = "wasm32"), path = "parking_lot.rs")]
 // #[cfg_attr(target_arch = "wasm32", path = "no_workers.rs")]
-#[path = "parking_lot.rs"]
+#[path = "no_workers.rs"]
 mod imp;
 
 /// The type used to represent the priority of a task.
@@ -78,9 +78,9 @@ impl<W: Worker> TaskPool<W> {
     /// Spawns a worker that will execute tasks from the queue.
     pub fn spawn(&self, worker: W)
     where
-        W: Send + 'static,
-        W::Input: Send,
-        W::Output: Send,
+        W: WasmNonSend + 'static,
+        W::Input: WasmNonSend,
+        W::Output: WasmNonSend,
     {
         self.inner.spawn(worker)
     }

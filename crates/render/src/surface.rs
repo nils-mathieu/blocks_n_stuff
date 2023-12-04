@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use pollster::FutureExt;
-
 use crate::{Gpu, RenderTarget};
 
 pub use wgpu::{PresentMode, TextureFormat};
@@ -56,7 +54,11 @@ impl<'w> Surface<'w> {
     ///
     /// This function panics if no GPU is found to render on, or if the rendering API cannot be
     /// initialized.
-    pub fn new<W>(window: W) -> Self
+    ///
+    /// # Remarks
+    ///
+    /// On web, this function must be polled by the web runtime in order to work properly.
+    pub async fn new<W>(window: W) -> Self
     where
         W: 'w
             + wgpu::WasmNotSendSync
@@ -76,13 +78,15 @@ impl<'w> Surface<'w> {
                 power_preference: wgpu::PowerPreference::HighPerformance,
                 ..Default::default()
             })
-            .block_on()
+            .await
             .expect("failed to find an appropriate GPU adapter");
+        let limits = adapter.limits();
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
                     required_limits: wgpu::Limits {
-                        min_uniform_buffer_offset_alignment: 64,
+                        min_uniform_buffer_offset_alignment: limits
+                            .min_uniform_buffer_offset_alignment,
                         ..Default::default()
                     },
                     required_features: wgpu::Features::empty(),
@@ -90,7 +94,7 @@ impl<'w> Surface<'w> {
                 },
                 None,
             )
-            .block_on()
+            .await
             .expect("failed to establish a connection with the selected GPU");
 
         let config = surface

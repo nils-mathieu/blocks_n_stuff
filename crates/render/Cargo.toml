@@ -10,7 +10,6 @@ publish.workspace = true
 
 [dependencies]
 wgpu = { path = "../../../wgpu/wgpu" }               # TODO: use crates.io when wgpu finally uses raw-window-handle v0.6
-pollster = "0.3"
 raw-window-handle = "0.6"
 bitflags = "2"
 glam = { version = "0.24", features = ["bytemuck"] }

@@ -2,11 +2,11 @@
 
 use std::sync::Arc;
 
-use bns_core::{Chunk, ChunkPos, TextureId};
+use bns_core::{Chunk, ChunkPos};
 use bns_render::data::{
     ChunkUniforms, Color, FrameUniforms, LineInstance, LineVertexFlags, RenderData,
 };
-use bns_render::{Renderer, RendererConfig, Surface, TextureAtlasConfig, TextureFormat};
+use bns_render::{Renderer, RendererConfig, Surface};
 use bns_rng::{DefaultRng, FromRng};
 use bns_workers::Priority;
 use bns_worldgen_std::StandardWorldGenerator;
@@ -18,12 +18,12 @@ use winit::event_loop::EventLoopWindowTarget;
 use winit::keyboard::KeyCode;
 use winit::window::{CursorGrabMode, Fullscreen, Window};
 
+use self::camera::Camera;
 use crate::window::UserEvent;
 use crate::world::World;
 
+mod asset;
 mod camera;
-
-use self::camera::Camera;
 
 const VERTICAL_RENDER_DISTANCE: i32 = 6;
 
@@ -87,13 +87,18 @@ impl App {
     pub const CLEANUP_PERIOD: usize = 200;
 
     /// Creates a new [`App`] instance.
-    pub fn new(window: Arc<Window>) -> Self {
-        let surface = Surface::new(window.clone());
+    ///
+    /// # Remarks
+    ///
+    /// This function must be polled by the web runtime in order to work properly (this obviously
+    /// only applied on web).
+    pub async fn new(window: Arc<Window>) -> Self {
+        let surface = Surface::new(window.clone()).await;
         let renderer = Renderer::new(
             surface.gpu().clone(),
             RendererConfig {
                 output_format: surface.info().format,
-                texture_atlas: load_texture_atlas(),
+                texture_atlas: asset::load_texture_atlas().await,
             },
         );
         let seed = bns_rng::entropy();
@@ -400,42 +405,6 @@ fn chunk_of(pos: Vec3) -> ChunkPos {
         coord_to_chunk(pos.y),
         coord_to_chunk(pos.z),
     )
-}
-
-fn load_texture_atlas() -> TextureAtlasConfig<'static> {
-    let mut data = Vec::new();
-    let mut count = 0;
-    let mut metadata = None;
-
-    for texture_id in TextureId::all() {
-        let path = format!("assets/{}.png", texture_id.file_name());
-        let mut image = bns_image::Image::load_png(std::fs::File::open(path).unwrap()).unwrap();
-        image.ensure_srgb();
-        image.ensure_rgba();
-
-        match &metadata {
-            Some(metadata) => assert_eq!(metadata, &image.metadata),
-            None => metadata = Some(image.metadata),
-        }
-
-        data.extend_from_slice(&image.pixels);
-        count += 1;
-    }
-
-    let metadata = metadata.unwrap();
-
-    TextureAtlasConfig {
-        data: data.into(),
-        width: metadata.width,
-        height: metadata.height,
-        count,
-        mip_level_count: 1,
-        format: match metadata.color_space {
-            bns_image::ColorSpace::Srgb => TextureFormat::Rgba8UnormSrgb,
-            bns_image::ColorSpace::Unknown => TextureFormat::Rgba8Unorm,
-            bns_image::ColorSpace::Linear => TextureFormat::Rgba8Unorm,
-        },
-    }
 }
 
 /// Adds a new axis-aligned bounding box to the gizmos list.

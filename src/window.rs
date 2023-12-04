@@ -21,11 +21,28 @@ pub enum UserEvent {}
 /// This function panics if it fails to initialize the window or the event loop. Additionally, if
 /// an error occurs while running the event loop, the function panics even if an exit code is
 /// requested.
-#[allow(clippy::collapsible_match, clippy::single_match)]
 pub fn run() {
+    #[cfg(target_arch = "wasm32")]
+    {
+        wasm_bindgen_futures::spawn_local(run_async());
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        pollster::block_on(run_async());
+    }
+}
+
+/// On web, some of the rendering function must be executed asynchronously. For this reason, the
+/// whole application is forced to be asynchronous-aware.
+///
+/// This function will be conditionally executed by either the web runtime or a dummy runtime
+/// depending on the target platform.
+#[allow(clippy::collapsible_match, clippy::single_match)]
+async fn run_async() {
     let event_loop = create_event_loop();
     let window = create_window(&event_loop);
-    let mut app = App::new(window.clone());
+    let mut app = App::new(window.clone()).await;
 
     // Render the first frame before showing the window.
     {
