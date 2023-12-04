@@ -14,7 +14,7 @@ use bns_worldgen_std::StandardWorldGenerator;
 
 use glam::{IVec3, Vec2, Vec3};
 
-use winit::event::KeyEvent;
+use winit::event::{KeyEvent, MouseButton};
 use winit::event_loop::EventLoopWindowTarget;
 use winit::keyboard::KeyCode;
 use winit::window::{CursorGrabMode, Fullscreen, Window};
@@ -130,12 +130,6 @@ impl App {
             Arc::new(StandardWorldGenerator::from_seed::<DefaultRng>(seed)),
         );
 
-        window
-            .set_cursor_grab(CursorGrabMode::Confined)
-            .or_else(|_| window.set_cursor_grab(CursorGrabMode::Locked))
-            .expect("failed to grab the mouse cursor");
-        window.set_cursor_visible(false);
-
         const INITIAL_RENDER_DISTANCE: i32 = 16;
         let camera = Camera::new(
             Vec3::new(0.0, 32.0, 0.0),
@@ -182,14 +176,7 @@ impl App {
     }
 
     /// Notifies the application that a keyboard event has been received.
-    pub fn notify_keyboard(&mut self, target: &Ctx, event: &KeyEvent) {
-        // TODO: remove this when a menu is implemented to exit the application.
-        // The key to open the menu will probably be Escape key anyway so I won't
-        // miss this.
-        if event.state.is_pressed() && event.physical_key == KeyCode::Escape {
-            target.exit();
-        }
-
+    pub fn notify_keyboard(&mut self, _target: &Ctx, event: &KeyEvent) {
         // Toggle fullscreen with F11.
         if event.state.is_pressed() && event.physical_key == KeyCode::F11 {
             self.window.set_fullscreen(
@@ -233,6 +220,32 @@ impl App {
         }
 
         self.camera.notify_keyboard(event);
+    }
+
+    /// Notifies the application that a mouse input event has been received.
+    pub fn notify_mouse_input(
+        &mut self,
+        _target: &Ctx,
+        state: winit::event::ElementState,
+        button: winit::event::MouseButton,
+    ) {
+        if state.is_pressed() && button == MouseButton::Left {
+            self.window
+                .set_cursor_grab(CursorGrabMode::Locked)
+                .or_else(|_| self.window.set_cursor_grab(CursorGrabMode::Confined))
+                .expect("failed to grab the mouse cursor");
+            self.window.set_cursor_visible(false);
+        }
+    }
+
+    /// Notifies the application that the window has gained or lost focus.
+    pub fn notify_focused(&mut self, _target: &Ctx, now_focused: bool) {
+        if !now_focused {
+            self.window
+                .set_cursor_grab(CursorGrabMode::None)
+                .expect("failed to release the cursor grab");
+            self.window.set_cursor_visible(true);
+        }
     }
 
     /// Notifies the application that the mouse has moved.

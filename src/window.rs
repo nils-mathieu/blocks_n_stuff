@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use quanta::Clock;
-use winit::dpi::PhysicalSize;
 use winit::event::{DeviceEvent, Event, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopBuilder};
 use winit::window::{Window, WindowBuilder};
@@ -78,11 +77,17 @@ async fn run_async() {
                 WindowEvent::KeyboardInput { event, .. } => {
                     app.notify_keyboard(target, &event);
                 }
+                WindowEvent::MouseInput { state, button, .. } => {
+                    app.notify_mouse_input(target, state, button);
+                }
                 WindowEvent::Resized(s) => {
                     app.notify_resized(s.width, s.height);
                 }
                 WindowEvent::RedrawRequested => {
                     app.render();
+                }
+                WindowEvent::Focused(now_focused) => {
+                    app.notify_focused(target, now_focused);
                 }
                 _ => (),
             },
@@ -130,13 +135,23 @@ fn create_event_loop() -> EventLoop<UserEvent> {
 fn create_window(event_loop: &EventLoop<UserEvent>) -> Arc<Window> {
     let mut builder = WindowBuilder::new()
         .with_title("Blocks 'n Stuff")
-        .with_min_inner_size(PhysicalSize::new(300, 300))
-        .with_inner_size(PhysicalSize::new(1280, 720))
         .with_visible(false);
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use winit::dpi::PhysicalSize;
+
+        // On wasm, setting a specific canvas size will force the canvas
+        // into a fixed size (which is logical, but not what we want).
+        builder = builder.with_inner_size(PhysicalSize::new(1280, 720));
+        builder = builder.with_min_inner_size(PhysicalSize::new(300, 300));
+    }
 
     #[cfg(target_arch = "wasm32")]
     {
         use winit::platform::web::WindowBuilderExtWebSys;
+
+        // Request winit to add a canvas in the DOM for us.
         builder = builder.with_append(true);
     }
 
