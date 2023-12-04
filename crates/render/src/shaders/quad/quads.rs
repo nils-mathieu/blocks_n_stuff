@@ -53,6 +53,7 @@ impl<'res> Quads<'res> {
     pub fn reset<'res2>(mut self) -> Quads<'res2> {
         self.opaque_buffers.clear();
         self.transparent_buffers.clear();
+        self.chunks.clear();
 
         // SAFETY:
         //  1. The buffer is empty, meaning that no references are actually being transmuted into
