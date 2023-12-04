@@ -4,10 +4,14 @@
 
 # Other
 
-- [ ] Find a way to use less memory to store chunk uniforms.
 - [ ] Add profiling options & display in the debug UI.
 - [x] Target web.
 - [ ] Check if there's a good way to generate quality random numbers on web.
+
+# Optimizations
+
+- [ ] Find a way to use less memory to store chunk uniforms.
+- [ ] Use indirect draw calls for chunk rendering.
 
 # Features
 
@@ -20,7 +24,7 @@
   - [x] Skybox.
   - [x] Reloadable texture atlas.
   - [ ] Ambiant occlusion.
-  - [ ] Distance fog.
+  - [x] Distance fog.
   - [ ] Underwater fog.
   - [ ] Text rendering.
   - [ ] Debug UI.
