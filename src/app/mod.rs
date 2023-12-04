@@ -3,6 +3,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use bns_app::{App, KeyCode, MouseButton};
 use bns_core::{Chunk, ChunkPos};
 use bns_render::data::{
     CharacterFlags, CharacterInstance, ChunkUniforms, Color, FrameUniforms, LineInstance,
@@ -14,22 +15,11 @@ use bns_worldgen_std::StandardWorldGenerator;
 
 use glam::{IVec3, Vec2, Vec3};
 
-use winit::event::{KeyEvent, MouseButton};
-use winit::event_loop::EventLoopWindowTarget;
-use winit::keyboard::KeyCode;
-use winit::window::{CursorGrabMode, Fullscreen, Window};
-
 use self::camera::Camera;
-use crate::window::UserEvent;
 use crate::world::World;
 
 mod asset;
 mod camera;
-
-const VERTICAL_RENDER_DISTANCE: i32 = 6;
-
-/// The context passed to the functions of [`App`] to control the event loop.
-type Ctx = EventLoopWindowTarget<UserEvent>;
 
 /// The state of the debug chunk display.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -54,251 +44,220 @@ impl DebugChunkState {
     }
 }
 
-/// Contains the state of the application.
-pub struct App {
-    /// A handle to the window that has been opened for the application.
-    ///
-    /// This can be used to control it.
-    window: Arc<Window>,
-    /// The surface on which things are rendered.
-    surface: Surface<'static>,
-    /// The renderer contains the resources required to render things using GPU resources.
-    renderer: Renderer,
-    /// Some storage to efficiently create [`RenderData`] instances.
-    render_data: Option<RenderData<'static>>,
+/// The number of ticks between two world cleanups.
+const CLEANUP_PERIOD: Duration = Duration::from_secs(5);
+/// The amount of time required to compute the average frame time.
+const CUMULATIVE_FRAME_TIME_THRESHOLD: Duration = Duration::from_secs(1);
+/// The maximum and minimum render distance that can be set (in chunks).
+const RENDER_DISTANCE_RANGE: (i32, i32) = (2, 32);
+/// The initial render distance.
+const INITIAL_RENDER_DISTNACE: i32 = 8;
+/// The initial position of the player.
+const INITIAL_PLAYER_POS: Vec3 = Vec3::new(0.0, 16.0, 0.0);
+/// The render distance on the Y axis.
+const VERTICAL_RENDER_DISTANCE: i32 = 6;
 
-    /// The current state of the camera.
-    camera: Camera,
+/// Runs the application until completion.
+pub fn run() {
+    // On web, we need everything to be executed by the browser's executor (because of some
+    // internals of WebGPU).
+    //
+    // Depending on the target platform, the `run_async` function will either be executed
+    // by the browser's executor, or by a dummy runtime.
+    #[cfg(target_arch = "wasm32")]
+    {
+        wasm_bindgen_futures::spawn_local(run_async());
+    }
 
-    /// The world that contains all the chunks.
-    world: World,
-
-    /// The distance (in chunks) at which chunks are rendered.
-    render_distance: i32,
-
-    /// The current state of the chunk debug display.
-    debug_chunk_state: DebugChunkState,
-
-    /// The next tick at which the world should be cleaned up.
-    next_cleanup: usize,
-
-    /// Whether debug information should be displayed.
-    show_debug_info: bool,
-
-    /// The buffer used to build the text to render before sending it to the GPU.
-    debug_info_buffer: DynamicVertexBuffer<CharacterInstance>,
-
-    /// The cumulative frame time since the last time `last_frame_time` was computed.
-    cumulative_frame_time: Duration,
-    /// The number of frames that have been rendered since the last time `last_frame_time` was
-    /// computed.
-    frames: usize,
-    /// The last frame time computed from the frame time history.
-    last_frame_time: Duration,
-
-    /// The list of all chunks currently visible from the point of the of the camera.
-    chunks_in_view: Vec<ChunkPos>,
-
-    /// The seed that was used to generate the current world.
-    current_seed: u64,
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        pollster::block_on(run_async());
+    }
 }
 
-impl App {
-    /// The next tick at which the world should be cleaned up.
-    pub const CLEANUP_PERIOD: usize = 200;
-    /// The number of frame times to keep in memory.
-    pub const FRAME_TIME_HISTORY_SIZE: usize = 10;
+async fn run_async() {
+    let app = App::new(bns_app::Config {
+        title: "Blocks 'n Stuff",
+        min_size: (300, 300),
+        fullscreen: cfg!(not(debug_assertions)),
+    });
 
-    /// Creates a new [`App`] instance.
-    ///
-    /// # Remarks
-    ///
-    /// This function must be polled by the web runtime in order to work properly (this obviously
-    /// only applied on web).
-    pub async fn new(window: Arc<Window>) -> Self {
-        let surface = Surface::new(window.clone()).await;
-        let renderer = Renderer::new(
-            surface.gpu().clone(),
-            RendererConfig {
-                output_format: surface.info().format,
-                texture_atlas: asset::load_texture_atlas().await,
-            },
-        );
-        let seed = bns_rng::entropy();
-        let world = World::new(
-            renderer.gpu().clone(),
-            Arc::new(StandardWorldGenerator::from_seed::<DefaultRng>(seed)),
-        );
+    let mut surface = Surface::new(app.opaque_window()).await;
+    let mut renderer = Renderer::new(
+        surface.gpu().clone(),
+        RendererConfig {
+            output_format: surface.info().format,
+            texture_atlas: asset::load_texture_atlas().await,
+        },
+    );
+    let mut render_data = Some(RenderData::new(surface.gpu()));
 
-        const INITIAL_RENDER_DISTANCE: i32 = 16;
-        let camera = Camera::new(
-            Vec3::new(0.0, 32.0, 0.0),
-            render_distance_to_far(INITIAL_RENDER_DISTANCE),
-        );
+    let mut seed = bns_rng::entropy();
+    let mut world = World::new(
+        renderer.gpu().clone(),
+        Arc::new(StandardWorldGenerator::from_seed::<DefaultRng>(seed)),
+    );
+    let mut since_last_cleanup = Duration::ZERO;
+    let mut chunks_in_view = Vec::new();
 
-        Self {
-            render_data: Some(RenderData::new(renderer.gpu())),
-            window,
-            surface,
-            camera,
-            world,
-            render_distance: INITIAL_RENDER_DISTANCE,
-            debug_chunk_state: DebugChunkState::Hidden,
-            next_cleanup: Self::CLEANUP_PERIOD,
-            debug_info_buffer: DynamicVertexBuffer::new(renderer.gpu().clone(), 16),
-            cumulative_frame_time: Duration::ZERO,
-            frames: 0,
-            show_debug_info: false,
-            renderer,
-            last_frame_time: Duration::ZERO,
-            chunks_in_view: Vec::new(),
-            current_seed: seed,
-        }
-    }
+    let mut render_distance = INITIAL_RENDER_DISTNACE;
 
-    /// Notifies the application that the window has been requested to close.
-    pub fn notify_close_requested(&mut self, target: &Ctx) {
-        target.exit();
-    }
+    let mut camera = Camera::new(INITIAL_PLAYER_POS, render_distance_to_far(render_distance));
 
-    /// Notifies the application that the size of the window on which it is drawing stuff has
-    /// changed.
-    pub fn notify_resized(&mut self, width: u32, height: u32) {
-        if width == 0 || height == 0 {
-            // We're probably minimized.
-            return;
+    let mut chunk_debug_state = DebugChunkState::Hidden;
+    let mut debug_overlay = false;
+    let mut cumulative_frame_time = Duration::ZERO;
+    let mut accumulated_frames = 0;
+    let mut debug_frame_time = Duration::ZERO;
+    let mut debug_info_buffer = DynamicVertexBuffer::new(surface.gpu().clone(), 64);
+
+    app.run(|ctx| {
+        // ==============================================
+        // Misc Events
+        // ==============================================
+
+        if ctx.just_resized() {
+            surface.config_mut().width = ctx.width();
+            surface.config_mut().height = ctx.height();
+            renderer.resize(ctx.width(), ctx.height());
         }
 
-        self.surface.config_mut().width = width;
-        self.surface.config_mut().height = height;
-        self.renderer.resize(width, height);
-        self.camera.notify_resized(width, height);
-    }
+        // ==============================================
+        // Input Handling
+        // ==============================================
 
-    /// Notifies the application that a keyboard event has been received.
-    pub fn notify_keyboard(&mut self, _target: &Ctx, event: &KeyEvent) {
-        // Toggle fullscreen with F11.
-        if event.state.is_pressed() && event.physical_key == KeyCode::F11 {
-            self.window.set_fullscreen(
-                self.window
-                    .fullscreen()
-                    .is_none()
-                    .then_some(Fullscreen::Borderless(None)),
-            );
-        }
-
-        if event.state.is_pressed() && event.physical_key == KeyCode::ArrowUp {
-            self.render_distance += 2;
-            self.camera
-                .set_far(render_distance_to_far(self.render_distance));
-        }
-
-        if event.state.is_pressed()
-            && event.physical_key == KeyCode::ArrowDown
-            && self.render_distance > 2
+        #[cfg(not(target_arch = "wasm32"))]
         {
-            self.render_distance -= 2;
-            self.camera
-                .set_far(render_distance_to_far(self.render_distance));
+            if ctx.just_pressed(KeyCode::Escape) {
+                ctx.close();
+                return;
+            }
         }
 
-        if event.state.is_pressed() && event.physical_key == KeyCode::KeyR {
-            let seed = bns_rng::entropy();
-            self.world = World::new(
-                self.renderer.gpu().clone(),
+        if ctx.just_pressed(KeyCode::F11) {
+            ctx.set_fullscreen(!ctx.fullscreen());
+        }
+
+        if ctx.just_pressed(KeyCode::ArrowUp) {
+            render_distance += 2;
+            if render_distance >= RENDER_DISTANCE_RANGE.1 {
+                render_distance = RENDER_DISTANCE_RANGE.1;
+            }
+            camera.set_far(render_distance_to_far(render_distance));
+        }
+
+        if ctx.just_pressed(KeyCode::ArrowDown) {
+            render_distance -= 2;
+            if render_distance <= RENDER_DISTANCE_RANGE.0 {
+                render_distance = RENDER_DISTANCE_RANGE.0;
+            }
+            camera.set_far(render_distance_to_far(render_distance));
+        }
+
+        if ctx.just_pressed(KeyCode::KeyR) {
+            seed = bns_rng::entropy();
+            world = World::new(
+                renderer.gpu().clone(),
                 Arc::new(StandardWorldGenerator::from_seed::<DefaultRng>(seed)),
             );
-            self.current_seed = seed;
         }
 
-        if event.state.is_pressed() && event.physical_key == KeyCode::F10 {
-            self.debug_chunk_state = self.debug_chunk_state.next_state();
+        if ctx.just_pressed(KeyCode::F10) {
+            chunk_debug_state = chunk_debug_state.next_state();
         }
 
-        if event.state.is_pressed() && event.physical_key == KeyCode::F3 {
-            self.show_debug_info = !self.show_debug_info;
+        if ctx.just_pressed(KeyCode::F3) {
+            debug_overlay = !debug_overlay;
         }
 
-        self.camera.notify_keyboard(event);
-    }
-
-    /// Notifies the application that a mouse input event has been received.
-    pub fn notify_mouse_input(
-        &mut self,
-        _target: &Ctx,
-        state: winit::event::ElementState,
-        button: winit::event::MouseButton,
-    ) {
-        if state.is_pressed() && button == MouseButton::Left {
-            self.window
-                .set_cursor_grab(CursorGrabMode::Locked)
-                .or_else(|_| self.window.set_cursor_grab(CursorGrabMode::Confined))
-                .expect("failed to grab the mouse cursor");
-            self.window.set_cursor_visible(false);
+        if ctx.just_pressed(MouseButton::Left) {
+            ctx.grab_cursor();
         }
-    }
 
-    /// Notifies the application that the window has gained or lost focus.
-    pub fn notify_focused(&mut self, _target: &Ctx, now_focused: bool) {
-        if !now_focused {
-            self.window
-                .set_cursor_grab(CursorGrabMode::None)
-                .expect("failed to release the cursor grab");
-            self.window.set_cursor_visible(true);
+        // ==============================================
+        // Tick other objects
+        // ==============================================
+
+        cumulative_frame_time += ctx.since_last_tick();
+        accumulated_frames += 1;
+        if cumulative_frame_time >= CUMULATIVE_FRAME_TIME_THRESHOLD {
+            debug_frame_time = cumulative_frame_time / accumulated_frames;
+            cumulative_frame_time = Duration::ZERO;
+            accumulated_frames = 0;
         }
-    }
 
-    /// Notifies the application that the mouse has moved.
-    ///
-    /// Note that the provided coordinates are not in pixels, but instead are an arbitrary
-    /// value relative to the last reported mouse position.
-    pub fn notify_mouse_moved(&mut self, _target: &Ctx, dx: f64, dy: f64) {
-        self.camera.notify_mouse_moved(dx, dy);
-    }
+        since_last_cleanup += ctx.since_last_tick();
+        if since_last_cleanup >= CLEANUP_PERIOD {
+            world.request_cleanup(
+                chunk_of(camera.position()),
+                render_distance as u32 + 3,
+                VERTICAL_RENDER_DISTANCE as u32 + 3,
+            );
+            since_last_cleanup = Duration::ZERO;
+        }
 
-    /// Renders a frame to the window.
-    #[profiling::function]
-    pub fn render(&mut self) {
-        let Some(frame) = self.surface.acquire_image() else {
+        camera.tick(ctx);
+
+        chunks_in_view.clear();
+        chunks_in_frustum(&camera, render_distance, &mut chunks_in_view);
+
+        let center = chunk_of(camera.position());
+        for &chunk in &chunks_in_view {
+            world.request_chunk(chunk, -chunk.distance_squared(center));
+        }
+
+        // On wasm, no worker threads can be spawned because GPU resources can only be accessed
+        // from the main thread apparently (not Send).
+        // In that platform, we call `fetch_available_chunks` 10 times to make sure that at
+        // least that many chunks are loaded per frame.
+        #[cfg(target_arch = "wasm32")]
+        {
+            for _ in 0..10 {
+                world.fetch_available_chunks();
+            }
+        }
+
+        #[cfg(not(target_arch = "wasm32"))]
+        world.fetch_available_chunks();
+
+        // ==============================================
+        // Rendering
+        // ==============================================
+
+        let Some(frame) = surface.acquire_image() else {
             return;
         };
 
-        let mut render_data = self.render_data.take().unwrap();
+        let mut data = render_data.take().unwrap();
 
-        let view = self.camera.view_matrix();
-        let projection = self.camera.projection_matrix();
-        render_data.frame = FrameUniforms {
+        let view = camera.view_matrix();
+        let projection = camera.projection_matrix();
+        data.frame = FrameUniforms {
             inverse_projection: projection.inverse(),
             projection,
             inverse_view: view.inverse(),
             view,
-            resolution: Vec2::new(
-                self.surface.config().width as f32,
-                self.surface.config().height as f32,
-            ),
-            fog_factor: 1.0 / (self.render_distance as f32 * 6.0),
-            fog_distance: self.render_distance as f32 * 0.5,
+            resolution: Vec2::new(ctx.width() as f32, ctx.height() as f32),
+            fog_factor: 1.0 / (render_distance as f32 * 6.0),
+            fog_distance: render_distance as f32 * 0.5,
         };
         let mut total_quad_count = 0;
-        for &chunk_pos in &self.chunks_in_view {
-            if let Some(chunk) = self.world.get_existing_chunk(chunk_pos) {
+        for &chunk_pos in &chunks_in_view {
+            if let Some(chunk) = world.get_existing_chunk(chunk_pos) {
                 if chunk.geometry.is_empty() {
                     continue;
                 }
 
-                let chunk_idx = render_data.quads.register_chunk(&ChunkUniforms {
+                let chunk_idx = data.quads.register_chunk(&ChunkUniforms {
                     position: chunk_pos,
                 });
 
                 if let Some(buffer) = chunk.geometry.opaque_quad_instances() {
-                    render_data
-                        .quads
-                        .register_opaque_quads(chunk_idx, buffer.slice());
+                    data.quads.register_opaque_quads(chunk_idx, buffer.slice());
                     total_quad_count += buffer.len();
                 }
                 if let Some(buffer) = chunk.geometry.transparent_quad_instances() {
-                    render_data
-                        .quads
+                    data.quads
                         .register_transparent_quads(chunk_idx, buffer.slice());
                     total_quad_count += buffer.len();
                 }
@@ -307,33 +266,33 @@ impl App {
 
         const CURRENT_CHUNK_COLOR: Color = Color::RED;
         const OTHER_CHUNK_COLOR: Color = Color::YELLOW;
-        match self.debug_chunk_state {
+        match chunk_debug_state {
             DebugChunkState::Hidden => (),
             DebugChunkState::ShowAllChunks => {
                 const S: f32 = Chunk::SIDE as f32;
-                let chunk_pos = chunk_of(self.camera.position()).as_vec3() * S;
-                let count = self.render_distance.min(6);
+                let chunk_pos = chunk_of(camera.position()).as_vec3() * S;
+                let count = render_distance.min(6);
                 let bound = count as f32 * S;
                 for a in -count..=count {
                     let a = a as f32 * S;
                     for b in -count..=count {
                         let b = b as f32 * S;
 
-                        render_data.lines.push(LineInstance {
+                        data.lines.push(LineInstance {
                             start: chunk_pos + Vec3::new(bound, a, b),
                             end: chunk_pos + Vec3::new(-bound, a, b),
                             color: OTHER_CHUNK_COLOR,
                             width: 1.0,
                             flags: LineVertexFlags::empty(),
                         });
-                        render_data.lines.push(LineInstance {
+                        data.lines.push(LineInstance {
                             start: chunk_pos + Vec3::new(a, bound, b),
                             end: chunk_pos + Vec3::new(a, -bound, b),
                             color: OTHER_CHUNK_COLOR,
                             flags: LineVertexFlags::empty(),
                             width: 1.0,
                         });
-                        render_data.lines.push(LineInstance {
+                        data.lines.push(LineInstance {
                             start: chunk_pos + Vec3::new(a, b, bound),
                             end: chunk_pos + Vec3::new(a, b, -bound),
                             color: OTHER_CHUNK_COLOR,
@@ -344,7 +303,7 @@ impl App {
                 }
 
                 add_aabb_lines(
-                    &mut render_data,
+                    &mut data,
                     chunk_pos,
                     chunk_pos + Vec3::splat(S),
                     CURRENT_CHUNK_COLOR,
@@ -355,9 +314,9 @@ impl App {
             DebugChunkState::ShowCurrentChunk => {
                 const S: f32 = Chunk::SIDE as f32;
 
-                let chunk_pos = chunk_of(self.camera.position()).as_vec3() * S;
+                let chunk_pos = chunk_of(camera.position()).as_vec3() * S;
                 add_aabb_lines(
-                    &mut render_data,
+                    &mut data,
                     chunk_pos,
                     chunk_pos + Vec3::splat(S),
                     CURRENT_CHUNK_COLOR,
@@ -367,7 +326,7 @@ impl App {
             }
         }
 
-        if self.show_debug_info {
+        if debug_overlay {
             let s = format!(
                 "\
                 Frame time: {frame_time:?} ({fps:.2} fps)\n\
@@ -385,18 +344,18 @@ impl App {
                 \n\
                 Seed: {seed}\n\
                 ",
-                frame_time = self.last_frame_time,
-                fps = 1.0 / self.last_frame_time.as_secs_f64(),
-                x = self.camera.position().x,
-                y = self.camera.position().y,
-                z = self.camera.position().z,
-                pitch = self.camera.pitch().to_degrees(),
-                yaw = self.camera.yaw().to_degrees(),
-                render_distance = self.render_distance,
-                loading_chunks = self.world.loading_chunk_count(),
-                loaded_chunks = self.world.loaded_chunk_count(),
-                visible_chunks = self.chunks_in_view.len(),
-                seed = self.current_seed,
+                frame_time = ctx.since_last_tick(),
+                fps = 1.0 / ctx.since_last_tick().as_secs_f64(),
+                x = camera.position().x,
+                y = camera.position().y,
+                z = camera.position().z,
+                pitch = camera.pitch().to_degrees(),
+                yaw = camera.yaw().to_degrees(),
+                render_distance = render_distance,
+                loading_chunks = world.loading_chunk_count(),
+                loaded_chunks = world.loaded_chunk_count(),
+                visible_chunks = chunks_in_view.len(),
+                seed = seed,
                 total_quads = total_quad_count,
             );
             let mut buf = Vec::new();
@@ -409,68 +368,17 @@ impl App {
                 Vec2::new(16.0, 32.0),
             );
 
-            self.debug_info_buffer.clear();
-            self.debug_info_buffer.extend(&buf);
+            debug_info_buffer.clear();
+            debug_info_buffer.extend(&buf);
 
-            render_data
-                .ui
-                .push(Ui::Text(self.debug_info_buffer.slice()));
+            data.ui.push(Ui::Text(debug_info_buffer.slice()));
         }
 
-        self.renderer.render(frame.target(), &mut render_data);
+        renderer.render(frame.target(), &mut data);
         frame.present();
 
-        self.render_data = Some(render_data.reset());
-    }
-
-    /// Advances the state of the application by one tick.
-    #[profiling::function]
-    pub fn tick(&mut self, _target: &Ctx, dt: Duration) {
-        let delta_seconds = dt.as_secs_f32();
-        self.cumulative_frame_time += dt;
-        self.frames += 1;
-        if self.frames == Self::FRAME_TIME_HISTORY_SIZE {
-            self.last_frame_time =
-                self.cumulative_frame_time / Self::FRAME_TIME_HISTORY_SIZE as u32;
-            self.frames = 0;
-            self.cumulative_frame_time = Duration::ZERO;
-        }
-
-        self.next_cleanup -= 1;
-        if self.next_cleanup == 0 {
-            self.world.request_cleanup(
-                chunk_of(self.camera.position()),
-                self.render_distance as u32 + 3,
-                VERTICAL_RENDER_DISTANCE as u32 + 3,
-            );
-            self.next_cleanup = Self::CLEANUP_PERIOD;
-        }
-
-        self.camera.tick(delta_seconds);
-
-        self.chunks_in_view.clear();
-        chunks_in_frustum(&self.camera, self.render_distance, &mut self.chunks_in_view);
-
-        let center = chunk_of(self.camera.position());
-        for &chunk in &self.chunks_in_view {
-            self.world
-                .request_chunk(chunk, -chunk.distance_squared(center));
-        }
-
-        // On wasm, no worker threads can be spawned because GPU resources can only be accessed
-        // from the main thread apparently (not Send).
-        // In that platform, we call `fetch_available_chunks` 10 times to make sure that at
-        // least that many chunks are loaded per frame.
-        #[cfg(target_arch = "wasm32")]
-        {
-            for _ in 0..10 {
-                self.world.fetch_available_chunks();
-            }
-        }
-
-        #[cfg(not(target_arch = "wasm32"))]
-        self.world.fetch_available_chunks();
-    }
+        render_data = Some(data.reset());
+    });
 }
 
 /// Converts a render distance measured in chunks to a far plane for the camera.
@@ -539,9 +447,6 @@ pub fn add_aabb_lines(
         start: Vec3::ZERO,
         end: Vec3::ZERO,
     };
-
-    // OPTIMZE: make sure that the vector is directly written to memory and not copied
-    // from stack.
 
     render_data.lines.extend_from_slice(&[
         // Lower face

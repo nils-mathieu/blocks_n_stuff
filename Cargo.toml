@@ -38,6 +38,7 @@ members = [
     "crates/worldgen-std",
     "crates/workers",
     "crates/log",
+    "crates/app",
 ]
 
 [dependencies]
@@ -49,8 +50,8 @@ bns-worldgen-core = { path = "crates/worldgen-core" }
 bns-worldgen-std = { path = "crates/worldgen-std" }
 bns-workers = { path = "crates/workers" }
 bns-log = { path = "crates/log" }
+bns-app = { path = "crates/app" }
 
-winit = "0.29"
 glam = "0.24"
 rustc-hash = "1"
 hashbrown = "0.14"

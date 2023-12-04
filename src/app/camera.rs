@@ -1,6 +1,5 @@
+use bns_app::{Ctx, KeyCode};
 use glam::{Mat4, Quat, Vec2, Vec3};
-use winit::event::KeyEvent;
-use winit::keyboard::KeyCode;
 
 /// Contains the state required to construct a perspective projection matrix.
 pub struct Perspective {
@@ -90,18 +89,6 @@ fn compute_near_plane(nearest_distance: f32, aspect_ratio: f32, fov_y: f32) -> f
 
 /// Stores the state of the camera.
 pub struct Camera {
-    /// Whether the user is currently pressing the "forward" key.
-    pressing_forward: bool,
-    /// Whether the user is currently pressing the "backward" key.
-    pressing_backward: bool,
-    /// Whether the user is currently pressing the "left" key.
-    pressing_left: bool,
-    /// Whether the user is currently pressing the "right" key.
-    pressing_right: bool,
-    /// Whether the user is currently pressing the "fly up" key.
-    pressing_fly_up: bool,
-    /// Whether the user is currently pressing the "fly down" key.
-    pressing_fly_down: bool,
     /// Whether the camera is in "sprint" mode.
     ///
     /// In this mode, the horizontal movement is multiplied by a factor.
@@ -139,12 +126,6 @@ impl Camera {
             yaw: 0.0,
             pitch: 0.0,
             position: pos,
-            pressing_backward: false,
-            pressing_forward: false,
-            pressing_left: false,
-            pressing_right: false,
-            pressing_fly_up: false,
-            pressing_fly_down: false,
             perspective: Perspective::new(0.1, 1.0, 60f32.to_radians(), far),
             sprinting: false,
         }
@@ -156,79 +137,75 @@ impl Camera {
         self.perspective.set_far(far);
     }
 
-    /// Notifies the camera that the size of the output display has changed.
-    pub fn notify_resized(&mut self, width: u32, height: u32) {
-        let aspect_ratio = width as f32 / height as f32;
-        self.perspective.set_aspect_ratio(aspect_ratio);
-    }
+    /// Ticks the camera once.
+    pub fn tick(&mut self, ctx: &mut Ctx) {
+        // ======================================
+        // Events
+        // ======================================
 
-    /// Notifies the camera that a keyboard event has been received.
-    pub fn notify_keyboard(&mut self, event: &KeyEvent) {
-        if event.physical_key == KeyCode::KeyW {
-            self.pressing_forward = event.state.is_pressed();
-        } else if event.physical_key == KeyCode::KeyS {
-            self.pressing_backward = event.state.is_pressed();
-        } else if event.physical_key == KeyCode::KeyA {
-            self.pressing_left = event.state.is_pressed();
-        } else if event.physical_key == KeyCode::KeyD {
-            self.pressing_right = event.state.is_pressed();
-        } else if event.physical_key == KeyCode::Space {
-            self.pressing_fly_up = event.state.is_pressed();
-        } else if event.physical_key == KeyCode::ShiftLeft {
-            self.pressing_fly_down = event.state.is_pressed();
-        } else if event.physical_key == KeyCode::ControlLeft && event.state.is_pressed() {
+        if ctx.just_resized() {
+            let aspect_ratio = ctx.width() as f32 / ctx.height() as f32;
+            self.perspective.set_aspect_ratio(aspect_ratio);
+        }
+
+        if ctx.mouse_delta_x() != 0.0 || ctx.mouse_delta_y() != 0.0 {
+            self.yaw += ctx.mouse_delta_x() as f32 * Self::MOUSE_SENSITIVITY;
+            self.yaw = self.yaw.rem_euclid(std::f32::consts::TAU);
+            self.pitch += ctx.mouse_delta_y() as f32 * Self::MOUSE_SENSITIVITY;
+            self.pitch = self.pitch.clamp(-Self::MAX_PITCH, Self::MAX_PITCH);
+        }
+
+        if ctx.pressing(KeyCode::KeyW) && ctx.just_pressed(KeyCode::ControlLeft) {
             self.sprinting = true;
         }
 
-        if !self.pressing_forward {
+        if !ctx.pressing(KeyCode::KeyW) {
             self.sprinting = false;
         }
-    }
 
-    /// Notifies the camera that the mouse has moved.
-    pub fn notify_mouse_moved(&mut self, dx: f64, dy: f64) {
-        self.yaw += dx as f32 * Self::MOUSE_SENSITIVITY;
-        self.yaw = self.yaw.rem_euclid(std::f32::consts::TAU);
-        self.pitch += dy as f32 * Self::MOUSE_SENSITIVITY;
-        self.pitch = self.pitch.clamp(-Self::MAX_PITCH, Self::MAX_PITCH);
-    }
-
-    /// Updates the state of the camera.
-    pub fn tick(&mut self, dt: f32) {
-        let mut movement_input = Vec2::ZERO;
-        if self.pressing_forward {
-            movement_input.y += 1.0;
-        }
-        if self.pressing_backward {
-            movement_input.y -= 1.0;
-        }
-        if self.pressing_left {
-            movement_input.x -= 1.0;
-        }
-        if self.pressing_right {
-            movement_input.x += 1.0;
-        }
-        movement_input = movement_input.normalize_or_zero();
-
+        let mut horizontal_movement_input = Vec2::ZERO;
         let mut vertical_movement_input = 0.0;
-        if self.pressing_fly_up {
+
+        if ctx.pressing(KeyCode::KeyW) {
+            horizontal_movement_input.y += 1.0;
+        }
+        if ctx.pressing(KeyCode::KeyS) {
+            horizontal_movement_input.y -= 1.0;
+        }
+        if ctx.pressing(KeyCode::KeyA) {
+            horizontal_movement_input.x -= 1.0;
+        }
+        if ctx.pressing(KeyCode::KeyD) {
+            horizontal_movement_input.x += 1.0;
+        }
+        horizontal_movement_input = horizontal_movement_input.normalize_or_zero();
+
+        if ctx.pressing(KeyCode::Space) {
             vertical_movement_input += 1.0;
         }
-        if self.pressing_fly_down {
+        if ctx.pressing(KeyCode::ShiftLeft) {
             vertical_movement_input -= 1.0;
         }
 
+        // ======================================
+        // Update
+        // ======================================
+
         self.position += Quat::from_rotation_y(self.yaw)
-            * Vec3::new(movement_input.x, 0.0, movement_input.y)
+            * Vec3::new(
+                horizontal_movement_input.x,
+                0.0,
+                horizontal_movement_input.y,
+            )
             * Self::SPEED
             * (if self.sprinting {
                 Self::SPRINT_FACTOR
             } else {
                 1.0
             })
-            * dt;
+            * ctx.delta_seconds();
 
-        self.position.y += vertical_movement_input * Self::FLY_SPEED * dt;
+        self.position.y += vertical_movement_input * Self::FLY_SPEED * ctx.delta_seconds();
     }
 
     /// Returns the position of the camera.

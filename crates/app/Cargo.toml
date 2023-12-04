@@ -1,0 +1,18 @@
+[package]
+name = "bns-app"
+version = "0.1.0"
+
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+winit = "0.29"
+hashbrown = "0.14"
+rustc-hash = "1"
+raw-window-handle = "0.6"
+quanta = "0.12"
+
+bns-log = { path = "../log" }

@@ -199,6 +199,7 @@ name = "blocks_n_stuff"
 version = "0.1.0"
 dependencies = [
  "bitflags 2.4.1",
+ "bns-app",
  "bns-core",
  "bns-image",
  "bns-log",
@@ -218,6 +219,17 @@ dependencies = [
  "wasm-bindgen-futures",
  "web-sys",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "bns-app"
+version = "0.1.0"
+dependencies = [
+ "bns-log",
+ "hashbrown",
+ "quanta",
+ "raw-window-handle",
+ "rustc-hash",
  "winit",
 ]
 
