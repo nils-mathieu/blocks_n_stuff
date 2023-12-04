@@ -166,6 +166,7 @@ impl World {
 
     /// Hints the [`World`] that the player is currently at the provided position, requesting
     /// chunks to be loaded around the player.
+    #[profiling::function]
     pub fn request_cleanup(&mut self, center: ChunkPos, h_radius: u32, v_radius: u32) {
         self.generator.request_cleanup(center, h_radius, v_radius);
 

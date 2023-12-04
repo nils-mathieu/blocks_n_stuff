@@ -85,6 +85,7 @@ impl ChunkBuildContext {
     ///
     /// Note that the neighboring chunks are *not* taken into account for culling, and the outer
     /// faces of the chunk are never built.
+    #[profiling::function]
     pub fn build_inner(&mut self, data: &Chunk) {
         for a in 1..Chunk::SIDE - 1 {
             let a = unsafe { coord::Inner::new_unchecked(a) };
@@ -145,6 +146,7 @@ impl ChunkBuildContext {
 
     /// Builds the boundary of the provided chunk based on its content and the content of the
     /// adjacent chunk (on the positive X axis).
+    #[profiling::function]
     pub fn build_boundary_x(&mut self, data: &Chunk, other: &Chunk) {
         build_chunk_boundary(
             data,
@@ -168,6 +170,7 @@ impl ChunkBuildContext {
 
     /// Builds the boundary of the provided chunk based on its content and the content of the
     /// adjacent chunk (on the negative X axis).
+    #[profiling::function]
     pub fn build_boundary_neg_x(&mut self, data: &Chunk, other: &Chunk) {
         build_chunk_boundary(
             data,
@@ -191,6 +194,7 @@ impl ChunkBuildContext {
 
     /// Builds the boundary of the provided chunk based on its content and the content of the
     /// adjacent chunk (on the positive Y axis).
+    #[profiling::function]
     pub fn build_boundary_y(&mut self, data: &Chunk, other: &Chunk) {
         build_chunk_boundary(
             data,
@@ -214,6 +218,7 @@ impl ChunkBuildContext {
 
     /// Builds the boundary of the provided chunk based on its content and the content of the
     /// adjacent chunk (on the negative Y axis).
+    #[profiling::function]
     pub fn build_boundary_neg_y(&mut self, data: &Chunk, other: &Chunk) {
         build_chunk_boundary(
             data,
@@ -237,6 +242,7 @@ impl ChunkBuildContext {
 
     /// Builds the boundary of the provided chunk based on its content and the content of the
     /// adjacent chunk (on the positive Z axis).
+    #[profiling::function]
     pub fn build_boundary_z(&mut self, data: &Chunk, other: &Chunk) {
         build_chunk_boundary(
             data,
@@ -260,6 +266,7 @@ impl ChunkBuildContext {
 
     /// Builds the boundary of the provided chunk based on its content and the content of the
     /// adjacent chunk (on the negative Z axis).
+    #[profiling::function]
     pub fn build_boundary_neg_z(&mut self, data: &Chunk, other: &Chunk) {
         build_chunk_boundary(
             data,

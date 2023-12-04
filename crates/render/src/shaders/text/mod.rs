@@ -28,6 +28,7 @@ impl TextPipeline {
     }
 
     /// Renders the provided text instances.
+    #[profiling::function]
     pub fn render<'res>(
         &'res self,
         _gpu: &Gpu,

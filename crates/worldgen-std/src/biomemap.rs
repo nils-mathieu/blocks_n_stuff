@@ -129,6 +129,7 @@ pub struct BiomeMap {
 
 impl BiomeMap {
     /// Returns the biome that should be placed on the tile at the provided position.
+    #[profiling::function]
     pub fn sample(&self, pos: IVec2, registry: &BiomeRegistry) -> BiomeId {
         let cell = self.cells.sample(pos);
         let climate = self.climate.sample(cell);

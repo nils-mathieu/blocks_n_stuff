@@ -68,6 +68,8 @@ async fn run_async() {
                 // This is where the main application logic should run.
                 app.tick(target, dt);
                 app.render();
+
+                profiling::finish_frame!();
             }
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => {

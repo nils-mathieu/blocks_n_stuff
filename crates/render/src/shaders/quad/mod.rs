@@ -90,6 +90,7 @@ impl QuadPipeline {
     /// 2. `texture_atlas` (bind group 2)
     ///
     /// This function will clobber bind group 1.
+    #[profiling::function]
     pub fn render<'res>(
         &'res mut self,
         gpu: &Gpu,

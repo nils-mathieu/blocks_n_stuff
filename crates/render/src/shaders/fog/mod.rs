@@ -16,6 +16,7 @@ impl FogPipeline {
     }
 
     /// Renders the fog.
+    #[profiling::function]
     pub fn render<'res>(&'res mut self, _gpu: &Gpu, rp: &mut wgpu::RenderPass<'res>) {
         rp.set_pipeline(&self.pipeline);
         rp.draw(0..4, 0..1);

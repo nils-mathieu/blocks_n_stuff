@@ -30,6 +30,7 @@ impl LinePipeline {
     /// # Remarks
     ///
     /// This function expects the bind group 0 to be bound to the frame uniforms.
+    #[profiling::function]
     pub fn render<'res>(
         &'res mut self,
         gpu: &Gpu,

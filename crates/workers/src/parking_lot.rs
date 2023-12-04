@@ -142,6 +142,7 @@ impl<W: Worker> TaskPool<W> {
     {
         let shared = self.shared.clone();
         std::thread::spawn(move || {
+            profiling::register_thread!();
             while let Some(input) = shared.fetch_task() {
                 let output = worker.run(input);
                 shared.push_result(output);

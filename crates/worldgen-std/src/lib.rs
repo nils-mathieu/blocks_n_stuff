@@ -55,6 +55,7 @@ impl FromRng for StandardWorldGenerator {
 }
 
 impl WorldGenerator for StandardWorldGenerator {
+    #[profiling::function]
     fn generate(&self, chunk_pos: ChunkPos) -> Chunk {
         let mut ret = Chunk::empty();
 
@@ -80,6 +81,7 @@ impl WorldGenerator for StandardWorldGenerator {
         ret
     }
 
+    #[profiling::function]
     fn request_cleanup(&self, center: ChunkPos, h_radius: u32, _v_radius: u32) {
         self.ctx.columns.request_cleanup(center.xz(), h_radius);
     }

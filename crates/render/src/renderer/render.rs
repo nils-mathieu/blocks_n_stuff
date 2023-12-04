@@ -3,6 +3,7 @@ use crate::{RenderTarget, Renderer};
 
 impl Renderer {
     /// Renders to the provided [`RenderTarget`] using the provided [`RenderData`].
+    #[profiling::function]
     pub fn render(&mut self, target: RenderTarget, data: &mut RenderData) {
         self.gpu.queue.write_buffer(
             &self.resources.frame_uniforms_buffer,

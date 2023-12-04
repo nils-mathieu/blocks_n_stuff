@@ -244,6 +244,7 @@ impl App {
     }
 
     /// Renders a frame to the window.
+    #[profiling::function]
     pub fn render(&mut self) {
         let Some(frame) = self.surface.acquire_image() else {
             return;
@@ -410,6 +411,7 @@ impl App {
     }
 
     /// Advances the state of the application by one tick.
+    #[profiling::function]
     pub fn tick(&mut self, _target: &Ctx, dt: Duration) {
         let delta_seconds = dt.as_secs_f32();
         self.cumulative_frame_time += dt;

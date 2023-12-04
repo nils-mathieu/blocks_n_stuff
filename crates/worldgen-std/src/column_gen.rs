@@ -180,6 +180,7 @@ impl ColumnGen {
     }
 
     /// Gets the biome stage of the column, or initializes it if it's not present.
+    #[profiling::function]
     pub fn biome_stage(&self, ctx: &GenCtx) -> &BiomeStage {
         self.biome_stage.get_or_init(|| {
             let mut ids = ColumnStore::new(BiomeId::Plains);
@@ -200,6 +201,7 @@ impl ColumnGen {
     }
 
     /// Gets the height map of the column, or initializes it if it's not present.
+    #[profiling::function]
     pub fn height_stage(&self, ctx: &GenCtx) -> &ColumnStore<i32> {
         self.height_stage.get_or_init(|| {
             let mut ret = ColumnStore::new(0);
