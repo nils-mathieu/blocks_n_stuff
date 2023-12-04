@@ -39,7 +39,7 @@ impl Biome for Plains {
         let biome_ids = &column.biome_stage(ctx).ids;
 
         for local_pos in LocalPos::iter_all() {
-            if biome_ids[local_pos.into()] != BiomeId::OakForest {
+            if biome_ids[local_pos.into()] != BiomeId::Plains {
                 continue;
             }
 

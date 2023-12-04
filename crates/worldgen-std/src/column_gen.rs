@@ -182,7 +182,7 @@ impl ColumnGen {
     /// Gets the biome stage of the column, or initializes it if it's not present.
     pub fn biome_stage(&self, ctx: &GenCtx) -> &BiomeStage {
         self.biome_stage.get_or_init(|| {
-            let mut ids = ColumnStore::new(BiomeId::Void);
+            let mut ids = ColumnStore::new(BiomeId::Plains);
             let mut unique_biomes = SmallVec::new();
 
             for pos in ColumnPos::iter_all() {

@@ -144,6 +144,7 @@ impl BiomeMap {
             // SAFETY:
             //  The biome value is non-zero, meaning that some biome must have existed to
             //  increase the total weight.
+            debug_assert!(index < biomes.len());
             let biome = unsafe { *biomes.get_unchecked(index) };
             index += 1;
 
@@ -154,6 +155,6 @@ impl BiomeMap {
             biome_value -= registry[biome].weight;
         }
 
-        BiomeId::Void
+        BiomeId::Plains
     }
 }
