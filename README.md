@@ -19,3 +19,30 @@ This project uses the following thrid-party libraries:
 - `winit`, a cross-platform windowing library.
 - `glam`, a linear algebra library that makes use of SIMD instructions to optimize most operations.
 - `png`, a PNG image decoder/encoder.
+
+## Keybindings
+
+### Movements
+
+| Key                     | Action        |
+| ----------------------- | ------------- |
+| <kbd>W</kbd>            | Move forward  |
+| <kbd>A</kbd>            | Move left     |
+| <kbd>S</kbd>            | Move backward |
+| <kbd>D</kbd>            | Move right    |
+| <kbd>Space</kbd>        | Fly Up        |
+| <kbd>Left Shift</kbd>   | Fly Down      |
+| <kbd>Left Control</kbd> | Sprint        |
+
+### Misc
+
+| Key            | Action            |
+| -------------- | ----------------- |
+| <kbd>F11</kbd> | Toggle fullscreen |
+
+### Debug
+
+| Key            | Action               |
+| -------------- | -------------------- |
+| <kbd>F3</kbd>  | Toggle debug overlay |
+| <kbd>F10</kbd> | Toggle chunk borders |

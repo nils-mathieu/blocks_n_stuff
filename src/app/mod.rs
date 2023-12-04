@@ -372,7 +372,7 @@ impl App {
                 "\
                 Frame time: {frame_time:?} ({fps:.2} fps)\n\
                 \n\
-                Position: {x} {y} {z}\n\
+                Position: {x:.2} {y:.2} {z:.2}\n\
                 Pitch: {pitch}\n\
                 Yaw: {yaw}\n\
                 \n\
