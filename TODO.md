@@ -1,9 +1,13 @@
+# Bugs
+
+- [ ] Fix the world generator creating holes in the ground.
+
 # Other
 
+- [ ] Find a way to use less memory to store chunk uniforms.
 - [ ] Add profiling options & display in the debug UI.
-- [ ] Target web.
+- [x] Target web.
 - [ ] Check if there's a good way to generate quality random numbers on web.
-
 
 # Features
 

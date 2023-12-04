@@ -5,7 +5,8 @@ struct FrameUniforms {
     view: mat4x4<f32>,
     inverse_view: mat4x4<f32>,
     resolution: vec2<f32>,
-    _padding: vec2<u32>,
+    fog_factor: f32,
+    fog_distance: f32,
 }
 
 @group(0) @binding(0)

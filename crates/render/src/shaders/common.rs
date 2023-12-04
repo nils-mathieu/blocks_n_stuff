@@ -58,7 +58,8 @@ pub struct FrameUniforms {
     /// The lower the value (close to zero), the less fog is applied. The higher the value (close
     /// to one), the more fog is applied.
     pub fog_factor: f32,
-    pub _padding: u32,
+    /// The distance at which the fog start taking effect.
+    pub fog_distance: f32,
 }
 
 /// Some resources commonly used through the renderer.

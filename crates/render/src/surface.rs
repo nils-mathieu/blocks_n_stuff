@@ -80,15 +80,10 @@ impl<'w> Surface<'w> {
             })
             .await
             .expect("failed to find an appropriate GPU adapter");
-        let limits = adapter.limits();
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    required_limits: wgpu::Limits {
-                        min_uniform_buffer_offset_alignment: limits
-                            .min_uniform_buffer_offset_alignment,
-                        ..Default::default()
-                    },
+                    required_limits: wgpu::Limits::default(),
                     required_features: wgpu::Features::empty(),
                     label: Some("GPU Device"),
                 },

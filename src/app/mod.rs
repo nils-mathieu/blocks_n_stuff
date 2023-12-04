@@ -238,8 +238,8 @@ impl App {
                 self.surface.config().width as f32,
                 self.surface.config().height as f32,
             ),
-            fog_factor: 1.0 / (self.render_distance as f32 * 12.0),
-            _padding: 0,
+            fog_factor: 1.0 / (self.render_distance as f32 * 6.0),
+            fog_distance: self.render_distance as f32 * 0.5,
         };
         chunks_in_frustum(&self.camera, self.render_distance, |chunk_pos, _| {
             if let Some(chunk) = self.world.get_existing_chunk(chunk_pos) {
@@ -247,7 +247,7 @@ impl App {
                     return;
                 }
 
-                let chunk_idx = render_data.quads.reigster_chunk(&ChunkUniforms {
+                let chunk_idx = render_data.quads.register_chunk(&ChunkUniforms {
                     position: chunk_pos,
                 });
 
@@ -347,10 +347,7 @@ impl App {
         chunks_in_frustum(&self.camera, self.render_distance, |chunk_pos, priority| {
             self.world.request_chunk(chunk_pos, priority);
         });
-
-        for _ in 0..10 {
-            self.world.fetch_available_chunks();
-        }
+        self.world.fetch_available_chunks();
     }
 }
 

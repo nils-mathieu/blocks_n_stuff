@@ -5,7 +5,8 @@ struct FrameUniforms {
     view: mat4x4<f32>,
     inverse_view: mat4x4<f32>,
     resolution: vec2<f32>,
-    _padding: vec2<u32>,
+    fog_factor: f32,
+    fog_distance: f32,
 }
 
 @group(0) @binding(0)
@@ -46,7 +47,7 @@ fn vs_main(
     @builtin(vertex_index) vertex_index: u32,
     instance: Instance,
 ) -> Interpolator {
-    var VERTICES: array<vec3<f32>, 24> = array(
+    var VERTICES: array<vec3<f32>, 24> = array<vec3<f32>, 24>(
         // Positive X
         vec3(1.0, 0.0, 0.0),
         vec3(1.0, 1.0, 0.0),
@@ -79,14 +80,14 @@ fn vs_main(
         vec3(1.0, 1.0, 0.0),
     );
 
-    var TEX_COORDS: array<vec2<f32>, 4> = array(
+    var TEX_COORDS: array<vec2<f32>, 4> = array<vec2<f32>, 4>(
         vec2(0.0, 1.0),
         vec2(0.0, 0.0),
         vec2(1.0, 1.0),
         vec2(1.0, 0.0),
     );
 
-    var NORMALS: array<vec3<f32>, 6> = array(
+    var NORMALS: array<vec3<f32>, 6> = array<vec3<f32>, 6>(
         vec3(1.0, 0.0, 0.0),
         vec3(-1.0, 0.0, 0.0),
         vec3(0.0, 1.0, 0.0),

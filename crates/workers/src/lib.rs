@@ -1,8 +1,7 @@
 //! A worker abstraction to create thread pools.
 
-// #[cfg_attr(not(target_arch = "wasm32"), path = "parking_lot.rs")]
-// #[cfg_attr(target_arch = "wasm32", path = "no_workers.rs")]
-#[path = "no_workers.rs"]
+#[cfg_attr(not(target_arch = "wasm32"), path = "parking_lot.rs")]
+#[cfg_attr(target_arch = "wasm32", path = "no_workers.rs")]
 mod imp;
 
 /// The type used to represent the priority of a task.
@@ -21,11 +20,14 @@ pub trait Worker {
     fn run(&mut self, input: Self::Input) -> Self::Output;
 }
 
-/// A trait that requires `Send` on non-WASM targets.
-pub trait WasmNonSend {}
+#[cfg(not(target_arch = "wasm32"))]
+pub trait WasmNonSend: Send {}
 
 #[cfg(not(target_arch = "wasm32"))]
 impl<T: Send> WasmNonSend for T {}
+
+#[cfg(target_arch = "wasm32")]
+pub trait WasmNonSend {}
 
 #[cfg(target_arch = "wasm32")]
 impl<T> WasmNonSend for T {}

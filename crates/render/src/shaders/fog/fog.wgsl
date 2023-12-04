@@ -6,7 +6,7 @@ struct FrameUniforms {
     inverse_view: mat4x4<f32>,
     resolution: vec2<f32>,
     fog_factor: f32,
-    _padding: u32,
+    fog_distance: f32,
 }
 
 @group(0) @binding(0)
@@ -70,15 +70,21 @@ fn fog(eye_dir: vec3<f32>) -> vec3<f32> {
     }
 }
 
+fn depth_value(uv: vec2<f32>) -> f32 {
+    var depth = textureSample(depth_texture, the_sampler, vec2(uv.x, -uv.y));
+    let clip_space = vec4<f32>(vec2(0.0, 1.0) - uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    let view_space = frame.inverse_projection * clip_space;
+    return view_space.z / view_space.w;
+}
+
 @fragment
 fn fs_main(
     in: Interpolator,
 ) -> @location(0) vec4<f32> {
     let fog_color = fog(in.eye_direction);
-    var depth = textureSample(depth_texture, the_sampler, vec2(in.uv.x, -in.uv.y));
-    let clip_space = vec4<f32>(vec2(0.0, 1.0) - in.uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
-    let view_space = frame.inverse_projection * clip_space;
-    depth = max(view_space.z / view_space.w, 0.0);
-    let fog_amount = 1.0 - pow(4.0, -depth * frame.fog_factor);
+    let depth = max(0.0, depth_value(in.uv) - frame.fog_distance);
+
+    let fog_amount = 1.0 - pow(2.0, -depth * frame.fog_factor);
+
     return vec4<f32>(fog_color, fog_amount);
 }
