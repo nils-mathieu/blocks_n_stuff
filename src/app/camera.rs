@@ -188,6 +188,7 @@ impl Camera {
     /// Notifies the camera that the mouse has moved.
     pub fn notify_mouse_moved(&mut self, dx: f64, dy: f64) {
         self.yaw += dx as f32 * Self::MOUSE_SENSITIVITY;
+        self.yaw = self.yaw.rem_euclid(std::f32::consts::TAU);
         self.pitch += dy as f32 * Self::MOUSE_SENSITIVITY;
         self.pitch = self.pitch.clamp(-Self::MAX_PITCH, Self::MAX_PITCH);
     }
