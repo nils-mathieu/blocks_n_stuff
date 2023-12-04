@@ -68,7 +68,7 @@ var font_atlas_sampler: sampler;
 fn fs_main(in: Interpolator) -> @location(0) vec4<f32> {
     if textureSample(font_atlas, font_atlas_sampler, in.tex_coords, in.tex_index).r < 0.5 {
         discard;
-    } else {
-        return unpack_color(in.color);
     }
+
+    return unpack_color(in.color);
 }

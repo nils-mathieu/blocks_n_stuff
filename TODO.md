@@ -1,14 +1,3 @@
-# Other
-
-- [ ] Add profiling options & display in the debug UI.
-- [x] Target web.
-- [ ] Check if there's a good way to generate quality random numbers on web.
-
-# Optimizations
-
-- [ ] Find a way to use less memory to store chunk uniforms.
-- [ ] Use indirect draw calls for chunk rendering.
-
 # Features
 
 - [ ] Infinite terrain generation.

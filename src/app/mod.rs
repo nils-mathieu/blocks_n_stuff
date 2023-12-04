@@ -443,6 +443,19 @@ impl App {
             self.world
                 .request_chunk(chunk, -chunk.distance_squared(center));
         }
+
+        // On wasm, no worker threads can be spawned because GPU resources can only be accessed
+        // from the main thread apparently (not Send).
+        // In that platform, we call `fetch_available_chunks` 10 times to make sure that at
+        // least that many chunks are loaded per frame.
+        #[cfg(target_arch = "wasm32")]
+        {
+            for _ in 0..10 {
+                self.world.fetch_available_chunks();
+            }
+        }
+
+        #[cfg(not(target_arch = "wasm32"))]
         self.world.fetch_available_chunks();
     }
 }
