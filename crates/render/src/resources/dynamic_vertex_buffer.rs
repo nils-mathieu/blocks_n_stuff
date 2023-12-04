@@ -66,6 +66,7 @@ impl<T> DynamicVertexBuffer<T> {
 
     /// Returns the number of `T`s that are currently stored in the buffer.
     #[inline]
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> u32 {
         self.len
     }
