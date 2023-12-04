@@ -1,5 +1,5 @@
 use super::{get_chunk_alignment, ChunkUniforms, QuadInstance};
-use crate::{Gpu, Vertices};
+use crate::{Gpu, VertexBufferSlice};
 
 /// A instance buffer that's ready to be rendered by the [`QuadPipeline`].
 pub(super) struct QuadBuffer<'res> {
@@ -8,9 +8,7 @@ pub(super) struct QuadBuffer<'res> {
     /// This is the offset within the chunk uniforms buffer to use when setting the bind group.
     pub(super) chunk_idx: u32,
     /// The quad instances of the chunk.
-    pub(super) buffer: wgpu::BufferSlice<'res>,
-    /// The number of [`QuadInstance`] instances in the buffer slice.
-    pub(super) len: u32,
+    pub(super) slice: VertexBufferSlice<'res, QuadInstance>,
 }
 
 /// A collection type used to properly lay out [`QuadInstance`]s and [`ChunkUniforms`] in a buffer.
@@ -87,12 +85,11 @@ impl<'res> Quads<'res> {
     pub fn register_opaque_quads(
         &mut self,
         chunk_idx: u32,
-        quads: &'res dyn Vertices<Vertex = QuadInstance>,
+        quads: VertexBufferSlice<'res, QuadInstance>,
     ) {
         self.opaque_buffers.push(QuadBuffer {
             chunk_idx,
-            buffer: quads.slice(),
-            len: quads.len(),
+            slice: quads,
         });
     }
 
@@ -102,12 +99,11 @@ impl<'res> Quads<'res> {
     pub fn register_transparent_quads(
         &mut self,
         chunk_idx: u32,
-        quads: &'res dyn Vertices<Vertex = QuadInstance>,
+        quads: VertexBufferSlice<'res, QuadInstance>,
     ) {
         self.transparent_buffers.push(QuadBuffer {
             chunk_idx,
-            buffer: quads.slice(),
-            len: quads.len(),
+            slice: quads,
         });
     }
 }

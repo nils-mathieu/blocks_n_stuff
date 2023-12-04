@@ -7,6 +7,7 @@ use crate::shaders::fog::FogPipeline;
 use crate::shaders::line::LinePipeline;
 use crate::shaders::quad::QuadPipeline;
 use crate::shaders::skybox::SkyboxPipeline;
+use crate::shaders::text::TextPipeline;
 use crate::Gpu;
 
 pub use crate::shaders::common::TextureAtlasConfig;
@@ -56,6 +57,9 @@ pub struct Renderer {
 
     /// The pipeline responsible for rendering fog.
     fog_pipeline: FogPipeline,
+
+    /// The pipeline responsible for rendering text.
+    text_pipeline: TextPipeline,
 }
 
 impl Renderer {
@@ -66,6 +70,7 @@ impl Renderer {
         let skybox_pipeline = SkyboxPipeline::new(&gpu, &resources, config.output_format);
         let line_pipeline = LinePipeline::new(&gpu, &resources, config.output_format);
         let fog_pipeline = FogPipeline::new(&gpu, &resources, config.output_format);
+        let text_pipeline = TextPipeline::new(&gpu, &resources, config.output_format);
 
         Self {
             gpu,
@@ -74,6 +79,7 @@ impl Renderer {
             skybox_pipeline,
             line_pipeline,
             fog_pipeline,
+            text_pipeline,
         }
     }
 

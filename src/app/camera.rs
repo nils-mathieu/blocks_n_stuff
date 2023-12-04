@@ -236,6 +236,18 @@ impl Camera {
         self.position
     }
 
+    /// Returns the pitch of the camera, in radians.
+    #[inline]
+    pub fn pitch(&self) -> f32 {
+        self.pitch
+    }
+
+    /// Returns the yaw of the camera, in radians.
+    #[inline]
+    pub fn yaw(&self) -> f32 {
+        self.yaw
+    }
+
     /// Computes the view matrix of the camera.
     pub fn view_matrix(&self) -> Mat4 {
         let forward = Quat::from_rotation_y(self.yaw) * Quat::from_rotation_x(self.pitch) * Vec3::Z;

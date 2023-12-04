@@ -1,7 +1,3 @@
-# Bugs
-
-- [ ] Fix the world generator creating holes in the ground.
-
 # Other
 
 - [ ] Add profiling options & display in the debug UI.
@@ -26,8 +22,8 @@
   - [ ] Ambiant occlusion.
   - [x] Distance fog.
   - [ ] Underwater fog.
-  - [ ] Text rendering.
-  - [ ] Debug UI.
+  - [x] Text rendering.
+  - [x] Debug UI.
   - [ ] Mipmaps.
 - [ ] Basic gameplay.
   - [ ] Physics system.

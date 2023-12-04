@@ -4,8 +4,9 @@ use std::mem::size_of;
 use std::sync::Arc;
 
 use bytemuck::NoUninit;
+use wgpu::util::DeviceExt;
 
-use crate::{Gpu, Vertices};
+use crate::{Gpu, VertexBufferSlice};
 
 /// A dynamic vertex buffer that can be written-to by the CPU.
 pub struct DynamicVertexBuffer<T> {
@@ -38,6 +39,35 @@ impl<T> DynamicVertexBuffer<T> {
             buffer,
             _marker: PhantomData,
         }
+    }
+
+    /// Creates a new [`DynamicVertexBuffer`] instance with the provided data.
+    pub fn new_with_data(gpu: Arc<Gpu>, data: &[T]) -> Self
+    where
+        T: NoUninit,
+    {
+        let buffer = gpu
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                contents: bytemuck::cast_slice(data),
+                label: Some(type_name::<T>()),
+                usage: wgpu::BufferUsages::VERTEX
+                    | wgpu::BufferUsages::COPY_DST
+                    | wgpu::BufferUsages::COPY_SRC,
+            });
+
+        Self {
+            gpu,
+            len: data.len() as u32,
+            buffer,
+            _marker: PhantomData,
+        }
+    }
+
+    /// Returns the number of `T`s that are currently stored in the buffer.
+    #[inline]
+    pub fn len(&self) -> u32 {
+        self.len
     }
 
     /// Clears the buffer.
@@ -87,18 +117,14 @@ impl<T> DynamicVertexBuffer<T> {
 
         self.len = new_len;
     }
-}
 
-impl<T> Vertices for DynamicVertexBuffer<T> {
-    type Vertex = T;
-
+    /// Returns a [`VertexBufferSlice`] that can be used to render the contents of this buffer.
     #[inline]
-    fn len(&self) -> u32 {
-        self.len
-    }
-
-    #[inline]
-    fn slice(&self) -> wgpu::BufferSlice {
-        self.buffer.slice(..self.len as u64 * size_of::<T>() as u64)
+    pub fn slice(&self) -> VertexBufferSlice<T> {
+        VertexBufferSlice {
+            buffer: self.buffer.slice(..self.len as u64 * size_of::<T>() as u64),
+            len: self.len,
+            marker: PhantomData,
+        }
     }
 }

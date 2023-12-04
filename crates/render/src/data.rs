@@ -1,10 +1,19 @@
 use crate::shaders::quad::Quads;
-use crate::Gpu;
+use crate::{Gpu, VertexBufferSlice};
 
 pub use crate::color::Color;
 pub use crate::shaders::common::FrameUniforms;
 pub use crate::shaders::line::{LineInstance, LineVertexFlags};
 pub use crate::shaders::quad::{ChunkUniforms, QuadFlags, QuadInstance};
+pub use crate::shaders::text::{CharacterFlags, CharacterInstance};
+
+/// An UI element to draw.
+///
+/// UI elements are drawn in the order they are declared.
+pub enum Ui<'a> {
+    /// Some text lements.
+    Text(VertexBufferSlice<'a, CharacterInstance>),
+}
 
 /// The data required to render a frame.
 pub struct RenderData<'res> {
@@ -24,6 +33,9 @@ pub struct RenderData<'res> {
     ///
     /// Right now, the lines are mainly used for debugging purposes, so this is not a problem.
     pub lines: Vec<LineInstance>,
+
+    /// A collection of UI elements.
+    pub ui: Vec<Ui<'res>>,
 }
 
 impl<'res> RenderData<'res> {
@@ -33,6 +45,7 @@ impl<'res> RenderData<'res> {
             frame: FrameUniforms::default(),
             quads: Quads::new(gpu),
             lines: Vec::new(),
+            ui: Vec::new(),
         }
     }
 
@@ -40,11 +53,19 @@ impl<'res> RenderData<'res> {
     /// original allocations.
     pub fn reset<'res2>(mut self) -> RenderData<'res2> {
         self.lines.clear();
+        self.ui.clear();
+
+        // SAFETY:
+        //  Any type has the same layout regardless of which lifetime it uses. No
+        //  references are actually being transmuted into a potentially longer lifetime because
+        //  the buffer is empty.
+        let ui = unsafe { std::mem::transmute(self.ui) };
 
         RenderData {
             frame: self.frame,
             quads: self.quads.reset(),
             lines: self.lines,
+            ui,
         }
     }
 }

@@ -154,8 +154,14 @@ impl World {
 
     /// Returns the number of chunks that are currently being generated.
     #[inline]
-    pub fn chunks_in_flight(&self) -> usize {
+    pub fn loading_chunk_count(&self) -> usize {
         self.task_pool.task_count()
+    }
+
+    /// Returns the number of chunks that are currently loaded in memory.
+    #[inline]
+    pub fn loaded_chunk_count(&self) -> usize {
+        self.chunks.len()
     }
 
     /// Hints the [`World`] that the player is currently at the provided position, requesting

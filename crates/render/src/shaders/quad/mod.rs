@@ -126,8 +126,8 @@ impl QuadPipeline {
                 &self.chunk_uniforms_bind_group,
                 &[buf.chunk_idx * self.chunk_align as u32],
             );
-            rp.set_vertex_buffer(0, buf.buffer);
-            rp.draw(0..4, 0..buf.len);
+            rp.set_vertex_buffer(0, buf.slice.buffer);
+            rp.draw(0..4, 0..buf.slice.len);
         }
 
         rp.set_pipeline(&self.transparent_pipeline);
@@ -137,8 +137,8 @@ impl QuadPipeline {
                 &self.chunk_uniforms_bind_group,
                 &[buf.chunk_idx * self.chunk_align as u32],
             );
-            rp.set_vertex_buffer(0, buf.buffer);
-            rp.draw(0..4, 0..buf.len);
+            rp.set_vertex_buffer(0, buf.slice.buffer);
+            rp.draw(0..4, 0..buf.slice.len);
         }
     }
 }

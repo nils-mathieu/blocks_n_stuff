@@ -1,4 +1,4 @@
-use crate::data::RenderData;
+use crate::data::{RenderData, Ui};
 use crate::{RenderTarget, Renderer};
 
 impl Renderer {
@@ -77,6 +77,35 @@ impl Renderer {
         rp.set_bind_group(1, &self.resources.depth_buffer_bind_group, &[]);
 
         self.fog_pipeline.render(&self.gpu, &mut rp);
+
+        drop(rp);
+
+        // ========================================
+        // UI
+        // ========================================
+
+        let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("UI Render Pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Load,
+                    store: wgpu::StoreOp::Store,
+                },
+                resolve_target: None,
+                view: target.view,
+            })],
+            depth_stencil_attachment: None,
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        });
+
+        rp.set_bind_group(0, &self.resources.frame_uniforms_bind_group, &[]);
+
+        for elem in &data.ui {
+            match elem {
+                Ui::Text(data) => self.text_pipeline.render(&self.gpu, &mut rp, *data),
+            }
+        }
 
         drop(rp);
 

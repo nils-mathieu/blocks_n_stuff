@@ -4,6 +4,7 @@ use bitflags::bitflags;
 use bns_core::{BlockAppearance, BlockId, BlockVisibility, Chunk, Face, LocalPos};
 use bns_render::data::{QuadFlags, QuadInstance};
 use bns_render::{DynamicVertexBuffer, Gpu};
+use bytemuck::NoUninit;
 
 use self::coord::IntoCoord;
 
@@ -284,21 +285,25 @@ impl ChunkBuildContext {
     ///
     /// The old geometry of the chunk is kept!
     pub fn append_to(&self, geometry: &mut ChunkGeometry) {
+        fn extend_or_create<T>(gpu: &Arc<Gpu>, buf: &mut Option<DynamicVertexBuffer<T>>, data: &[T])
+        where
+            T: NoUninit,
+        {
+            match buf {
+                Some(buf) => buf.extend(data),
+                None => *buf = Some(DynamicVertexBuffer::new_with_data(gpu.clone(), data)),
+            }
+        }
+
         if !self.opaque_quads.is_empty() {
-            geometry
-                .opaque_quads
-                .get_or_insert_with(|| {
-                    DynamicVertexBuffer::new(self.gpu.clone(), self.opaque_quads.len() as u32)
-                })
-                .extend(&self.opaque_quads);
+            extend_or_create(&self.gpu, &mut geometry.opaque_quads, &self.opaque_quads);
         }
         if !self.transparent_quads.is_empty() {
-            geometry
-                .transparent_quads
-                .get_or_insert_with(|| {
-                    DynamicVertexBuffer::new(self.gpu.clone(), self.transparent_quads.len() as u32)
-                })
-                .extend(&self.transparent_quads);
+            extend_or_create(
+                &self.gpu,
+                &mut geometry.transparent_quads,
+                &self.transparent_quads,
+            );
         }
     }
 }

@@ -206,6 +206,7 @@ dependencies = [
  "bns-workers",
  "bns-worldgen-core",
  "bns-worldgen-std",
+ "bytemuck",
  "glam",
  "hashbrown",
  "pollster",

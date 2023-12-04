@@ -66,7 +66,7 @@ async fn run_async() {
                 last_tick = now;
 
                 // This is where the main application logic should run.
-                app.tick(target, dt.as_secs_f32());
+                app.tick(target, dt);
                 app.render();
             }
             Event::WindowEvent { event, .. } => match event {

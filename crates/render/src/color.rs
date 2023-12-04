@@ -5,15 +5,25 @@ use bytemuck::{Pod, Zeroable};
 #[doc(hidden)]
 #[derive(Clone, Copy, PartialEq, Eq, Zeroable, Pod)]
 #[repr(C)]
+#[cfg(target_endian = "big")]
+#[non_exhaustive]
 pub struct ColorDeref {
-    /// The red component of the color.
     pub r: u8,
-    /// The green component of the color.
     pub g: u8,
-    /// The blue component of the color.
     pub b: u8,
-    /// The alpha component of the color.
     pub a: u8,
+}
+
+#[doc(hidden)]
+#[derive(Clone, Copy, PartialEq, Eq, Zeroable, Pod)]
+#[repr(C)]
+#[cfg(target_endian = "little")]
+#[non_exhaustive]
+pub struct ColorDeref {
+    pub a: u8,
+    pub b: u8,
+    pub g: u8,
+    pub r: u8,
 }
 
 /// A color, represented as four 8-bit unsigned bytes.

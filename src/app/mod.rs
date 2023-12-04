@@ -1,14 +1,15 @@
 //! This module contains the game-related logic, aggregating all the other modules.
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use bns_core::{Chunk, ChunkPos};
 use bns_render::data::{
-    ChunkUniforms, Color, FrameUniforms, LineInstance, LineVertexFlags, RenderData,
+    CharacterFlags, CharacterInstance, ChunkUniforms, Color, FrameUniforms, LineInstance,
+    LineVertexFlags, RenderData, Ui,
 };
-use bns_render::{Renderer, RendererConfig, Surface};
+use bns_render::{DynamicVertexBuffer, Renderer, RendererConfig, Surface};
 use bns_rng::{DefaultRng, FromRng};
-use bns_workers::Priority;
 use bns_worldgen_std::StandardWorldGenerator;
 
 use glam::{IVec3, Vec2, Vec3};
@@ -80,11 +81,33 @@ pub struct App {
 
     /// The next tick at which the world should be cleaned up.
     next_cleanup: usize,
+
+    /// Whether debug information should be displayed.
+    show_debug_info: bool,
+
+    /// The buffer used to build the text to render before sending it to the GPU.
+    debug_info_buffer: DynamicVertexBuffer<CharacterInstance>,
+
+    /// The cumulative frame time since the last time `last_frame_time` was computed.
+    cumulative_frame_time: Duration,
+    /// The number of frames that have been rendered since the last time `last_frame_time` was
+    /// computed.
+    frames: usize,
+    /// The last frame time computed from the frame time history.
+    last_frame_time: Duration,
+
+    /// The list of all chunks currently visible from the point of the of the camera.
+    chunks_in_view: Vec<ChunkPos>,
+
+    /// The seed that was used to generate the current world.
+    current_seed: u64,
 }
 
 impl App {
     /// The next tick at which the world should be cleaned up.
     pub const CLEANUP_PERIOD: usize = 200;
+    /// The number of frame times to keep in memory.
+    pub const FRAME_TIME_HISTORY_SIZE: usize = 10;
 
     /// Creates a new [`App`] instance.
     ///
@@ -102,7 +125,6 @@ impl App {
             },
         );
         let seed = bns_rng::entropy();
-        println!("Seed: {seed}");
         let world = World::new(
             renderer.gpu().clone(),
             Arc::new(StandardWorldGenerator::from_seed::<DefaultRng>(seed)),
@@ -124,12 +146,19 @@ impl App {
             render_data: Some(RenderData::new(renderer.gpu())),
             window,
             surface,
-            renderer,
             camera,
             world,
             render_distance: INITIAL_RENDER_DISTANCE,
             debug_chunk_state: DebugChunkState::Hidden,
             next_cleanup: Self::CLEANUP_PERIOD,
+            debug_info_buffer: DynamicVertexBuffer::new(renderer.gpu().clone(), 16),
+            cumulative_frame_time: Duration::ZERO,
+            frames: 0,
+            show_debug_info: false,
+            renderer,
+            last_frame_time: Duration::ZERO,
+            chunks_in_view: Vec::new(),
+            current_seed: seed,
         }
     }
 
@@ -171,15 +200,10 @@ impl App {
             );
         }
 
-        if event.state.is_pressed() && event.physical_key == KeyCode::KeyI {
-            println!("Chunks in flight: {}", self.world.chunks_in_flight());
-        }
-
         if event.state.is_pressed() && event.physical_key == KeyCode::ArrowUp {
             self.render_distance += 2;
             self.camera
                 .set_far(render_distance_to_far(self.render_distance));
-            println!("Render distance: {}", self.render_distance);
         }
 
         if event.state.is_pressed()
@@ -189,21 +213,23 @@ impl App {
             self.render_distance -= 2;
             self.camera
                 .set_far(render_distance_to_far(self.render_distance));
-            println!("Render distance: {}", self.render_distance);
         }
 
         if event.state.is_pressed() && event.physical_key == KeyCode::KeyR {
             let seed = bns_rng::entropy();
-            println!("Seed: {seed}");
             self.world = World::new(
                 self.renderer.gpu().clone(),
                 Arc::new(StandardWorldGenerator::from_seed::<DefaultRng>(seed)),
             );
+            self.current_seed = seed;
         }
 
         if event.state.is_pressed() && event.physical_key == KeyCode::F10 {
             self.debug_chunk_state = self.debug_chunk_state.next_state();
-            println!("Debug chunk state: {:?}", self.debug_chunk_state);
+        }
+
+        if event.state.is_pressed() && event.physical_key == KeyCode::F3 {
+            self.show_debug_info = !self.show_debug_info;
         }
 
         self.camera.notify_keyboard(event);
@@ -219,8 +245,6 @@ impl App {
 
     /// Renders a frame to the window.
     pub fn render(&mut self) {
-        // TODO: print quad count in debug info.
-
         let Some(frame) = self.surface.acquire_image() else {
             return;
         };
@@ -241,10 +265,11 @@ impl App {
             fog_factor: 1.0 / (self.render_distance as f32 * 6.0),
             fog_distance: self.render_distance as f32 * 0.5,
         };
-        chunks_in_frustum(&self.camera, self.render_distance, |chunk_pos, _| {
+        let mut total_quad_count = 0;
+        for &chunk_pos in &self.chunks_in_view {
             if let Some(chunk) = self.world.get_existing_chunk(chunk_pos) {
                 if chunk.geometry.is_empty() {
-                    return;
+                    continue;
                 }
 
                 let chunk_idx = render_data.quads.register_chunk(&ChunkUniforms {
@@ -252,15 +277,19 @@ impl App {
                 });
 
                 if let Some(buffer) = chunk.geometry.opaque_quad_instances() {
-                    render_data.quads.register_opaque_quads(chunk_idx, buffer);
+                    render_data
+                        .quads
+                        .register_opaque_quads(chunk_idx, buffer.slice());
+                    total_quad_count += buffer.len();
                 }
                 if let Some(buffer) = chunk.geometry.transparent_quad_instances() {
                     render_data
                         .quads
-                        .register_transparent_quads(chunk_idx, buffer);
+                        .register_transparent_quads(chunk_idx, buffer.slice());
+                    total_quad_count += buffer.len();
                 }
             }
-        });
+        }
 
         const CURRENT_CHUNK_COLOR: Color = Color::RED;
         const OTHER_CHUNK_COLOR: Color = Color::YELLOW;
@@ -324,6 +353,56 @@ impl App {
             }
         }
 
+        if self.show_debug_info {
+            let s = format!(
+                "\
+                Frame time: {frame_time:?} ({fps:.2} fps)\n\
+                \n\
+                Position: {x} {y} {z}\n\
+                Pitch: {pitch}\n\
+                Yaw: {yaw}\n\
+                \n\
+                Render distance: {render_distance}\n\
+                Total quads: {total_quads}\n\
+                \n\
+                Loading chunks: {loading_chunks}\n\
+                Loaded chunks: {loaded_chunks}\n\
+                Visible chunks: {visible_chunks}\n\
+                \n\
+                Seed: {seed}\n\
+                ",
+                frame_time = self.last_frame_time,
+                fps = 1.0 / self.last_frame_time.as_secs_f64(),
+                x = self.camera.position().x,
+                y = self.camera.position().y,
+                z = self.camera.position().z,
+                pitch = self.camera.pitch().to_degrees(),
+                yaw = self.camera.yaw().to_degrees(),
+                render_distance = self.render_distance,
+                loading_chunks = self.world.loading_chunk_count(),
+                loaded_chunks = self.world.loaded_chunk_count(),
+                visible_chunks = self.chunks_in_view.len(),
+                seed = self.current_seed,
+                total_quads = total_quad_count,
+            );
+            let mut buf = Vec::new();
+            build_text(
+                &mut buf,
+                &s,
+                Color::WHITE,
+                Vec2::new(10.0, 10.0),
+                Vec2::new(0.0, 4.0),
+                Vec2::new(16.0, 32.0),
+            );
+
+            self.debug_info_buffer.clear();
+            self.debug_info_buffer.extend(&buf);
+
+            render_data
+                .ui
+                .push(Ui::Text(self.debug_info_buffer.slice()));
+        }
+
         self.renderer.render(frame.target(), &mut render_data);
         frame.present();
 
@@ -331,7 +410,17 @@ impl App {
     }
 
     /// Advances the state of the application by one tick.
-    pub fn tick(&mut self, _target: &Ctx, dt: f32) {
+    pub fn tick(&mut self, _target: &Ctx, dt: Duration) {
+        let delta_seconds = dt.as_secs_f32();
+        self.cumulative_frame_time += dt;
+        self.frames += 1;
+        if self.frames == Self::FRAME_TIME_HISTORY_SIZE {
+            self.last_frame_time =
+                self.cumulative_frame_time / Self::FRAME_TIME_HISTORY_SIZE as u32;
+            self.frames = 0;
+            self.cumulative_frame_time = Duration::ZERO;
+        }
+
         self.next_cleanup -= 1;
         if self.next_cleanup == 0 {
             self.world.request_cleanup(
@@ -342,11 +431,16 @@ impl App {
             self.next_cleanup = Self::CLEANUP_PERIOD;
         }
 
-        self.camera.tick(dt);
+        self.camera.tick(delta_seconds);
 
-        chunks_in_frustum(&self.camera, self.render_distance, |chunk_pos, priority| {
-            self.world.request_chunk(chunk_pos, priority);
-        });
+        self.chunks_in_view.clear();
+        chunks_in_frustum(&self.camera, self.render_distance, &mut self.chunks_in_view);
+
+        let center = chunk_of(self.camera.position());
+        for &chunk in &self.chunks_in_view {
+            self.world
+                .request_chunk(chunk, -chunk.distance_squared(center));
+        }
         self.world.fetch_available_chunks();
     }
 }
@@ -357,11 +451,7 @@ fn render_distance_to_far(render_distance: i32) -> f32 {
 }
 
 /// Calls the provided function for every visible chunk from the camera.
-fn chunks_in_frustum(
-    camera: &Camera,
-    render_distance: i32,
-    mut callback: impl FnMut(ChunkPos, Priority),
-) {
+fn chunks_in_frustum(camera: &Camera, render_distance: i32, buf: &mut Vec<ChunkPos>) {
     const CHUNK_RADIUS: f32 = (Chunk::SIDE as f32) * 0.8660254; // sqrt(3) / 2
 
     let camera_chunk_pos = chunk_of(camera.position());
@@ -379,8 +469,7 @@ fn chunks_in_frustum(
                     - (camera.position() - camera_chunk_pos.as_vec3() * Chunk::SIDE as f32);
 
                 if camera.is_sphere_in_frustum(relative_chunk_pos_center, CHUNK_RADIUS) {
-                    let priority = Priority::MAX - (x * x + y * y + z * z) as Priority;
-                    callback(camera_chunk_pos + relative_chunk_pos, priority);
+                    buf.push(camera_chunk_pos + relative_chunk_pos);
                 }
             }
         }
@@ -491,4 +580,34 @@ pub fn add_aabb_lines(
             ..base
         },
     ]);
+}
+
+fn build_text(
+    buf: &mut Vec<CharacterInstance>,
+    text: &str,
+    color: Color,
+    mut position: Vec2,
+    space: Vec2,
+    size: Vec2,
+) {
+    let initial_x = position.x;
+
+    for text in text.chars() {
+        if text == '\n' {
+            position.x = initial_x;
+            position.y += size.y + space.y;
+            continue;
+        }
+
+        let flags = CharacterFlags::from_character(text)
+            .or(CharacterFlags::from_character(' '))
+            .unwrap();
+        buf.push(CharacterInstance {
+            flags,
+            color,
+            position,
+            size,
+        });
+        position.x += size.x + space.x;
+    }
 }
