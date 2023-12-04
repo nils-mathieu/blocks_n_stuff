@@ -99,6 +99,7 @@ where
                 if ctx.closing() {
                     bns_log::trace!("closing the winit event loop...");
                     target.exit();
+                    return;
                 }
 
                 ctx.notify_end_of_tick();

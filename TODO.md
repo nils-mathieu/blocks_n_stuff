@@ -16,7 +16,7 @@
   - [ ] Mipmaps.
 - [ ] Basic gameplay.
   - [ ] Physics system.
-  - [ ] Player movement.
+  - [ ] Mincraft survival-like player movement.
   - [ ] Mining, placing blocks.
 - [ ] Advanced graphics.
   - [ ] Dynamic lighting.

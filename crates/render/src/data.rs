@@ -5,7 +5,7 @@ pub use crate::color::Color;
 pub use crate::shaders::common::FrameUniforms;
 pub use crate::shaders::line::{LineInstance, LineVertexFlags};
 pub use crate::shaders::quad::{ChunkUniforms, QuadFlags, QuadInstance};
-pub use crate::shaders::text::{CharacterFlags, CharacterInstance};
+pub use crate::shaders::text::{CharacterFlags, CharacterInstance, CharacterInstanceCursor};
 
 /// An UI element to draw.
 ///
@@ -18,7 +18,7 @@ pub enum Ui<'a> {
 /// The data required to render a frame.
 pub struct RenderData<'res> {
     /// The frame uniforms for the frame.
-    pub frame: FrameUniforms,
+    pub uniforms: FrameUniforms,
 
     /// The list of quad instances to render.
     ///
@@ -42,7 +42,7 @@ impl<'res> RenderData<'res> {
     /// Creates a new [`RenderData`] instance.
     pub fn new(gpu: &Gpu) -> Self {
         Self {
-            frame: FrameUniforms::default(),
+            uniforms: FrameUniforms::default(),
             quads: Quads::new(gpu),
             lines: Vec::new(),
             ui: Vec::new(),
@@ -62,7 +62,7 @@ impl<'res> RenderData<'res> {
         let ui = unsafe { std::mem::transmute(self.ui) };
 
         RenderData {
-            frame: self.frame,
+            uniforms: self.uniforms,
             quads: self.quads.reset(),
             lines: self.lines,
             ui,

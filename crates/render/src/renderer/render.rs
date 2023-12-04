@@ -8,7 +8,7 @@ impl Renderer {
         self.gpu.queue.write_buffer(
             &self.resources.frame_uniforms_buffer,
             0,
-            bytemuck::bytes_of(&data.frame),
+            bytemuck::bytes_of(&data.uniforms),
         );
 
         // Now that we have upload everything, we can start recording GPU commands.

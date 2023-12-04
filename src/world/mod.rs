@@ -134,8 +134,8 @@ impl World {
     /// Creates a new [`World`] that uses the provided [`WorldGenerator`] to generate chunks.
     pub fn new(gpu: Arc<Gpu>, generator: Arc<dyn WorldGenerator>) -> Self {
         let worker_count = std::thread::available_parallelism()
-            .map_or(4 + 3, NonZeroUsize::get)
-            .saturating_sub(3)
+            .map_or(4 + 5, NonZeroUsize::get)
+            .saturating_sub(5)
             .max(1);
 
         let task_pool = TaskPool::default();

@@ -45,3 +45,66 @@ pub struct CharacterInstance {
     /// The size of the character on the screen.
     pub size: Vec2,
 }
+
+/// A helper structure that helps creating buffers of [`CharacterInstance`]s.
+#[derive(Debug, Clone)]
+pub struct CharacterInstanceCursor {
+    /// The top-left position of the buffer.
+    top_left: Vec2,
+    /// The current cursor position.
+    cursor: Vec2,
+    /// The current color.
+    color: Color,
+    /// The size of the characters.
+    size: Vec2,
+    /// The spacing between characters.
+    spacing: Vec2,
+}
+
+impl CharacterInstanceCursor {
+    /// Creates a new [`CharacterInstanceBuffer`] instance.
+    pub const fn new(top_left: Vec2, size: Vec2, spacing: Vec2) -> Self {
+        Self {
+            top_left,
+            cursor: top_left,
+            color: Color::WHITE,
+            size,
+            spacing,
+        }
+    }
+
+    /// Updates the color of all subsequent characters written
+    /// to the buffer.
+    #[inline]
+    pub fn set_color(&mut self, color: Color) {
+        self.color = color;
+    }
+
+    /// Advances the buffer without actually writing to the inner container.
+    pub fn advance(&mut self, c: char) -> CharacterInstance {
+        if c == '\n' {
+            self.cursor.x = self.top_left.x;
+            self.cursor.y += self.size.y + self.spacing.y;
+            return CharacterInstance {
+                flags: CharacterFlags::from_character(' ').unwrap(),
+                color: self.color,
+                position: self.cursor,
+                size: self.size,
+            };
+        }
+
+        let flags = CharacterFlags::from_character(c)
+            .or(CharacterFlags::from_character(' '))
+            .unwrap();
+        let instance = CharacterInstance {
+            flags,
+            color: self.color,
+            position: self.cursor,
+            size: self.size,
+        };
+
+        self.cursor.x += self.size.x + self.spacing.x;
+
+        instance
+    }
+}

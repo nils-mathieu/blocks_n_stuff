@@ -31,18 +31,22 @@ This project uses the following thrid-party libraries:
 | <kbd>S</kbd>            | Move backward |
 | <kbd>D</kbd>            | Move right    |
 | <kbd>Space</kbd>        | Fly Up        |
-| <kbd>Left Shift</kbd>   | Fly Down      |
-| <kbd>Left Control</kbd> | Sprint        |
+| <kbd>Left shift</kbd>   | Fly Down      |
+| <kbd>Left control</kbd> | Sprint        |
 
 ### Misc
 
-| Key            | Action            |
-| -------------- | ----------------- |
-| <kbd>F11</kbd> | Toggle fullscreen |
+| Key                   | Action                   |
+| --------------------- | ------------------------ |
+| <kbd>Escape</kbd>     | Exit game                |
+| <kbd>F11</kbd>        | Toggle fullscreen        |
+| <kbd>R</kbd>          | Re-create world          |
+| <kbd>Arrow up</kbd>   | Increase render distance |
+| <kbd>Arrow down</kbd> | Decrease render distance |
 
 ### Debug
 
-| Key            | Action               |
-| -------------- | -------------------- |
-| <kbd>F3</kbd>  | Toggle debug overlay |
-| <kbd>F10</kbd> | Toggle chunk borders |
+| Key           | Action               |
+| ------------- | -------------------- |
+| <kbd>F3</kbd> | Toggle debug overlay |
+| <kbd>F4</kbd> | Toggle chunk borders |
