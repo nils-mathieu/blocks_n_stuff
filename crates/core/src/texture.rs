@@ -40,6 +40,12 @@ pub enum TextureId {
     Cobblestone,
     MossyCobblestone,
     DiamondOre,
+    OakLogTop,
+    OakLogSide,
+    OakLeaves,
+    PineLogTop,
+    PineLogSide,
+    PineLeaves,
 }
 
 impl TextureId {
@@ -90,6 +96,12 @@ impl TextureId {
             "cobblestone",
             "mossy_cobblestone",
             "diamond_ore",
+            "oak_log_top",
+            "oak_log_side",
+            "oak_leaves",
+            "pine_log_top",
+            "pine_log_side",
+            "pine_leaves",
         ];
         unsafe { NAMES.get_unchecked(self as usize) }
     }

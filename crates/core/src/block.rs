@@ -37,6 +37,10 @@ pub enum BlockId {
     Cobblestone,
     MossyCobblestone,
     DiamondOre,
+    OakLog,
+    OakLeaves,
+    PineLog,
+    PineLeaves,
 }
 
 // SAFETY:
@@ -197,6 +201,38 @@ impl BlockId {
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::DiamondOre),
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
+            },
+            // OakLog
+            BlockInfo {
+                appearance: BlockAppearance::Regular {
+                    top: TextureId::OakLogTop,
+                    bottom: TextureId::OakLogTop,
+                    side: TextureId::OakLogSide,
+                },
+                visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
+            },
+            // OakLeaves
+            BlockInfo {
+                appearance: BlockAppearance::uniform(TextureId::OakLeaves),
+                visibility: BlockVisibility::SemiOpaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
+            },
+            // PineLog
+            BlockInfo {
+                appearance: BlockAppearance::Regular {
+                    top: TextureId::PineLogTop,
+                    bottom: TextureId::PineLogTop,
+                    side: TextureId::PineLogSide,
+                },
+                visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
+            },
+            // PineLeaves
+            BlockInfo {
+                appearance: BlockAppearance::uniform(TextureId::PineLeaves),
+                visibility: BlockVisibility::SemiOpaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
         ];
