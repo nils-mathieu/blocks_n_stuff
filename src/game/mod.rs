@@ -62,6 +62,7 @@ impl Game {
     }
 
     /// Advances the [`Game`] state by one tick.
+    #[profiling::function]
     pub fn tick(&mut self, ctx: &mut Ctx) {
         self.debug.reset_overlay();
 

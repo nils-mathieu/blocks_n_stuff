@@ -52,6 +52,7 @@ impl DebugThings {
     }
 
     /// Ticks the debug overlay.
+    #[profiling::function]
     pub fn tick(&mut self, ctx: &mut Ctx) {
         // ==================================
         // Inputs
