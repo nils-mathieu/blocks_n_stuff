@@ -2,7 +2,6 @@ use wgpu::util::DeviceExt;
 
 use std::mem::size_of;
 
-use super::common::CommonResources;
 use crate::Gpu;
 
 mod instance;
@@ -44,7 +43,7 @@ pub struct QuadPipeline {
 
 impl QuadPipeline {
     /// Creates a new [`QuadPipeline`] instance.
-    pub fn new(gpu: &Gpu, resources: &CommonResources, output_format: wgpu::TextureFormat) -> Self {
+    pub fn new(gpu: &Gpu, output_format: wgpu::TextureFormat) -> Self {
         let chunk_align = get_chunk_alignment(gpu);
         let chunk_uniforms_layout = create_chunk_uniforms_bind_group_layout(gpu, chunk_align);
         let (chunk_uniforms_buffer, chunk_uniforms_bind_group) = create_chunk_uniforms_buffer(
@@ -53,7 +52,7 @@ impl QuadPipeline {
             chunk_align as wgpu::BufferAddress * 64,
             chunk_align,
         );
-        let pipeline_layout = create_pipeline_layout(gpu, resources, &chunk_uniforms_layout);
+        let pipeline_layout = create_pipeline_layout(gpu, &chunk_uniforms_layout);
         let shader_module = create_shader_module(gpu);
         let opaque_pipeline = create_pipeline(
             gpu,
@@ -218,16 +217,17 @@ enum PipelineFlavor {
 
 fn create_pipeline_layout(
     gpu: &Gpu,
-    resources: &CommonResources,
     chunk_uniforms_layout: &wgpu::BindGroupLayout,
 ) -> wgpu::PipelineLayout {
+    let res = gpu.resources.read();
+
     gpu.device
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Quad Pipeline Layout"),
             bind_group_layouts: &[
-                &resources.frame_uniforms_layout,
+                &res.frame_uniforms_layout,
                 chunk_uniforms_layout,
-                &resources.texture_atlas_layout,
+                &res.texture_atlas_layout,
             ],
             push_constant_ranges: &[],
         })

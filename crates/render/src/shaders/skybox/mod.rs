@@ -1,7 +1,5 @@
 use crate::Gpu;
 
-use super::common::CommonResources;
-
 /// A simple render pipeline that renders a shared-based skybox.
 pub struct SkyboxPipeline {
     /// The pipeline responsible for the skybox.
@@ -10,8 +8,8 @@ pub struct SkyboxPipeline {
 
 impl SkyboxPipeline {
     /// Creates a new [`SkyboxPipeline`] instance.
-    pub fn new(gpu: &Gpu, resources: &CommonResources, output_format: wgpu::TextureFormat) -> Self {
-        let pipeline = create_shader(gpu, resources, output_format);
+    pub fn new(gpu: &Gpu, output_format: wgpu::TextureFormat) -> Self {
+        let pipeline = create_shader(gpu, output_format);
         Self { pipeline }
     }
 
@@ -33,11 +31,9 @@ impl SkyboxPipeline {
 ///
 /// The provided `frame_uniforms_layout` is expected to include the bind group for the
 /// frame uniforms.
-pub fn create_shader(
-    gpu: &Gpu,
-    resources: &CommonResources,
-    output_format: wgpu::TextureFormat,
-) -> wgpu::RenderPipeline {
+pub fn create_shader(gpu: &Gpu, output_format: wgpu::TextureFormat) -> wgpu::RenderPipeline {
+    let res = gpu.resources.read();
+
     let shader_module = gpu
         .device
         .create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -49,7 +45,7 @@ pub fn create_shader(
         .device
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Skybox Pipeline Layout"),
-            bind_group_layouts: &[&resources.frame_uniforms_layout],
+            bind_group_layouts: &[&res.frame_uniforms_layout],
             push_constant_ranges: &[],
         });
 

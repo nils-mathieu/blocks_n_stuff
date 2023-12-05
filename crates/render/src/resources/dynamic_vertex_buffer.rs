@@ -41,7 +41,31 @@ impl<T> DynamicVertexBuffer<T> {
             _marker: PhantomData,
         }
     }
+    /// Returns the number of `T`s that are currently stored in the buffer.
+    #[inline]
+    #[allow(clippy::len_without_is_empty)]
+    pub fn len(&self) -> u32 {
+        self.len
+    }
 
+    /// Clears the buffer.
+    #[inline]
+    pub fn clear(&mut self) {
+        self.len = 0;
+    }
+
+    /// Returns a [`VertexBufferSlice`] that can be used to render the contents of this buffer.
+    #[inline]
+    pub fn slice(&self) -> VertexBufferSlice<T> {
+        VertexBufferSlice {
+            buffer: self.buffer.slice(..self.len as u64 * size_of::<T>() as u64),
+            len: self.len,
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<T: NoUninit> DynamicVertexBuffer<T> {
     /// Creates a new [`DynamicVertexBuffer`] instance with the provided data.
     #[profiling::function]
     pub fn new_with_data(gpu: Arc<Gpu>, data: &[T]) -> Self
@@ -66,25 +90,9 @@ impl<T> DynamicVertexBuffer<T> {
         }
     }
 
-    /// Returns the number of `T`s that are currently stored in the buffer.
-    #[inline]
-    #[allow(clippy::len_without_is_empty)]
-    pub fn len(&self) -> u32 {
-        self.len
-    }
-
-    /// Clears the buffer.
-    #[inline]
-    pub fn clear(&mut self) {
-        self.len = 0;
-    }
-
     /// Extends the buffer with the provided data.
     #[profiling::function]
-    pub fn extend(&mut self, data: &[T])
-    where
-        T: NoUninit,
-    {
+    pub fn extend(&mut self, data: &[T]) {
         let cap = self.buffer.size() / size_of::<T>() as wgpu::BufferAddress;
         let new_len = self.len + data.len() as u32;
 
@@ -122,13 +130,12 @@ impl<T> DynamicVertexBuffer<T> {
         self.len = new_len;
     }
 
-    /// Returns a [`VertexBufferSlice`] that can be used to render the contents of this buffer.
-    #[inline]
-    pub fn slice(&self) -> VertexBufferSlice<T> {
-        VertexBufferSlice {
-            buffer: self.buffer.slice(..self.len as u64 * size_of::<T>() as u64),
-            len: self.len,
-            marker: PhantomData,
-        }
+    /// Edits the buffer at the provided index.
+    pub fn edit(&mut self, at: u32, data: &[T]) {
+        self.gpu.queue.write_buffer(
+            &self.buffer,
+            at as u64 * size_of::<T>() as u64,
+            bytemuck::cast_slice(data),
+        );
     }
 }

@@ -1,13 +1,12 @@
+use std::mem::size_of;
+
 mod font;
 
 mod instance;
 pub use instance::*;
 
-use std::mem::size_of;
-
 use wgpu::util::DeviceExt;
 
-use super::common::CommonResources;
 use crate::{Gpu, VertexBufferSlice};
 
 /// Pipeline responsible for rendering text.
@@ -20,10 +19,10 @@ pub struct TextPipeline {
 
 impl TextPipeline {
     /// Creates a new [`TextPipeline`] instance.
-    pub fn new(gpu: &Gpu, resources: &CommonResources, output_format: wgpu::TextureFormat) -> Self {
+    pub fn new(gpu: &Gpu, output_format: wgpu::TextureFormat) -> Self {
         let font_layout = create_font_layout(gpu);
-        let font = create_font(gpu, &font_layout, resources);
-        let pipeline = create_pipeline(gpu, &font_layout, resources, output_format);
+        let font = create_font(gpu, &font_layout);
+        let pipeline = create_pipeline(gpu, &font_layout, output_format);
         Self { font, pipeline }
     }
 
@@ -67,11 +66,9 @@ fn create_font_layout(gpu: &Gpu) -> wgpu::BindGroupLayout {
         })
 }
 
-fn create_font(
-    gpu: &Gpu,
-    layout: &wgpu::BindGroupLayout,
-    resources: &CommonResources,
-) -> wgpu::BindGroup {
+fn create_font(gpu: &Gpu, layout: &wgpu::BindGroupLayout) -> wgpu::BindGroup {
+    let res = gpu.resources.read();
+
     let data = font::load();
 
     let texture = gpu.device.create_texture_with_data(
@@ -106,7 +103,7 @@ fn create_font(
             },
             wgpu::BindGroupEntry {
                 binding: 1,
-                resource: wgpu::BindingResource::Sampler(&resources.pixel_sampler),
+                resource: wgpu::BindingResource::Sampler(&res.pixel_sampler),
             },
         ],
     })
@@ -115,14 +112,15 @@ fn create_font(
 fn create_pipeline(
     gpu: &Gpu,
     font: &wgpu::BindGroupLayout,
-    common_resources: &CommonResources,
     output_format: wgpu::TextureFormat,
 ) -> wgpu::RenderPipeline {
+    let res = gpu.resources.read();
+
     let layout = gpu
         .device
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Text Pipeline Layout"),
-            bind_group_layouts: &[&common_resources.frame_uniforms_layout, &font],
+            bind_group_layouts: &[&res.frame_uniforms_layout, &font],
             push_constant_ranges: &[],
         });
 

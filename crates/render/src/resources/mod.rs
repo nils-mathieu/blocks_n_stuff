@@ -1,9 +1,12 @@
 //! Provides GPU-managed resources.
 
 mod dynamic_vertex_buffer;
-use std::marker::PhantomData;
-
 pub use dynamic_vertex_buffer::*;
+
+mod texture;
+pub use texture::*;
+
+use std::marker::PhantomData;
 
 /// A slice into a [`VertexBuffer`].
 #[derive(Clone, Copy)]

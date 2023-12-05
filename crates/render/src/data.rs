@@ -1,11 +1,12 @@
 use crate::shaders::quad::Quads;
-use crate::{Gpu, VertexBufferSlice};
+use crate::{Gpu, Texture, VertexBufferSlice};
 
 pub use crate::color::Color;
 pub use crate::shaders::common::FrameUniforms;
 pub use crate::shaders::line::{LineFlags, LineInstance};
 pub use crate::shaders::quad::{ChunkUniforms, QuadFlags, QuadInstance};
 pub use crate::shaders::text::{CharacterFlags, CharacterInstance, CharacterInstanceCursor};
+pub use crate::shaders::ui_sprite::Sprite;
 
 /// An UI element to draw.
 ///
@@ -13,6 +14,13 @@ pub use crate::shaders::text::{CharacterFlags, CharacterInstance, CharacterInsta
 pub enum Ui<'a> {
     /// Some text lements.
     Text(VertexBufferSlice<'a, CharacterInstance>),
+    /// A sprite (or a collection of sprites that share the same texture).
+    Sprite {
+        /// The sprite instances to draw.
+        instances: VertexBufferSlice<'a, Sprite>,
+        /// The texture to use for the sprites.
+        texture: &'a Texture,
+    },
 }
 
 /// The data required to render a frame.

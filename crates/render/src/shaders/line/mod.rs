@@ -2,10 +2,10 @@ use std::mem::{size_of, size_of_val};
 
 mod instance;
 pub use instance::*;
+
 use wgpu::util::DeviceExt;
 use wgpu::RenderPass;
 
-use super::common::CommonResources;
 use crate::Gpu;
 
 /// Contains the state required to draw lines using GPU resources.
@@ -18,8 +18,8 @@ pub struct LinePipeline {
 
 impl LinePipeline {
     /// Creates a new [`LinePipeline`] instance.
-    pub fn new(gpu: &Gpu, resources: &CommonResources, output_format: wgpu::TextureFormat) -> Self {
-        let pipeline = create_pipeline(gpu, &resources.frame_uniforms_layout, output_format);
+    pub fn new(gpu: &Gpu, output_format: wgpu::TextureFormat) -> Self {
+        let pipeline = create_pipeline(gpu, output_format);
         let buffer = create_line_instance_buffer(gpu);
 
         Self { pipeline, buffer }
@@ -63,11 +63,9 @@ impl LinePipeline {
 }
 
 /// Creates the render pipeline that's responsible for drawing lines.
-fn create_pipeline(
-    gpu: &Gpu,
-    frame_uniforms_layout: &wgpu::BindGroupLayout,
-    output_format: wgpu::TextureFormat,
-) -> wgpu::RenderPipeline {
+fn create_pipeline(gpu: &Gpu, output_format: wgpu::TextureFormat) -> wgpu::RenderPipeline {
+    let res = gpu.resources.read();
+
     let shader_module = gpu
         .device
         .create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -79,7 +77,7 @@ fn create_pipeline(
         .device
         .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Line Pipeline Layout"),
-            bind_group_layouts: &[frame_uniforms_layout],
+            bind_group_layouts: &[&res.frame_uniforms_layout],
             push_constant_ranges: &[],
         });
 

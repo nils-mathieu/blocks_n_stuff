@@ -5,8 +5,10 @@ impl Renderer {
     /// Renders to the provided [`RenderTarget`] using the provided [`RenderData`].
     #[profiling::function]
     pub fn render(&mut self, target: RenderTarget, data: &mut RenderData) {
+        let res = self.gpu.resources.read();
+
         self.gpu.queue.write_buffer(
-            &self.resources.frame_uniforms_buffer,
+            &res.frame_uniforms_buffer,
             0,
             bytemuck::bytes_of(&data.uniforms),
         );
@@ -39,15 +41,15 @@ impl Renderer {
                     store: wgpu::StoreOp::Store,
                 }),
                 stencil_ops: None,
-                view: &self.resources.depth_buffer,
+                view: &res.depth_buffer,
             }),
             occlusion_query_set: None,
             timestamp_writes: None,
         });
 
         // Set the bind groups that are used by most of the pipelines.
-        rp.set_bind_group(0, &self.resources.frame_uniforms_bind_group, &[]);
-        rp.set_bind_group(2, &self.resources.texture_atlas_bind_group, &[]);
+        rp.set_bind_group(0, &res.frame_uniforms_bind_group, &[]);
+        rp.set_bind_group(2, &res.texture_atlas_bind_group, &[]);
 
         self.skybox_pipeline.render(&self.gpu, &mut rp);
         self.quad_pipeline.render(&self.gpu, &mut rp, &data.quads);
@@ -74,8 +76,8 @@ impl Renderer {
             timestamp_writes: None,
         });
 
-        rp.set_bind_group(0, &self.resources.frame_uniforms_bind_group, &[]);
-        rp.set_bind_group(1, &self.resources.depth_buffer_bind_group, &[]);
+        rp.set_bind_group(0, &res.frame_uniforms_bind_group, &[]);
+        rp.set_bind_group(1, &res.depth_buffer_bind_group, &[]);
 
         self.fog_pipeline.render(&self.gpu, &mut rp);
 
@@ -100,11 +102,16 @@ impl Renderer {
             timestamp_writes: None,
         });
 
-        rp.set_bind_group(0, &self.resources.frame_uniforms_bind_group, &[]);
+        rp.set_bind_group(0, &res.frame_uniforms_bind_group, &[]);
 
         for elem in &data.ui {
             match elem {
-                Ui::Text(data) => self.text_pipeline.render(&self.gpu, &mut rp, *data),
+                Ui::Text(data) => {
+                    self.text_pipeline.render(&self.gpu, &mut rp, *data);
+                }
+                Ui::Sprite { instances, texture } => {
+                    self.ui_sprite_pipeline.render(&mut rp, *instances, texture);
+                }
             }
         }
 

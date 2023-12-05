@@ -6,8 +6,6 @@ use glam::{Mat4, Vec2};
 use wgpu::util::DeviceExt;
 use wgpu::TextureFormat;
 
-use crate::Gpu;
-
 /// Information about a texture atlas to be created.
 #[derive(Clone, Debug)]
 pub struct TextureAtlasConfig<'a> {
@@ -85,26 +83,30 @@ pub struct CommonResources {
     pub frame_uniforms_bind_group: wgpu::BindGroup,
     /// A linear sampler that can be used to sample pixels from a texture.
     pub linear_sampler: wgpu::Sampler,
+    /// The bind group layout used to create textures.
+    pub texture_layout: wgpu::BindGroupLayout,
 }
 
 impl CommonResources {
     /// Creates a new [`CommonResources`] instance from the provided GPU.
-    pub fn new(gpu: &Gpu, texture_atlas_config: &TextureAtlasConfig) -> Self {
-        let pixel_sampler = create_pixel_sampler(gpu);
-        let texture_atlas_layout = create_texture_atlas_layout(gpu);
+    pub fn new(device: &wgpu::Device, queue: &wgpu::Queue) -> Self {
+        let pixel_sampler = create_pixel_sampler(device);
+        let texture_atlas_layout = create_texture_atlas_layout(device);
         let texture_atlas_bind_group = create_texture_atlas(
-            gpu,
+            device,
+            queue,
             &texture_atlas_layout,
-            texture_atlas_config,
+            &TextureAtlasConfig::dummy::<64>(),
             &pixel_sampler,
         );
-        let frame_uniforms_layout = create_frame_uniforms_layout(gpu);
+        let frame_uniforms_layout = create_frame_uniforms_layout(device);
         let (frame_uniforms_buffer, frame_uniforms_bind_group) =
-            create_frame_uniforms_buffer(gpu, &frame_uniforms_layout);
-        let depth_buffer_layout = create_depth_buffer_layout(gpu);
-        let linear_sampler = create_linear_sampler(gpu);
+            create_frame_uniforms_buffer(device, &frame_uniforms_layout);
+        let depth_buffer_layout = create_depth_buffer_layout(device);
+        let linear_sampler = create_linear_sampler(device);
         let (depth_buffer, depth_buffer_bind_group) =
-            create_depth_buffer(gpu, &depth_buffer_layout, &linear_sampler, 1, 1);
+            create_depth_buffer(device, &depth_buffer_layout, &linear_sampler, 1, 1);
+        let texture_layout = create_texture_layout(device);
 
         Self {
             pixel_sampler,
@@ -117,19 +119,30 @@ impl CommonResources {
             depth_buffer_layout,
             frame_uniforms_buffer,
             linear_sampler,
+            texture_layout,
         }
     }
 
     /// Updates the texture atlas with the provided configuration.
-    pub fn set_texture_atlas(&mut self, gpu: &Gpu, config: &TextureAtlasConfig) {
-        self.texture_atlas_bind_group =
-            create_texture_atlas(gpu, &self.texture_atlas_layout, config, &self.pixel_sampler);
+    pub fn set_texture_atlas(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        config: &TextureAtlasConfig,
+    ) {
+        self.texture_atlas_bind_group = create_texture_atlas(
+            device,
+            queue,
+            &self.texture_atlas_layout,
+            config,
+            &self.pixel_sampler,
+        );
     }
 
     /// Notifies this [`CommonResources`] that the render target has been resized.
-    pub fn notify_resized(&mut self, gpu: &Gpu, width: u32, height: u32) {
+    pub fn notify_resized(&mut self, device: &wgpu::Device, width: u32, height: u32) {
         (self.depth_buffer, self.depth_buffer_bind_group) = create_depth_buffer(
-            gpu,
+            device,
             &self.depth_buffer_layout,
             &self.linear_sampler,
             width,
@@ -138,35 +151,34 @@ impl CommonResources {
     }
 }
 
-fn create_frame_uniforms_layout(gpu: &Gpu) -> wgpu::BindGroupLayout {
-    gpu.device
-        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Frame Uniform Bind Group Layout"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                count: None,
-                ty: wgpu::BindingType::Buffer {
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                    ty: wgpu::BufferBindingType::Uniform,
-                },
-                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-            }],
-        })
+fn create_frame_uniforms_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("Frame Uniform Bind Group Layout"),
+        entries: &[wgpu::BindGroupLayoutEntry {
+            binding: 0,
+            count: None,
+            ty: wgpu::BindingType::Buffer {
+                has_dynamic_offset: false,
+                min_binding_size: None,
+                ty: wgpu::BufferBindingType::Uniform,
+            },
+            visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+        }],
+    })
 }
 
 fn create_frame_uniforms_buffer(
-    gpu: &Gpu,
+    device: &wgpu::Device,
     bind_group_layout: &wgpu::BindGroupLayout,
 ) -> (wgpu::Buffer, wgpu::BindGroup) {
-    let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+    let buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("Frame Uniform Buffer"),
         mapped_at_creation: false,
         size: size_of::<FrameUniforms>() as u64,
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
     });
 
-    let bind_group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Frame Uniform Bind Group"),
         layout: bind_group_layout,
         entries: &[wgpu::BindGroupEntry {
@@ -178,8 +190,8 @@ fn create_frame_uniforms_buffer(
     (buffer, bind_group)
 }
 
-fn create_pixel_sampler(gpu: &Gpu) -> wgpu::Sampler {
-    gpu.device.create_sampler(&wgpu::SamplerDescriptor {
+fn create_pixel_sampler(device: &wgpu::Device) -> wgpu::Sampler {
+    device.create_sampler(&wgpu::SamplerDescriptor {
         label: Some("Pixel Sampler"),
         address_mode_u: wgpu::AddressMode::ClampToEdge,
         address_mode_v: wgpu::AddressMode::ClampToEdge,
@@ -195,39 +207,39 @@ fn create_pixel_sampler(gpu: &Gpu) -> wgpu::Sampler {
     })
 }
 
-fn create_texture_atlas_layout(gpu: &Gpu) -> wgpu::BindGroupLayout {
-    gpu.device
-        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Texture Atlas Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    count: None,
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
-                        view_dimension: wgpu::TextureViewDimension::D2Array,
-                    },
-                    visibility: wgpu::ShaderStages::FRAGMENT,
+fn create_texture_atlas_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("Texture Atlas Bind Group Layout"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                count: None,
+                ty: wgpu::BindingType::Texture {
+                    multisampled: false,
+                    sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                    view_dimension: wgpu::TextureViewDimension::D2Array,
                 },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    count: None,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                },
-            ],
-        })
+                visibility: wgpu::ShaderStages::FRAGMENT,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                count: None,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
+                visibility: wgpu::ShaderStages::FRAGMENT,
+            },
+        ],
+    })
 }
 
 fn create_texture_atlas(
-    gpu: &Gpu,
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
     layout: &wgpu::BindGroupLayout,
     config: &TextureAtlasConfig,
     sampler: &wgpu::Sampler,
 ) -> wgpu::BindGroup {
-    let texture = gpu.device.create_texture_with_data(
-        &gpu.queue,
+    let texture = device.create_texture_with_data(
+        queue,
         &wgpu::TextureDescriptor {
             label: Some("Texture Atlas"),
             size: wgpu::Extent3d {
@@ -248,7 +260,7 @@ fn create_texture_atlas(
 
     let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-    let bind_group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Texture Atlas Bind Group"),
         layout,
         entries: &[
@@ -266,33 +278,32 @@ fn create_texture_atlas(
     bind_group
 }
 
-fn create_depth_buffer_layout(gpu: &Gpu) -> wgpu::BindGroupLayout {
-    gpu.device
-        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Depth Buffer Bind Group Layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    count: None,
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        sample_type: wgpu::TextureSampleType::Depth,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                    },
-                    visibility: wgpu::ShaderStages::FRAGMENT,
+fn create_depth_buffer_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("Depth Buffer Bind Group Layout"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                count: None,
+                ty: wgpu::BindingType::Texture {
+                    multisampled: false,
+                    sample_type: wgpu::TextureSampleType::Depth,
+                    view_dimension: wgpu::TextureViewDimension::D2,
                 },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    count: None,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                },
-            ],
-        })
+                visibility: wgpu::ShaderStages::FRAGMENT,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                count: None,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                visibility: wgpu::ShaderStages::FRAGMENT,
+            },
+        ],
+    })
 }
 
-fn create_linear_sampler(gpu: &Gpu) -> wgpu::Sampler {
-    gpu.device.create_sampler(&wgpu::SamplerDescriptor {
+fn create_linear_sampler(device: &wgpu::Device) -> wgpu::Sampler {
+    device.create_sampler(&wgpu::SamplerDescriptor {
         label: Some("Regular Sampler"),
         address_mode_u: wgpu::AddressMode::Repeat,
         address_mode_v: wgpu::AddressMode::Repeat,
@@ -309,13 +320,13 @@ fn create_linear_sampler(gpu: &Gpu) -> wgpu::Sampler {
 }
 
 fn create_depth_buffer(
-    gpu: &Gpu,
+    device: &wgpu::Device,
     layout: &wgpu::BindGroupLayout,
     sampler: &wgpu::Sampler,
     width: u32,
     height: u32,
 ) -> (wgpu::TextureView, wgpu::BindGroup) {
-    let depth_buffer = gpu.device.create_texture(&wgpu::TextureDescriptor {
+    let depth_buffer = device.create_texture(&wgpu::TextureDescriptor {
         label: Some("Depth Buffer"),
         size: wgpu::Extent3d {
             width,
@@ -332,7 +343,7 @@ fn create_depth_buffer(
 
     let view = depth_buffer.create_view(&wgpu::TextureViewDescriptor::default());
 
-    let bind_group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Depth Buffer Bind Group"),
         layout,
         entries: &[
@@ -348,4 +359,28 @@ fn create_depth_buffer(
     });
 
     (view, bind_group)
+}
+
+fn create_texture_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("Texture Bind Group Layout"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                count: None,
+                ty: wgpu::BindingType::Texture {
+                    multisampled: false,
+                    sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                },
+                visibility: wgpu::ShaderStages::FRAGMENT,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                count: None,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
+                visibility: wgpu::ShaderStages::FRAGMENT,
+            },
+        ],
+    })
 }

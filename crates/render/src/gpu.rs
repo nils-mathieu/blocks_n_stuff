@@ -1,6 +1,9 @@
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
 #[cfg(not(target_arch = "wasm32"))]
 use thread_local::ThreadLocal;
+
+use crate::shaders::common::CommonResources;
+use crate::TextureAtlasConfig;
 
 /// Holds an open connection with a Graphics Processing Unit (GPU) and provides access to its
 /// resources.
@@ -19,6 +22,9 @@ pub struct Gpu {
     /// The queue used to submit commands to the GPU.
     pub(crate) queue: wgpu::Queue,
 
+    /// The resources that are commonly used by all shaders.
+    pub(crate) resources: RwLock<CommonResources>,
+
     /// Temprorary command encoders used to send commands to the GPU from multiple threads.
     ///
     /// The `ThredLocal` ensures that there will be no contention most of the time, but if the
@@ -33,6 +39,8 @@ pub struct Gpu {
 impl Gpu {
     /// Creates a new [`Gpu`] instance.
     pub(crate) fn new(device: wgpu::Device, queue: wgpu::Queue) -> Self {
+        let resources = RwLock::new(CommonResources::new(&device, &queue));
+
         Self {
             limits: device.limits(),
             queue,
@@ -45,6 +53,8 @@ impl Gpu {
                     label: Some("Temporary Command Encoder"),
                 },
             )),
+
+            resources,
 
             device,
         }
@@ -84,5 +94,19 @@ impl Gpu {
         {
             std::iter::once(&self.temp_command_encoder)
         }
+    }
+
+    /// Notifies the GPU that the render target has been resized.
+    pub fn notify_resized(&self, width: u32, height: u32) {
+        self.resources
+            .write()
+            .notify_resized(&self.device, width, height);
+    }
+
+    /// Sets the texture atlas to use for rendering.
+    pub fn set_texture_atlas(&self, texture: &TextureAtlasConfig) {
+        self.resources
+            .write()
+            .set_texture_atlas(&self.device, &self.queue, texture);
     }
 }

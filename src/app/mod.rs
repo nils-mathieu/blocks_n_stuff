@@ -45,9 +45,11 @@ async fn run_async() {
         surface.gpu().clone(),
         RendererConfig {
             output_format: surface.info().format,
-            texture_atlas: asset::load_texture_atlas().await,
         },
     );
+    renderer
+        .gpu()
+        .set_texture_atlas(&asset::load_texture_atlas().await);
     let mut render_data = Some(RenderData::new(surface.gpu()));
 
     let mut game = Game::new(surface.gpu().clone(), bns_rng::entropy());
@@ -60,7 +62,7 @@ async fn run_async() {
         if ctx.just_resized() {
             surface.config_mut().width = ctx.width();
             surface.config_mut().height = ctx.height();
-            renderer.resize(ctx.width(), ctx.height());
+            renderer.gpu().notify_resized(ctx.width(), ctx.height());
         }
 
         #[cfg(not(target_arch = "wasm32"))]

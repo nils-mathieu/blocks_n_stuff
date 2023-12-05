@@ -49,7 +49,7 @@ impl Game {
         bns_log::info!("creating a new world with seed: {seed}");
         let generator = Arc::new(StandardWorldGenerator::from_seed::<DefaultRng>(seed));
         let world = World::new(gpu.clone(), generator);
-        let player = Player::new(Vec3::new(0.0, 16.0, 0.0));
+        let player = Player::new(gpu.clone(), Vec3::new(0.0, 16.0, 0.0));
         let debug = DebugThings::new(gpu.clone());
 
         Self {
@@ -187,6 +187,8 @@ impl Game {
                 total_quad_count += buf.len();
             }
         }
+
+        self.player.render_hud(frame);
 
         // Outline the block that the player is looking at.
         if let Some(looking_at) = self.player.looking_at() {

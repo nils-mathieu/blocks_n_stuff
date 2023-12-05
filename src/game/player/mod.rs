@@ -1,5 +1,12 @@
 mod camera;
+use std::sync::Arc;
+
+use bns_render::data::RenderData;
+use bns_render::Gpu;
 pub use camera::*;
+
+mod hud;
+pub use hud::*;
 
 use bns_app::{Ctx, KeyCode, MouseButton};
 use bns_core::{BlockId, Chunk, ChunkPos};
@@ -44,11 +51,14 @@ pub struct Player {
 
     /// The reach of the player, in blocks.
     max_reach: f32,
+
+    /// The HUD displayed in front the player.
+    hud: Hud,
 }
 
 impl Player {
     /// Creates a new [`Player`] instance.
-    pub fn new(position: Vec3) -> Self {
+    pub fn new(gpu: Arc<Gpu>, position: Vec3) -> Self {
         let render_distance = 8;
         let far_plane = render_distance_to_far_plane(render_distance);
 
@@ -67,6 +77,8 @@ impl Player {
 
             looking_at: None,
             max_reach: 8.0,
+
+            hud: Hud::new(gpu),
         }
     }
 
@@ -185,6 +197,17 @@ impl Player {
             * ctx.delta_seconds();
         let vdelta = vertical_movement_input * self.fly_speed * ctx.delta_seconds();
         self.position += Vec3::new(hdelta.x, vdelta, hdelta.y);
+
+        // ======================================
+        // Other
+        // ======================================
+
+        self.hud.tick(ctx);
+    }
+
+    /// Renders the player's HUD.
+    pub fn render_hud<'res>(&'res self, frame: &mut RenderData<'res>) {
+        self.hud.render(frame);
     }
 
     /// Re-computes the chunks that are in view of the player.
