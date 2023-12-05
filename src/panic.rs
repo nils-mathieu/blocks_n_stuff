@@ -78,16 +78,39 @@ fn custom_panic_hook(info: &PanicInfo) {
     // Except on WASM, where we use the browser's console.
     #[cfg(target_arch = "wasm32")]
     {
-        use web_sys::js_sys::wasm_bindgen::JsValue;
+        use web_sys::wasm_bindgen::{JsCast, JsValue};
+        use web_sys::HtmlElement;
 
-        let message = format!("%cPANIC%c  {}", message);
+        let console_message = format!("%cPANIC%c  {}", message);
         let css1 = "color: white; font-weight: bold; background-color: red;";
         let css2 = "color: inherit; font-weight: normal; background-color: inherit;";
         web_sys::console::error_3(
-            &JsValue::from(message),
+            &JsValue::from(console_message),
             &JsValue::from(css1),
             &JsValue::from(css2),
         );
+
+        let document = web_sys::window().unwrap().document().unwrap();
+        let error = document
+            .create_element("div")
+            .unwrap()
+            .unchecked_into::<HtmlElement>();
+        error.set_id("error");
+        let title = document
+            .create_element("p")
+            .unwrap()
+            .unchecked_into::<HtmlElement>();
+        title.set_class_name("title");
+        title.set_inner_text("Unexpected panic :(");
+        let message_elem = document
+            .create_element("p")
+            .unwrap()
+            .unchecked_into::<HtmlElement>();
+        message_elem.set_class_name("message");
+        message_elem.set_inner_text(&message.to_string());
+        error.append_child(&title).unwrap();
+        error.append_child(&message_elem).unwrap();
+        document.body().unwrap().append_child(&error).unwrap();
     }
 
     // Display the message to the user using a message box.
