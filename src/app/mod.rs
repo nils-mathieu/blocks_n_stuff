@@ -54,7 +54,7 @@ async fn run_async() {
 
     app.run(|ctx| {
         // ==============================================
-        // Misc Events
+        // Update
         // ==============================================
 
         if ctx.just_resized() {
@@ -62,10 +62,6 @@ async fn run_async() {
             surface.config_mut().height = ctx.height();
             renderer.resize(ctx.width(), ctx.height());
         }
-
-        // ==============================================
-        // Input Handling
-        // ==============================================
 
         #[cfg(not(target_arch = "wasm32"))]
         {
@@ -98,5 +94,7 @@ async fn run_async() {
         renderer.render(frame.target(), &mut data);
         frame.present();
         render_data = Some(data.reset());
+
+        profiling::finish_frame!();
     });
 }
