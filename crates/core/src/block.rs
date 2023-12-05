@@ -42,6 +42,7 @@ pub enum BlockId {
     OakLeaves,
     PineLog,
     PineLeaves,
+    StructureBlock,
 }
 
 // SAFETY:
@@ -235,6 +236,12 @@ impl BlockId {
                 appearance: BlockAppearance::uniform(TextureId::PineLeaves),
                 visibility: BlockVisibility::SemiOpaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
+            },
+            // StructureBlock
+            BlockInfo {
+                appearance: BlockAppearance::uniform(TextureId::StructureBlock),
+                visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::TANGIBLE,
             },
         ];
 
