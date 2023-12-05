@@ -337,7 +337,7 @@ impl Chunk {
     /// This function panics if `block` requires some metadata to be complete.
     #[inline]
     pub fn set_block(&mut self, pos: LocalPos, block: BlockId) {
-        if block == BlockId::Air {
+        if block == BlockId::Air && self.blocks.is_none() {
             return;
         }
 

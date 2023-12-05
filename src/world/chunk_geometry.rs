@@ -313,6 +313,17 @@ impl ChunkBuildContext {
             );
         }
     }
+
+    /// Overwrites the provided [`ChunkGeometry`] instance with this [`ChunkBuildContext`].
+    pub fn overwrite_to(&mut self, geometry: &mut ChunkGeometry) {
+        if let Some(buf) = &mut geometry.opaque_quads {
+            buf.clear();
+        }
+        if let Some(buf) = &mut geometry.transparent_quads {
+            buf.clear();
+        }
+        self.append_to(geometry);
+    }
 }
 
 bitflags! {

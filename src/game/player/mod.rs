@@ -1,7 +1,7 @@
 mod camera;
 pub use camera::*;
 
-use bns_app::{Ctx, KeyCode};
+use bns_app::{Ctx, KeyCode, MouseButton};
 use bns_core::{BlockId, Chunk, ChunkPos};
 
 use glam::{IVec3, Vec2, Vec3};
@@ -159,12 +159,15 @@ impl Player {
         }
 
         // Outline the block that's currently being looked at.
-        if let Ok(result) =
-            world.query_line(self.position, self.camera.view.look_at(), self.max_reach)
-        {
-            self.looking_at = Some(LookingAt::from_query(&result, self.position));
-        } else {
-            self.looking_at = None;
+        self.looking_at = world
+            .query_line(self.position, self.camera.view.look_at(), self.max_reach)
+            .ok()
+            .map(|q| LookingAt::from_query(&q, self.position));
+
+        if ctx.pressing(MouseButton::Left) {
+            if let Some(looking_at) = self.looking_at {
+                debug_assert!(world.set_block(looking_at.world_pos, BlockId::Air));
+            }
         }
 
         // ======================================

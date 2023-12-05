@@ -7,7 +7,7 @@ use glam::{IVec3, Vec3, Vec3Swizzles};
 use hashbrown::HashMap;
 use smallvec::SmallVec;
 
-use bns_core::{BlockFlags, Chunk, ChunkPos, Face, LocalPos};
+use bns_core::{BlockFlags, BlockId, Chunk, ChunkPos, Face, LocalPos};
 use bns_render::Gpu;
 use bns_workers::{Priority, TaskPool, Worker};
 use bns_worldgen_core::WorldGenerator;
@@ -436,6 +436,108 @@ impl World {
         }
 
         Err(QueryError::NotFound)
+    }
+
+    /// Rebuilds the geometry of the chunk at the provided position.
+    ///
+    /// # Returns
+    ///
+    /// This function returns `true` if the chunk was successfully rebuilt, or `false` if the
+    /// provided position was part of an unloaded chunk.
+    #[profiling::function]
+    pub fn rebuild_geometry(&mut self, pos: ChunkPos) -> bool {
+        let chunk = match self.chunks.get(&pos) {
+            Some(ChunkEntry::Loaded(chunk)) => chunk,
+            _ => return false,
+        };
+
+        self.chunk_build_context.reset();
+        self.chunk_build_context.build_inner(&chunk.data);
+        if let Some(ChunkEntry::Loaded(other)) = self.chunks.get(&(pos + IVec3::X)) {
+            self.chunk_build_context
+                .build_boundary_x(&chunk.data, &other.data);
+        }
+        if let Some(ChunkEntry::Loaded(other)) = self.chunks.get(&(pos - IVec3::X)) {
+            self.chunk_build_context
+                .build_boundary_neg_x(&chunk.data, &other.data);
+        }
+        if let Some(ChunkEntry::Loaded(other)) = self.chunks.get(&(pos + IVec3::Y)) {
+            self.chunk_build_context
+                .build_boundary_y(&chunk.data, &other.data);
+        }
+        if let Some(ChunkEntry::Loaded(other)) = self.chunks.get(&(pos - IVec3::Y)) {
+            self.chunk_build_context
+                .build_boundary_neg_y(&chunk.data, &other.data);
+        }
+        if let Some(ChunkEntry::Loaded(other)) = self.chunks.get(&(pos + IVec3::Z)) {
+            self.chunk_build_context
+                .build_boundary_z(&chunk.data, &other.data);
+        }
+        if let Some(ChunkEntry::Loaded(other)) = self.chunks.get(&(pos - IVec3::Z)) {
+            self.chunk_build_context
+                .build_boundary_neg_z(&chunk.data, &other.data);
+        }
+
+        let Some(ChunkEntry::Loaded(chunk)) = self.chunks.get_mut(&pos) else {
+            // SAFETY:
+            //  We know that the chunk is present in the map because we already successfully
+            //  got it previously.
+            unsafe { std::hint::unreachable_unchecked() }
+        };
+        self.chunk_build_context.overwrite_to(&mut chunk.geometry);
+
+        true
+    }
+
+    /// Replaces the provided block with another one.
+    ///
+    /// # Returns
+    ///
+    /// This function returns `true` if the block was successfully replaced, or `false` if the
+    /// the provided position was part of an unloaded chunk.
+    #[profiling::function]
+    pub fn set_block(&mut self, world_pos: IVec3, block: BlockId) -> bool {
+        let chunk_pos = ChunkPos::new(
+            world_pos.x.div_euclid(Chunk::SIDE),
+            world_pos.y.div_euclid(Chunk::SIDE),
+            world_pos.z.div_euclid(Chunk::SIDE),
+        );
+        let local_pos = unsafe {
+            LocalPos::from_xyz_unchecked(
+                world_pos.x - chunk_pos.x * Chunk::SIDE,
+                world_pos.y - chunk_pos.y * Chunk::SIDE,
+                world_pos.z - chunk_pos.z * Chunk::SIDE,
+            )
+        };
+
+        let chunk = match self.chunks.get_mut(&chunk_pos) {
+            Some(ChunkEntry::Loaded(chunk)) => chunk,
+            _ => return false,
+        };
+
+        chunk.data.set_block(local_pos, block);
+
+        self.rebuild_geometry(chunk_pos);
+
+        if local_pos.x() == 0 {
+            self.rebuild_geometry(chunk_pos - IVec3::X);
+        } else if local_pos.x() == Chunk::SIDE - 1 {
+            self.rebuild_geometry(chunk_pos + IVec3::X);
+        }
+
+        if local_pos.y() == 0 {
+            self.rebuild_geometry(chunk_pos - IVec3::Y);
+        } else if local_pos.y() == Chunk::SIDE - 1 {
+            self.rebuild_geometry(chunk_pos + IVec3::Y);
+        }
+
+        if local_pos.z() == 0 {
+            self.rebuild_geometry(chunk_pos - IVec3::Z);
+        } else if local_pos.z() == Chunk::SIDE - 1 {
+            self.rebuild_geometry(chunk_pos + IVec3::Z);
+        }
+
+        true
     }
 }
 
