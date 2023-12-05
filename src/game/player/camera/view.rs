@@ -28,7 +28,7 @@ impl View {
     pub fn set_rotation(&mut self, yaw: f32, pitch: f32) {
         self.yaw = yaw.rem_euclid(std::f32::consts::TAU);
         self.pitch = pitch.clamp(-Self::MAX_PITCH, Self::MAX_PITCH);
-        self.rotation = compute_rotation(yaw, pitch);
+        self.rotation = compute_rotation(self.yaw, self.pitch);
     }
 
     /// An utility function that rotates the camera by the given yaw and pitch values.
