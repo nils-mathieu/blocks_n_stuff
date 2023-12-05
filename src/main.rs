@@ -21,7 +21,7 @@ mod wasm {
 
     #[wasm_bindgen(start)]
     #[allow(clippy::main_recursion)]
-    fn wasm_entrp_point() {
+    fn wasm_entry_point() {
         super::main();
     }
 }

@@ -20,7 +20,7 @@ pub struct DebugThings {
 
     /// The content of the debug overlay.
     overlay_buffer: DebugOverlayBuffer,
-    /// The actual GPU buffer that will be uploaded to.
+    /// The actual GPU buffer that will be uploaded to the GPU.
     overlay_gpu_buffer: DynamicVertexBuffer<CharacterInstance>,
 
     /// The total amount of time since the last time
