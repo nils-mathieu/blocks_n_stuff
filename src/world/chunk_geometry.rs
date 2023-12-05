@@ -43,13 +43,19 @@ impl ChunkGeometry {
     /// Returns the quad instances of the chunk, if any.
     #[inline]
     pub fn opaque_quad_instances(&self) -> Option<&DynamicVertexBuffer<QuadInstance>> {
-        self.opaque_quads.as_ref()
+        match self.opaque_quads {
+            Some(ref buf) if buf.len() > 0 => Some(buf),
+            _ => None,
+        }
     }
 
     /// Returns the quad instances of the chunk, if any.
     #[inline]
     pub fn transparent_quad_instances(&self) -> Option<&DynamicVertexBuffer<QuadInstance>> {
-        self.transparent_quads.as_ref()
+        match self.transparent_quads {
+            Some(ref buf) if buf.len() > 0 => Some(buf),
+            _ => None,
+        }
     }
 }
 

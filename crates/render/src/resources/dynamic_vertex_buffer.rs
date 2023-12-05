@@ -56,7 +56,10 @@ impl<T> DynamicVertexBuffer<T> {
 
     /// Returns a [`VertexBufferSlice`] that can be used to render the contents of this buffer.
     #[inline]
+    #[track_caller]
     pub fn slice(&self) -> VertexBufferSlice<T> {
+        debug_assert!(self.len > 0, "buffer slices cannot be empty");
+
         VertexBufferSlice {
             buffer: self.buffer.slice(..self.len as u64 * size_of::<T>() as u64),
             len: self.len,
