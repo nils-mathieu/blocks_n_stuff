@@ -134,18 +134,18 @@ impl Hud {
         }
 
         if ctx.mouse_scroll_y() > 0.0 {
-            if self.hotbar_slot == HOTBAR_SLOT_COUNT - 1 {
-                self.hotbar_slot = 0;
-            } else {
-                self.hotbar_slot += 1;
-            }
-
-            self.rebuild_ui(ctx.width(), ctx.height());
-        } else if ctx.mouse_scroll_y() < 0.0 {
             if self.hotbar_slot == 0 {
                 self.hotbar_slot = HOTBAR_SLOT_COUNT - 1;
             } else {
                 self.hotbar_slot -= 1;
+            }
+
+            self.rebuild_ui(ctx.width(), ctx.height());
+        } else if ctx.mouse_scroll_y() < 0.0 {
+            if self.hotbar_slot == HOTBAR_SLOT_COUNT - 1 {
+                self.hotbar_slot = 0;
+            } else {
+                self.hotbar_slot += 1;
             }
 
             self.rebuild_ui(ctx.width(), ctx.height());
