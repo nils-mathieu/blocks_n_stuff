@@ -124,7 +124,7 @@ impl DebugThings {
                 .push(bns_render::data::Ui::Text(self.overlay_gpu_buffer.slice()));
         }
 
-        const CHUNK_SIZE: f32 = bns_core::Chunk::SIZE as f32;
+        const CHUNK_SIZE: f32 = bns_core::Chunk::SIDE as f32;
         match self.chunk_state {
             DebugChunkState::Hidden => (),
             DebugChunkState::ShowCurrentChunk => {
@@ -138,7 +138,7 @@ impl DebugThings {
                 );
             }
             DebugChunkState::ShowAllChunks => {
-                const BOUND: i32 = 5;
+                const BOUND: i32 = 4;
 
                 for z in -BOUND..=BOUND {
                     for y in -BOUND..=BOUND {
@@ -152,13 +152,13 @@ impl DebugThings {
                                 if pos == ChunkPos::ZERO {
                                     Color::RED
                                 } else {
-                                    Color::WHITE
+                                    Color::YELLOW
                                 },
-                                if pos == ChunkPos::ZERO { 3.0 } else { 1.0 },
+                                if pos == ChunkPos::ZERO { 3.0 } else { 2.0 },
                                 if pos == ChunkPos::ZERO {
-                                    LineVertexFlags::empty()
-                                } else {
                                     LineVertexFlags::ABOVE
+                                } else {
+                                    LineVertexFlags::empty()
                                 },
                             );
                         }

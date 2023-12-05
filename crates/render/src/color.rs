@@ -62,6 +62,30 @@ impl Color {
     pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self(u32::from_be_bytes([r, g, b, a]))
     }
+
+    /// Changes the alpha component of the [`Color`], returning a new one.
+    #[inline]
+    pub fn with_alpha(self, alpha: u8) -> Self {
+        Self::rgba(self.r, self.g, self.b, alpha)
+    }
+
+    /// Changes the red component of the [`Color`], returning a new one.
+    #[inline]
+    pub fn with_red(self, red: u8) -> Self {
+        Self::rgba(red, self.g, self.b, self.a)
+    }
+
+    /// Changes the green component of the [`Color`], returning a new one.
+    #[inline]
+    pub fn with_green(self, green: u8) -> Self {
+        Self::rgba(self.r, green, self.b, self.a)
+    }
+
+    /// Changes the blue component of the [`Color`], returning a new one.
+    #[inline]
+    pub fn with_blue(self, blue: u8) -> Self {
+        Self::rgba(self.r, self.g, blue, self.a)
+    }
 }
 
 impl Deref for Color {
