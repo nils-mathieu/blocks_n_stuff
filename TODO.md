@@ -17,7 +17,7 @@
 - [ ] Basic gameplay.
   - [ ] Physics system.
   - [ ] Mincraft survival-like player movement.
-  - [ ] Mining, placing blocks.
+  - [x] Mining, placing blocks.
 - [ ] Advanced graphics.
   - [ ] Dynamic lighting.
   - [ ] Shadows.
