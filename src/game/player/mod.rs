@@ -185,13 +185,12 @@ impl Player {
 
         self.hud.tick(ctx);
 
-        // Outline the block that's currently being looked at.
         self.looking_at = world
             .query_line(self.position, self.camera.view.look_at(), self.max_reach)
             .ok()
             .map(|q| LookingAt::from_query(&q, self.position));
 
-        if ctx.pressing(MouseButton::Left) {
+        if ctx.just_pressed(MouseButton::Left) {
             if let Some(looking_at) = self.looking_at {
                 world.set_block(looking_at.world_pos, BlockId::Air);
             }
@@ -369,7 +368,7 @@ fn record_structure(world: &World, a: IVec3, b: IVec3) -> Structure {
             for z in min.z..=max.z {
                 let pos = IVec3::new(x, y, z);
                 if let Some(block) = world.get_block(pos) {
-                    if matches!(block.id(), BlockId::Air | BlockId::StructureBlock) {
+                    if !matches!(block.id(), BlockId::Air | BlockId::StructureBlock) {
                         edits.push(StructureEdit {
                             position: pos - min,
                             block,
@@ -388,11 +387,15 @@ fn record_structure(world: &World, a: IVec3, b: IVec3) -> Structure {
 }
 
 /// Writes the provided list of blocks to a structure file.
-fn write_structure_file(blocks: &Structure) {
+fn write_structure_file(structure: &Structure) {
     const FILE_NAME: &str = "structure.ron";
 
-    bns_log::info!("Writing '{FILE_NAME}'...");
-    let s = ron::ser::to_string_pretty(blocks, ron::ser::PrettyConfig::default()).unwrap();
+    bns_log::info!(
+        "Writing {} blocks to '{}'...",
+        structure.edits.len(),
+        FILE_NAME
+    );
+    let s = ron::ser::to_string_pretty(structure, ron::ser::PrettyConfig::default()).unwrap();
     download_file(FILE_NAME, &s);
 }
 
