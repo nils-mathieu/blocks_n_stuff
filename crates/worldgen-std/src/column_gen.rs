@@ -24,7 +24,7 @@ const COLUMN_SIZE: usize = (COLUMN_SIDE * COLUMN_SIDE) as usize;
 ///
 /// Samples will be taken in randomly around the value, in a square of size
 /// `HEIGHT_MAP_SAMPLE_DISPERSE`.
-const HEIGHT_MAP_SAMPLE_COUNT: i32 = 16;
+const HEIGHT_MAP_SAMPLE_COUNT: i32 = 8;
 
 /// The maximum displacement of a heightmap sample from the center of the sampled square.
 ///

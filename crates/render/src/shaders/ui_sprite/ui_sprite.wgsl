@@ -7,6 +7,8 @@ struct FrameUniforms {
     resolution: vec2<f32>,
     fog_factor: f32,
     fog_distance: f32,
+    fog_color: u32,
+    flags: u32,
 }
 
 @group(0) @binding(0)

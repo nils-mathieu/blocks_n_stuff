@@ -177,7 +177,7 @@ pub struct DebugOverlayBuffer {
 impl DebugOverlayBuffer {
     /// The initial cursor position.
     const INITIAL_CURSOR: CharacterInstanceCursor =
-        CharacterInstanceCursor::new(Vec2::new(5.0, 5.0), Vec2::new(8.0, 16.0), Vec2::ZERO);
+        CharacterInstanceCursor::new(Vec2::new(5.0, 5.0), Vec2::new(16.0, 32.0), Vec2::ZERO);
 
     /// Creates a new [`DebugOverlayBuffer`] instance.
     fn new() -> Self {

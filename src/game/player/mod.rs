@@ -60,6 +60,9 @@ pub struct Player {
     /// If a structure block has already been interacted with, this is the position of the first
     /// block that was selected.
     structure_block: Option<IVec3>,
+
+    /// Whether the head of the player is currently underwater.
+    is_underwater: bool,
 }
 
 impl Player {
@@ -87,6 +90,8 @@ impl Player {
             hud: Hud::new(gpu),
 
             structure_block: None,
+
+            is_underwater: false,
         }
     }
 
@@ -221,6 +226,10 @@ impl Player {
             }
         }
 
+        if ctx.pressing(KeyCode::KeyT) {
+            self.position = Vec3::new(u16::MAX as f32, 0.0, 0.0);
+        }
+
         // ======================================
         // Movement
         // ======================================
@@ -236,6 +245,16 @@ impl Player {
             * ctx.delta_seconds();
         let vdelta = vertical_movement_input * self.fly_speed * ctx.delta_seconds();
         self.position += Vec3::new(hdelta.x, vdelta, hdelta.y);
+
+        self.is_underwater = world
+            .get_block(bns_core::utility::world_pos_of(self.position))
+            .is_some_and(|b| b == BlockId::Water);
+    }
+
+    /// Returns whether the player's head is underwater.
+    #[inline]
+    pub fn is_underwater(&self) -> bool {
+        self.is_underwater
     }
 
     /// Renders the player's HUD.

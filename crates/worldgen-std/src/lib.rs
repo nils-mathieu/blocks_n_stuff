@@ -94,6 +94,7 @@ impl WorldGenerator for StandardWorldGenerator {
         let column = self.ctx.columns.get(col_pos);
         let biomes = column.biome_stage(&self.ctx);
         let biome = biomes.ids[local_pos];
+        writeln!(w, "Biome: {:?}", biome)?;
         self.ctx.biome_registry[biome]
             .implementation
             .debug_info(w, pos)?;

@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use bns_app::{Ctx, KeyCode};
-use bns_render::data::{ChunkUniforms, Color, FrameUniforms, LineFlags, RenderData};
+use bns_render::data::{ChunkUniforms, Color, FrameFlags, FrameUniforms, LineFlags, RenderData};
 use bns_render::Gpu;
 use bns_rng::{DefaultRng, FromRng};
 use bns_worldgen_std::StandardWorldGenerator;
@@ -155,6 +155,15 @@ impl Game {
         assets: &'res Assets,
         frame: &mut RenderData<'res>,
     ) {
+        let mut fog_distance = self.player.render_distance() as f32 * 0.5;
+        let mut fog_factor = 1.0 / (self.player.render_distance() as f32 * 6.0);
+        let mut fog_color = Color::rgb(100, 200, 255);
+        if self.player.is_underwater() {
+            fog_distance = 0.0;
+            fog_factor *= 6.0;
+            fog_color = Color::rgb(2, 5, 30);
+        }
+
         // Initialize the frame.
         let projection = self.player.camera().projection.matrix();
         let view = self.player.camera().view.matrix(self.player.position());
@@ -163,9 +172,12 @@ impl Game {
             inverse_view: view.inverse(),
             view,
             projection,
-            fog_distance: self.player.render_distance() as f32 * 0.5,
-            fog_factor: 1.0 / (self.player.render_distance() as f32 * 6.0),
+            fog_distance,
+            fog_factor,
             resolution: Vec2::new(ctx.width() as f32, ctx.height() as f32),
+            fog_color,
+            flags: FrameFlags::UNDERWATER,
+            _padding: [0; 2],
         };
 
         // Register the world geometry.

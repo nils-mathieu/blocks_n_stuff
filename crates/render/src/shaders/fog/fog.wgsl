@@ -7,6 +7,8 @@ struct FrameUniforms {
     resolution: vec2<f32>,
     fog_factor: f32,
     fog_distance: f32,
+    fog_color: u32,
+    flags: u32,
 }
 
 @group(0) @binding(0)
@@ -46,29 +48,21 @@ fn vs_main(
     return out;
 }
 
-// The color of the sky.
-//
-// This color is specifically used at very high altitudes, where the sky is
-// the most visible.
-const HIGH_SKY_COLOR: vec3<f32> = vec3<f32>(0.2, 0.6, 0.9);
 
-// The color the sky in low altitudes.
-const LOW_SKY_COLOR: vec3<f32> = vec3<f32>(0.6, 0.6, 1.0);
+// Unpacks the provided color.
+fn unpack_color(color: u32) -> vec4<f32> {
+    return vec4<f32>(
+        f32((color >> 24u) & 0xFFu) / 255.0,
+        f32((color >> 16u) & 0xFFu) / 255.0,
+        f32((color >> 8u) & 0xFFu) / 255.0,
+        f32(color & 0xFFu) / 255.0,
+    );
+}
 
 @group(1) @binding(0)
 var depth_texture: texture_depth_2d;
 @group(1) @binding(1)
 var the_sampler: sampler;
-
-fn fog(eye_dir: vec3<f32>) -> vec3<f32> {
-    let height = eye_dir.y;
-
-    if (height > 0.0) {
-        return vec3<f32>(mix(LOW_SKY_COLOR, HIGH_SKY_COLOR, height));
-    } else {
-        return vec3<f32>(LOW_SKY_COLOR);
-    }
-}
 
 fn depth_value(uv: vec2<f32>) -> f32 {
     var depth = textureSample(depth_texture, the_sampler, vec2(uv.x, -uv.y));
@@ -81,10 +75,9 @@ fn depth_value(uv: vec2<f32>) -> f32 {
 fn fs_main(
     in: Interpolator,
 ) -> @location(0) vec4<f32> {
-    let fog_color = fog(in.eye_direction);
     let depth = max(0.0, depth_value(in.uv) - frame.fog_distance);
-
     let fog_amount = 1.0 - pow(2.0, -depth * frame.fog_factor);
-
-    return vec4<f32>(fog_color, fog_amount);
+    var fog_color = unpack_color(frame.fog_color);
+    fog_color.a *= fog_amount;
+    return fog_color;
 }

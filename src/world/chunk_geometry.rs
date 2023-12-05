@@ -510,6 +510,10 @@ fn build_voxel(pos: LocalPos, chunk: &Chunk, culled: CulledFaces, ctx: &mut Chun
                     flags: base_flags | QuadFlags::Y | QuadFlags::OFFSET_1,
                     texture: surface as u32,
                 });
+                buffer.push(QuadInstance {
+                    flags: base_flags | QuadFlags::NEG_Y | QuadFlags::OFFSET_7,
+                    texture: surface as u32,
+                });
             }
         }
         BlockAppearance::Flat(texture) => {

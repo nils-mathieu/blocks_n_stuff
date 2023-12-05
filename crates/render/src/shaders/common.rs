@@ -1,10 +1,25 @@
 use std::borrow::Cow;
 use std::mem::size_of;
 
+use bitflags::bitflags;
 use bytemuck::{Pod, Zeroable};
 use glam::{Mat4, Vec2};
 use wgpu::util::DeviceExt;
 use wgpu::TextureFormat;
+
+use crate::color::Color;
+
+bitflags! {
+    /// Some flags associated with a [`FrameUniforms`] instance.
+    #[derive(Default, Debug, Clone, Copy)]
+    pub struct FrameFlags: u32 {
+        /// Whether the camera is currently underwater.
+        const UNDERWATER = 1 << 0;
+    }
+}
+
+unsafe impl Zeroable for FrameFlags {}
+unsafe impl Pod for FrameFlags {}
 
 /// Information about a texture atlas to be created.
 #[derive(Clone, Debug)]
@@ -58,6 +73,11 @@ pub struct FrameUniforms {
     pub fog_factor: f32,
     /// The distance at which the fog start taking effect.
     pub fog_distance: f32,
+    /// The color of the fog.
+    pub fog_color: Color,
+    /// Some flags associated with this frame.
+    pub flags: FrameFlags,
+    pub _padding: [u32; 2],
 }
 
 /// Some resources commonly used through the renderer.

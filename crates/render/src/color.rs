@@ -27,7 +27,7 @@ pub struct ColorDeref {
 }
 
 /// A color, represented as four 8-bit unsigned bytes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Zeroable, Pod)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Zeroable, Pod)]
 #[repr(transparent)]
 pub struct Color(u32);
 

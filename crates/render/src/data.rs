@@ -2,7 +2,7 @@ use crate::shaders::quad::Quads;
 use crate::{Gpu, Texture, VertexBufferSlice};
 
 pub use crate::color::Color;
-pub use crate::shaders::common::FrameUniforms;
+pub use crate::shaders::common::{FrameFlags, FrameUniforms};
 pub use crate::shaders::line::{LineFlags, LineInstance};
 pub use crate::shaders::quad::{ChunkUniforms, QuadFlags, QuadInstance};
 pub use crate::shaders::text::{CharacterFlags, CharacterInstance, CharacterInstanceCursor};

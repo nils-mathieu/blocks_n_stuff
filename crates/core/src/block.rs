@@ -458,6 +458,13 @@ impl std::fmt::Debug for InstanciatedBlock {
     }
 }
 
+impl PartialEq<BlockId> for InstanciatedBlock {
+    #[inline]
+    fn eq(&self, other: &BlockId) -> bool {
+        self.id == *other
+    }
+}
+
 #[cfg(feature = "serde")]
 impl serde::Serialize for InstanciatedBlock {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
