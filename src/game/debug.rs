@@ -4,8 +4,7 @@ use std::time::Duration;
 use bns_app::{Ctx, KeyCode};
 use bns_core::ChunkPos;
 use bns_render::data::{
-    CharacterInstance, CharacterInstanceCursor, Color, LineInstance, LineVertexFlags, RenderData,
-    Ui,
+    CharacterInstance, CharacterInstanceCursor, Color, LineFlags, RenderData, Ui,
 };
 use bns_render::{DynamicVertexBuffer, Gpu};
 
@@ -127,13 +126,13 @@ impl DebugThings {
         match self.chunk_state {
             DebugChunkState::Hidden => (),
             DebugChunkState::ShowCurrentChunk => {
-                push_aabb_lines(
+                super::utility::push_aabb_lines(
                     &mut frame.lines,
                     current_chunk.as_vec3() * CHUNK_SIZE,
                     current_chunk.as_vec3() * CHUNK_SIZE + Vec3::splat(CHUNK_SIZE),
                     Color::RED,
                     3.0,
-                    LineVertexFlags::ABOVE,
+                    LineFlags::ABOVE,
                 );
             }
             DebugChunkState::ShowAllChunks => {
@@ -143,7 +142,7 @@ impl DebugThings {
                     for y in -BOUND..=BOUND {
                         for x in -BOUND..=BOUND {
                             let pos = ChunkPos::new(x, y, z);
-                            push_aabb_lines(
+                            super::utility::push_aabb_lines(
                                 &mut frame.lines,
                                 (current_chunk + pos).as_vec3() * CHUNK_SIZE,
                                 (current_chunk + pos).as_vec3() * CHUNK_SIZE
@@ -155,9 +154,9 @@ impl DebugThings {
                                 },
                                 if pos == ChunkPos::ZERO { 3.0 } else { 2.0 },
                                 if pos == ChunkPos::ZERO {
-                                    LineVertexFlags::ABOVE
+                                    LineFlags::ABOVE
                                 } else {
-                                    LineVertexFlags::empty()
+                                    LineFlags::empty()
                                 },
                             );
                         }
@@ -257,90 +256,4 @@ impl DebugChunkState {
             Self::ShowAllChunks => Self::Hidden,
         }
     }
-}
-
-/// Adds a new axis-aligned bounding box to the gizmos list.
-pub fn push_aabb_lines(
-    lines: &mut Vec<LineInstance>,
-    min: Vec3,
-    max: Vec3,
-    color: Color,
-    width: f32,
-    flags: LineVertexFlags,
-) {
-    use glam::vec3;
-
-    let base = LineInstance {
-        width,
-        flags,
-        color,
-        start: Vec3::ZERO,
-        end: Vec3::ZERO,
-    };
-
-    lines.extend_from_slice(&[
-        // Lower face
-        LineInstance {
-            start: vec3(min.x, min.y, min.z),
-            end: vec3(max.x, min.y, min.z),
-            ..base
-        },
-        LineInstance {
-            start: vec3(max.x, min.y, min.z),
-            end: vec3(max.x, min.y, max.z),
-            ..base
-        },
-        LineInstance {
-            start: vec3(max.x, min.y, max.z),
-            end: vec3(min.x, min.y, max.z),
-            ..base
-        },
-        LineInstance {
-            start: vec3(min.x, min.y, max.z),
-            end: vec3(min.x, min.y, min.z),
-            ..base
-        },
-        // Upper face
-        LineInstance {
-            start: vec3(min.x, max.y, min.z),
-            end: vec3(max.x, max.y, min.z),
-            ..base
-        },
-        LineInstance {
-            start: vec3(max.x, max.y, min.z),
-            end: vec3(max.x, max.y, max.z),
-            ..base
-        },
-        LineInstance {
-            start: vec3(max.x, max.y, max.z),
-            end: vec3(min.x, max.y, max.z),
-            ..base
-        },
-        LineInstance {
-            start: vec3(min.x, max.y, max.z),
-            end: vec3(min.x, max.y, min.z),
-            ..base
-        },
-        // Vertical edges
-        LineInstance {
-            start: vec3(min.x, min.y, min.z),
-            end: vec3(min.x, max.y, min.z),
-            ..base
-        },
-        LineInstance {
-            start: vec3(max.x, min.y, min.z),
-            end: vec3(max.x, max.y, min.z),
-            ..base
-        },
-        LineInstance {
-            start: vec3(max.x, min.y, max.z),
-            end: vec3(max.x, max.y, max.z),
-            ..base
-        },
-        LineInstance {
-            start: vec3(min.x, min.y, max.z),
-            end: vec3(min.x, max.y, max.z),
-            ..base
-        },
-    ]);
 }

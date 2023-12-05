@@ -8,14 +8,14 @@ bitflags! {
     /// Some flags associated with a [`LineVertex`].
     #[derive(Debug, Clone, Copy)]
     #[repr(transparent)]
-    pub struct LineVertexFlags: u32 {
+    pub struct LineFlags: u32 {
         /// Whether the line should appear above all geometry in the world.
         const ABOVE = 1 << 0;
     }
 }
 
-unsafe impl Zeroable for LineVertexFlags {}
-unsafe impl Pod for LineVertexFlags {}
+unsafe impl Zeroable for LineFlags {}
+unsafe impl Pod for LineFlags {}
 
 /// A vertex that's used to construct a line.
 #[repr(C)]
@@ -28,7 +28,7 @@ pub struct LineInstance {
     /// The end position of the vertex, in world space.
     pub end: Vec3,
     /// Some flags associated with the line.
-    pub flags: LineVertexFlags,
+    pub flags: LineFlags,
     /// The color of the vertex.
     pub color: Color,
 }

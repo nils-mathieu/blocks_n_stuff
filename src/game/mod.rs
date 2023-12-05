@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use bns_app::{Ctx, KeyCode};
-use bns_render::data::{ChunkUniforms, FrameUniforms, RenderData};
+use bns_render::data::{ChunkUniforms, Color, FrameUniforms, LineFlags, RenderData};
 use bns_render::Gpu;
 use bns_rng::{DefaultRng, FromRng};
 use bns_worldgen_std::StandardWorldGenerator;
@@ -12,12 +12,13 @@ use bns_worldgen_std::StandardWorldGenerator;
 use glam::{Vec2, Vec3};
 
 use self::debug::DebugThings;
-use self::player::Player;
+use self::player::{LookingAt, Player};
 use crate::world::World;
 
 pub mod player;
 
 mod debug;
+mod utility;
 
 /// The amount of time that must have passed before the world cleans up its unused data.
 ///
@@ -77,14 +78,14 @@ impl Game {
         self.since_last_cleanup += ctx.since_last_tick();
         if self.since_last_cleanup >= WORLD_CLEAN_UP_INTERVAL {
             self.world.request_cleanup(
-                bns_core::utility::chunk_of(self.player.position()),
+                bns_core::utility::chunk_pos_of(self.player.position()),
                 self.player.render_distance() as u32 + 3,
                 self.player.vertical_render_distance() as u32 + 3,
             );
             self.since_last_cleanup = Duration::ZERO;
         }
 
-        self.player.tick(ctx);
+        self.player.tick(&mut self.world, ctx);
         self.player.compute_chunks_in_view();
         for &chunk in self.player.chunks_in_view() {
             self.world
@@ -93,11 +94,13 @@ impl Game {
 
         // On wasm, no worker threads can be spawned because GPU resources can only be accessed
         // from the main thread apparently (not Send).
-        // In that platform, we call `fetch_available_chunks` 10 times to make sure that at
+        // In that platform, we call `fetch_available_chunks` a bunch of times to make sure that at
         // least that many chunks are loaded per frame.
+        // I wanted to use worker threads, but the GPU API is not available there (or at least
+        // that's what I understood. It's really not that clear in the documentation).
         #[cfg(target_arch = "wasm32")]
         {
-            for _ in 0..10 {
+            for _ in 0..5 {
                 self.world.fetch_available_chunks();
             }
         }
@@ -115,6 +118,8 @@ impl Game {
             Loaded chunks: {}\n\
             Visible chunks: {}\n\
             \n\
+            Looking at: {}\n\
+            \n\
             Seed: {}",
             self.player.position().x,
             self.player.position().y,
@@ -127,6 +132,7 @@ impl Game {
             self.world.loading_chunk_count(),
             self.world.loaded_chunk_count(),
             self.player.chunks_in_view().len(),
+            DisplayLookingAt(self.player.looking_at()),
             self.seed,
         );
 
@@ -143,6 +149,7 @@ impl Game {
     /// Renders the game.
     #[profiling::function]
     pub fn render<'res>(&'res mut self, ctx: &mut Ctx, frame: &mut RenderData<'res>) {
+        // Initialize the frame.
         let projection = self.player.camera().projection.matrix();
         let view = self.player.camera().view.matrix(self.player.position());
         frame.uniforms = FrameUniforms {
@@ -155,6 +162,7 @@ impl Game {
             resolution: Vec2::new(ctx.width() as f32, ctx.height() as f32),
         };
 
+        // Register the world geometry.
         let mut total_quad_count = 0;
         for &chunk_pos in self.player.chunks_in_view() {
             let Some(chunk) = self.world.get_existing_chunk(chunk_pos) else {
@@ -180,6 +188,20 @@ impl Game {
             }
         }
 
+        // Outline the block that the player is looking at.
+        if let Some(looking_at) = self.player.looking_at() {
+            const PADDING: f32 = 0.01;
+
+            utility::push_aabb_lines(
+                &mut frame.lines,
+                looking_at.world_pos.as_vec3() - Vec3::ONE * PADDING,
+                looking_at.world_pos.as_vec3() + Vec3::ONE * (1.0 + PADDING),
+                Color::WHITE,
+                2.0,
+                LineFlags::empty(),
+            );
+        }
+
         let _ = writeln!(
             self.debug.overlay_buffer(),
             "Render distance: {}x{}",
@@ -193,5 +215,27 @@ impl Game {
         );
 
         self.debug.render(self.player.position_chunk(), frame);
+    }
+}
+
+/// A simple wrapper that implement [`std::fmt::Display`] to display
+/// what the player is currently looking at.
+struct DisplayLookingAt(Option<LookingAt>);
+
+impl std::fmt::Display for DisplayLookingAt {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(looking_at) = self.0 {
+            write!(
+                f,
+                "{} {} {} ({:?}) ({} blocks)",
+                looking_at.world_pos.x,
+                looking_at.world_pos.y,
+                looking_at.world_pos.z,
+                looking_at.block,
+                looking_at.distance,
+            )
+        } else {
+            write!(f, "nothing")
+        }
     }
 }

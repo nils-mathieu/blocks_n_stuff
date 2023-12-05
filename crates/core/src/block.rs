@@ -1,4 +1,6 @@
+use bitflags::bitflags;
 use bytemuck::{Contiguous, Zeroable};
+use glam::Vec3;
 
 use crate::TextureId;
 
@@ -59,11 +61,13 @@ impl BlockId {
             BlockInfo {
                 appearance: BlockAppearance::Invisible,
                 visibility: BlockVisibility::Invisible,
+                flags: BlockFlags::empty(),
             },
             // Stone
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Stone),
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // Grass
             BlockInfo {
@@ -73,36 +77,43 @@ impl BlockId {
                     side: TextureId::GrassSide,
                 },
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // Dirt
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Dirt),
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // Andesite
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Andesite),
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // Clay
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Clay),
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // Diorite
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Diorite),
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // Granite
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Granite),
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // Gravel
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Gravel),
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // Podzol
             BlockInfo {
@@ -112,16 +123,19 @@ impl BlockId {
                     side: TextureId::PodzolSide,
                 },
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // RedSand
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::RedSand),
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // Sand
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Sand),
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // Sandstone
             BlockInfo {
@@ -131,6 +145,7 @@ impl BlockId {
                     side: TextureId::SandstoneSide,
                 },
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // RedSandstone
             BlockInfo {
@@ -140,41 +155,49 @@ impl BlockId {
                     side: TextureId::RedSandstoneSide,
                 },
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // Water
             BlockInfo {
                 appearance: BlockAppearance::Liquid(TextureId::Water),
                 visibility: BlockVisibility::Transparent,
+                flags: BlockFlags::empty(),
             },
             // Bedrock
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Bedrock),
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // Daffodil
             BlockInfo {
                 appearance: BlockAppearance::Flat(TextureId::Daffodil),
                 visibility: BlockVisibility::SemiOpaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // Pebbles
             BlockInfo {
                 appearance: BlockAppearance::Flat(TextureId::Pebbles),
                 visibility: BlockVisibility::SemiOpaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // Cobblestone
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Cobblestone),
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // MossyCobblestone
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::MossyCobblestone),
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
             // DiamondOre
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::DiamondOre),
                 visibility: BlockVisibility::Opaque,
+                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
         ];
 
@@ -199,6 +222,20 @@ pub enum Face {
     NegZ,
 }
 
+impl Face {
+    /// Returns the normal vector of the face.
+    pub fn normal(self) -> Vec3 {
+        match self {
+            Self::X => Vec3::X,
+            Self::NegX => Vec3::NEG_X,
+            Self::Y => Vec3::Y,
+            Self::NegY => Vec3::NEG_Y,
+            Self::Z => Vec3::Z,
+            Self::NegZ => Vec3::NEG_Z,
+        }
+    }
+}
+
 /// Some metadata about the appearance of a block.
 #[derive(Clone, Copy)]
 pub union AppearanceMetadata {
@@ -211,6 +248,7 @@ pub union AppearanceMetadata {
 }
 
 /// Describes the appearance of a block.
+#[derive(Debug, Clone, Copy)]
 pub enum BlockAppearance {
     /// The block is invisible.
     ///
@@ -290,15 +328,29 @@ pub enum BlockVisibility {
     Invisible,
 }
 
+bitflags! {
+    /// A bunch of flags associated with a block.
+    #[derive(Default, Debug, Clone, Copy)]
+    pub struct BlockFlags: u8 {
+        /// The block can be interacted with, for example by placing on it, or breaking it.
+        const TANGIBLE = 1 << 0;
+        /// It's not possible to walk through the block.
+        const SOLID = 1 << 1;
+    }
+}
+
 /// Stores static information about a block.
 ///
 /// An instance of this type can be obtained by calling the [`info`] method of a
 /// [`BlockId`].
 ///
 /// [`info`]: BlockId::info
+#[derive(Debug, Clone)]
 pub struct BlockInfo {
     /// Describes the appearance of a block.
     pub appearance: BlockAppearance,
     /// The visibility of the block.
     pub visibility: BlockVisibility,
+    /// The flags associated with the block.
+    pub flags: BlockFlags,
 }

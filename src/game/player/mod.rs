@@ -2,9 +2,11 @@ mod camera;
 pub use camera::*;
 
 use bns_app::{Ctx, KeyCode};
-use bns_core::{Chunk, ChunkPos};
+use bns_core::{BlockId, Chunk, ChunkPos};
 
 use glam::{IVec3, Vec2, Vec3};
+
+use crate::world::{QueryResult, World};
 
 /// Contains the state of the player, including camera orientation and computed intent.
 pub struct Player {
@@ -36,6 +38,12 @@ pub struct Player {
     ///
     /// This is a cache that's updated every time the player moves.
     chunks_in_view: Vec<ChunkPos>,
+
+    /// The block at which the player is currently looking at.
+    looking_at: Option<LookingAt>,
+
+    /// The reach of the player, in blocks.
+    max_reach: f32,
 }
 
 impl Player {
@@ -56,6 +64,9 @@ impl Player {
             camera: Camera::new(far_plane, 60f32.to_radians()),
 
             chunks_in_view: Vec::new(),
+
+            looking_at: None,
+            max_reach: 8.0,
         }
     }
 
@@ -82,7 +93,7 @@ impl Player {
     /// Returns the chunk that the player is a part of.
     #[inline]
     pub fn position_chunk(&self) -> ChunkPos {
-        bns_core::utility::chunk_of(self.position)
+        bns_core::utility::chunk_pos_of(self.position)
     }
 
     /// Returns the current render distance of the player.
@@ -103,9 +114,15 @@ impl Player {
         &self.chunks_in_view
     }
 
+    /// Returns the position of the block that the player is currently looking at.
+    #[inline]
+    pub fn looking_at(&self) -> Option<LookingAt> {
+        self.looking_at
+    }
+
     /// Tick the player state.
     #[profiling::function]
-    pub fn tick(&mut self, ctx: &mut Ctx) {
+    pub fn tick(&mut self, world: &mut World, ctx: &mut Ctx) {
         // ======================================
         // Controls & Events
         // ======================================
@@ -139,6 +156,15 @@ impl Player {
         }
         if !ctx.pressing(KeyCode::KeyW) {
             self.sprinting = false;
+        }
+
+        // Outline the block that's currently being looked at.
+        if let Ok(result) =
+            world.query_line(self.position, self.camera.view.look_at(), self.max_reach)
+        {
+            self.looking_at = Some(LookingAt::from_query(&result, self.position));
+        } else {
+            self.looking_at = None;
         }
 
         // ======================================
@@ -185,6 +211,28 @@ impl Player {
                     }
                 }
             }
+        }
+    }
+}
+
+/// Stores information about what the player is looking at.
+#[derive(Debug, Clone, Copy)]
+pub struct LookingAt {
+    /// The position of the block.
+    pub world_pos: IVec3,
+    /// The ID of the block.
+    pub block: BlockId,
+    /// The distance from the player to the block.
+    pub distance: f32,
+}
+
+impl LookingAt {
+    /// Creates a new [`LookingAt`] instance from a [`QueryResult`].
+    pub fn from_query(query: &QueryResult, pos: Vec3) -> Self {
+        Self {
+            world_pos: query.world_pos,
+            block: query.chunk.get_block(query.local_pos),
+            distance: query.hit.distance(pos),
         }
     }
 }

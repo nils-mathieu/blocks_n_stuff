@@ -3,11 +3,11 @@ use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use bitflags::bitflags;
-use glam::{IVec3, Vec3Swizzles};
+use glam::{IVec3, Vec3, Vec3Swizzles};
 use hashbrown::HashMap;
 use smallvec::SmallVec;
 
-use bns_core::{Chunk, ChunkPos};
+use bns_core::{BlockFlags, Chunk, ChunkPos, Face, LocalPos};
 use bns_render::Gpu;
 use bns_workers::{Priority, TaskPool, Worker};
 use bns_worldgen_core::WorldGenerator;
@@ -201,6 +201,7 @@ impl World {
 
     /// Makes sure that the chunks that have been generated in the background are loaded and
     /// available to the current thread.
+    #[profiling::function]
     pub fn fetch_available_chunks(&mut self) {
         self.chunks.extend(
             self.task_pool
@@ -230,6 +231,7 @@ impl World {
     /// # Returns
     ///
     /// The built chunk, if it was already available.
+    #[profiling::function]
     pub fn request_chunk(&mut self, pos: ChunkPos, priority: Priority) -> &mut ChunkEntry {
         use hashbrown::hash_map::Entry;
 
@@ -345,4 +347,120 @@ impl World {
 
         entry
     }
+
+    /// Queries the world for the first block that intersects the line defined by `start`,
+    /// `direction` and `end`.
+    ///
+    /// The block that's the closest to `start` is returned (or [`NotFound`] if no blocks intersect
+    /// the line).
+    ///
+    /// If the line goes through a chunk that's not yet loaded, the query fails with
+    /// [`MissingChunk`].
+    ///
+    /// [`NotFound`]: QueryError::NotFound
+    /// [`MissingChunk`]: QueryError::MissingChunk
+    ///
+    /// # Arguments
+    ///
+    /// - `start`: The starting point of the line.
+    ///
+    /// - `direction`: The direction of the line. This is expected to be a normalized vector.
+    ///
+    /// - `length`: The length of the line.
+    #[profiling::function]
+    pub fn query_line(
+        &self,
+        start: Vec3,
+        direction: Vec3,
+        mut length: f32,
+    ) -> Result<QueryResult, QueryError> {
+        // FIXME: This is the naive implementation.
+        // It's pretty easy to come up with a better one that increases the cursor by the right
+        // amount every time.
+
+        const STEP: f32 = 0.05;
+
+        let mut cur = start;
+
+        let mut current_chunk = bns_core::utility::chunk_pos_of(cur);
+        let mut chunk = match self.chunks.get(&current_chunk) {
+            Some(ChunkEntry::Loaded(chunk)) => chunk,
+            _ => return Err(QueryError::MissingChunk(current_chunk)),
+        };
+        let mut world_pos = bns_core::utility::world_pos_of(cur);
+
+        while length > 0.0 {
+            let new_current_chunk = bns_core::utility::chunk_pos_of(cur);
+            if new_current_chunk != current_chunk {
+                current_chunk = new_current_chunk;
+                chunk = match self.chunks.get(&current_chunk) {
+                    Some(ChunkEntry::Loaded(chunk)) => chunk,
+                    _ => return Err(QueryError::MissingChunk(current_chunk)),
+                };
+            }
+
+            let new_world_pos = bns_core::utility::world_pos_of(cur);
+            if new_world_pos == world_pos {
+                cur += direction * STEP;
+                length -= STEP;
+                continue;
+            }
+            world_pos = new_world_pos;
+
+            let local_pos = unsafe {
+                LocalPos::from_xyz_unchecked(
+                    world_pos.x - current_chunk.x * Chunk::SIDE,
+                    world_pos.y - current_chunk.y * Chunk::SIDE,
+                    world_pos.z - current_chunk.z * Chunk::SIDE,
+                )
+            };
+
+            if chunk
+                .data
+                .get_block(local_pos)
+                .info()
+                .flags
+                .contains(BlockFlags::TANGIBLE)
+            {
+                // Hit!
+
+                return Ok(QueryResult {
+                    face: Face::Y, // TODO: compute the face
+                    local_pos,
+                    world_pos,
+                    chunk_pos: current_chunk,
+                    chunk: &chunk.data,
+                    hit: cur,
+                });
+            }
+        }
+
+        Err(QueryError::NotFound)
+    }
+}
+
+/// An error that might occur while querying a block.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QueryError {
+    /// The query went through a chunk that was not yet loaded.
+    MissingChunk(ChunkPos),
+    /// No block matched the query.
+    NotFound,
+}
+
+/// The result of a [`World::query_line`] query.
+#[derive(Clone, Copy)]
+pub struct QueryResult<'a> {
+    /// The block face that was hit.
+    pub face: Face,
+    /// The local position of the block.
+    pub local_pos: LocalPos,
+    /// The world position of the block.
+    pub world_pos: IVec3,
+    /// The chunk that the block is in.
+    pub chunk_pos: ChunkPos,
+    /// The location of the hit.
+    pub hit: Vec3,
+    /// The chunk that the block is in.
+    pub chunk: &'a Chunk,
 }

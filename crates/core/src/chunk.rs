@@ -62,6 +62,15 @@ impl LocalPos {
         unsafe { Self::from_xyz_unchecked(x, y, z) }
     }
 
+    /// Creates a new [`LocalPos`] from the given world position.
+    #[inline]
+    pub fn from_world_pos(pos: IVec3) -> Self {
+        let x = pos.x.div_euclid(pos.x);
+        let y = pos.y.div_euclid(pos.y);
+        let z = pos.z.div_euclid(pos.z);
+        unsafe { Self::from_xyz_unchecked(x, y, z) }
+    }
+
     /// Clears the X coordinate of the position.
     #[inline]
     pub fn clear_x(&mut self) {
