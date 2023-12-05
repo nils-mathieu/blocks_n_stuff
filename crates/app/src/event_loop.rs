@@ -95,17 +95,10 @@ where
                 // Instead, it's used as a way to detect when no more events are pending for any
                 // of the windows managed by the event loop (we only have one).
 
-                ctx.notify_start_of_tick();
-
-                tick(&mut ctx);
-
-                if ctx.closing() {
-                    bns_log::trace!("closing the winit event loop...");
-                    target.exit();
-                    return;
-                }
-
-                ctx.notify_end_of_tick();
+                // We want to block the thread until the next vertical blanking period, so that
+                // we don't waste CPU cycles rendering frames that will never be displayed (this
+                // is done automatically by the GPU on most platform, but not web!)
+                ctx.winit_window().request_redraw();
             }
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => ctx.notify_close_requested(),
@@ -133,6 +126,19 @@ where
                     }
                 }
                 WindowEvent::Focused(yes) => ctx.notify_focus_changed(yes),
+                WindowEvent::RedrawRequested => {
+                    ctx.notify_start_of_tick();
+
+                    tick(&mut ctx);
+
+                    if ctx.closing() {
+                        bns_log::trace!("closing the winit event loop...");
+                        target.exit();
+                        return;
+                    }
+
+                    ctx.notify_end_of_tick();
+                }
                 _ => (),
             },
             Event::DeviceEvent { event, .. } => match event {

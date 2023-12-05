@@ -20,6 +20,9 @@ panic = "abort"
 [profile.release]
 panic = "abort"
 
+[lints.clippy]
+"print_stdout" = "warn"
+
 [workspace.package]
 edition = "2021"
 authors = ["Nils Mathieu <contact@nils-mathieu.fr>"]

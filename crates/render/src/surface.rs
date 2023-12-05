@@ -103,6 +103,7 @@ impl<'w> Surface<'w> {
             .expect("the selected GPU is not compatible with the surface");
 
         bns_log::info!("surface format: {:?}", config.format);
+        bns_log::info!("present mode: {:?}", config.present_mode);
 
         #[allow(clippy::arc_with_non_send_sync)]
         let gpu = Arc::new(Gpu::new(device, queue));

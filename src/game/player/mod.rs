@@ -166,7 +166,7 @@ impl Player {
 
         if ctx.pressing(MouseButton::Left) {
             if let Some(looking_at) = self.looking_at {
-                debug_assert!(world.set_block(looking_at.world_pos, BlockId::Air));
+                world.set_block(looking_at.world_pos, BlockId::Air);
             }
         }
 

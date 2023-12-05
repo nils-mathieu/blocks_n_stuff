@@ -30,7 +30,7 @@ async fn run_async() {
     let app = App::new(bns_app::Config {
         title: "Blocks 'n Stuff",
         min_size: (300, 300),
-        fullscreen: cfg!(not(debug_assertions)),
+        fullscreen: false,
 
         // On platform other than web, we require a specific window size that's decently
         // large. But on web, we leave the css do that for us.
