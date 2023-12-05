@@ -298,6 +298,7 @@ impl Ctx {
     pub fn set_fullscreen(&mut self, yes: bool) {
         self.window
             .set_fullscreen(yes.then_some(Fullscreen::Borderless(None)));
+        self.is_fullscreen = yes;
     }
 
     /// Returns the text that has been typed since the last tick.
