@@ -133,7 +133,7 @@ impl DebugThings {
                     current_chunk.as_vec3() * CHUNK_SIZE,
                     current_chunk.as_vec3() * CHUNK_SIZE + Vec3::splat(CHUNK_SIZE),
                     Color::RED,
-                    1.0,
+                    3.0,
                     LineVertexFlags::ABOVE,
                 );
             }
@@ -146,14 +146,15 @@ impl DebugThings {
                             let pos = ChunkPos::new(x, y, z);
                             push_aabb_lines(
                                 &mut frame.lines,
-                                pos.as_vec3() * CHUNK_SIZE,
-                                pos.as_vec3() * CHUNK_SIZE + Vec3::splat(CHUNK_SIZE),
+                                (current_chunk + pos).as_vec3() * CHUNK_SIZE,
+                                (current_chunk + pos).as_vec3() * CHUNK_SIZE
+                                    + Vec3::splat(CHUNK_SIZE),
                                 if pos == ChunkPos::ZERO {
                                     Color::RED
                                 } else {
                                     Color::WHITE
                                 },
-                                1.0,
+                                if pos == ChunkPos::ZERO { 3.0 } else { 1.0 },
                                 if pos == ChunkPos::ZERO {
                                     LineVertexFlags::empty()
                                 } else {
@@ -178,7 +179,7 @@ pub struct DebugOverlayBuffer {
 impl DebugOverlayBuffer {
     /// The initial cursor position.
     const INITIAL_CURSOR: CharacterInstanceCursor =
-        CharacterInstanceCursor::new(Vec2::ZERO, Vec2::new(16.0, 32.0), Vec2::ZERO);
+        CharacterInstanceCursor::new(Vec2::new(5.0, 5.0), Vec2::new(16.0, 32.0), Vec2::ZERO);
 
     /// Creates a new [`DebugOverlayBuffer`] instance.
     fn new() -> Self {

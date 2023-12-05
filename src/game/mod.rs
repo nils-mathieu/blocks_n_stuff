@@ -105,8 +105,6 @@ impl Game {
         #[cfg(not(target_arch = "wasm32"))]
         self.world.fetch_available_chunks();
 
-        let _ = writeln!(self.debug.overlay_buffer(),);
-
         let _ = writeln!(
             self.debug.overlay_buffer(),
             "Position: {:.2} {:.2} {:.2}\n\

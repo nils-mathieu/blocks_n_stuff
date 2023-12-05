@@ -79,6 +79,10 @@ async fn run_async() {
             ctx.grab_cursor();
         }
 
+        if ctx.focus_just_changed() && ctx.focused() {
+            ctx.release_cursor();
+        }
+
         game.tick(ctx);
 
         // ==============================================

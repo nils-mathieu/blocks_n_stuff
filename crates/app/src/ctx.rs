@@ -295,6 +295,14 @@ impl Ctx {
         self.window.set_cursor_visible(false);
     }
 
+    /// Attempt to release the cursor, showing it and unlocking it from the window.
+    pub fn release_cursor(&mut self) {
+        self.window
+            .set_cursor_grab(CursorGrabMode::None)
+            .expect("failed to release the cursor");
+        self.window.set_cursor_visible(true);
+    }
+
     /// Returns the amount of time elapsed since the application started.
     #[inline]
     pub fn since_startup(&self) -> Duration {
@@ -311,6 +319,18 @@ impl Ctx {
     #[inline]
     pub fn delta_seconds(&self) -> f32 {
         self.delta_seconds
+    }
+
+    /// Returns whether the window is currently focused.
+    #[inline]
+    pub fn focused(&self) -> bool {
+        self.focused
+    }
+
+    /// Returns whether the window has just gained or lost focus.
+    #[inline]
+    pub fn focus_just_changed(&self) -> bool {
+        self.focus_just_changed
     }
 }
 
