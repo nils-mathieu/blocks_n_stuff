@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use bns_app::Ctx;
+use bns_app::{Ctx, KeyCode};
 use bns_render::data::{RenderData, Sprite, Ui};
 use bns_render::{DynamicVertexBuffer, Gpu, Texture, TextureFormat};
 
@@ -127,6 +127,35 @@ impl Hud {
                 self.hotbar_slot -= 1;
             }
 
+            self.rebuild_ui(ctx.width(), ctx.height());
+        }
+
+        if ctx.just_pressed(KeyCode::Digit1) {
+            self.hotbar_slot = 0;
+            self.rebuild_ui(ctx.width(), ctx.height());
+        } else if ctx.just_pressed(KeyCode::Digit2) {
+            self.hotbar_slot = 1;
+            self.rebuild_ui(ctx.width(), ctx.height());
+        } else if ctx.just_pressed(KeyCode::Digit3) {
+            self.hotbar_slot = 2;
+            self.rebuild_ui(ctx.width(), ctx.height());
+        } else if ctx.just_pressed(KeyCode::Digit4) {
+            self.hotbar_slot = 3;
+            self.rebuild_ui(ctx.width(), ctx.height());
+        } else if ctx.just_pressed(KeyCode::Digit5) {
+            self.hotbar_slot = 4;
+            self.rebuild_ui(ctx.width(), ctx.height());
+        } else if ctx.just_pressed(KeyCode::Digit6) {
+            self.hotbar_slot = 5;
+            self.rebuild_ui(ctx.width(), ctx.height());
+        } else if ctx.just_pressed(KeyCode::Digit7) {
+            self.hotbar_slot = 6;
+            self.rebuild_ui(ctx.width(), ctx.height());
+        } else if ctx.just_pressed(KeyCode::Digit8) {
+            self.hotbar_slot = 7;
+            self.rebuild_ui(ctx.width(), ctx.height());
+        } else if ctx.just_pressed(KeyCode::Digit9) {
+            self.hotbar_slot = 8;
             self.rebuild_ui(ctx.width(), ctx.height());
         }
     }
