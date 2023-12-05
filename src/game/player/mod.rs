@@ -406,5 +406,23 @@ fn download_file(name: &str, data: &str) {
 
 #[cfg(target_arch = "wasm32")]
 fn download_file(name: &str, data: &str) {
-    todo!();
+    use web_sys::wasm_bindgen::{JsCast, JsValue};
+
+    let string = web_sys::js_sys::Array::from_iter(&[JsValue::from_str(data)]);
+    let blob = web_sys::Blob::new_with_str_sequence(&string).unwrap();
+
+    let window = web_sys::window().unwrap();
+    let document = window.document().unwrap();
+
+    let url = web_sys::Url::create_object_url_with_blob(&blob).unwrap();
+
+    let elem = document
+        .create_element("a")
+        .unwrap()
+        .unchecked_into::<web_sys::HtmlAnchorElement>();
+    elem.set_href(&url);
+    elem.set_download(name);
+    elem.click();
+
+    web_sys::Url::revoke_object_url(&url).unwrap();
 }
