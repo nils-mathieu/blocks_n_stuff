@@ -1,6 +1,4 @@
-Awesome project, show-off project for my application at [*Hypixel Studos*][hs].
-
-[hs]: https://hypixelstudios.com/
+Cool thing I made in Rust.
 
 This project is supposed to be sort of a Minecraft clone to show off my skills in graphics
 programming.
@@ -9,11 +7,7 @@ A web version of this project is available at https://nils-mathieu.fr/blocks_n_s
 
 ## Technologies
 
-This project is written in Rust, because I absolutely love the language. It's fast and allows
-me to write safe abstractions over fast unsafe code. I know Hypixel Studios uses C++ for their
-engine, but I'd rather use Rust :P.
-
-This project uses the following thrid-party libraries:
+This project uses the following thrid-party Rust libraries:
 
 - `wgpu`, a cross-platform abstraction over Vulkan, Metal, DX12, OpenGL and WebGPU. I would've
   liked to use Vulkan directly, but that would make the project unusable on web, which I really
