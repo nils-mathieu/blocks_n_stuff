@@ -177,11 +177,12 @@ fn grad2(index: usize) -> [f32; 2] {
 }
 
 /// 3D super simplex noise implementation.
-pub struct OpenSimplex3 {
+#[derive(FromRng, Clone, Debug)]
+pub struct SuperSimplex3 {
     mixer: Mixer<3>,
 }
 
-impl Noise<[f32; 3]> for OpenSimplex3 {
+impl Noise<[f32; 3]> for SuperSimplex3 {
     type Output = f32;
 
     fn sample(&self, point: [f32; 3]) -> Self::Output {

@@ -1,5 +1,5 @@
 use bns_core::{AppearanceMetadata, BlockId, Chunk, Face, LocalPos};
-use bns_rng::noises::{Mixer, SuperSimplex2};
+use bns_rng::noises::{Mixer, SuperSimplex2, SuperSimplex3};
 use bns_rng::{FromRng, Noise};
 
 use glam::{IVec2, IVec3};
@@ -14,6 +14,7 @@ pub struct Plains {
     height_noise: [SuperSimplex2; 2],
     pebble_noise: Mixer<2>,
     daffodil_noise: Mixer<2>,
+    diamond_noise: SuperSimplex3,
 }
 
 impl Plains {
@@ -55,7 +56,16 @@ impl Biome for Plains {
 
             if world_pos.y <= height {
                 if world_pos.y < height - dirt_depth {
-                    chunk.set_block(local_pos, BlockId::Stone);
+                    if self.diamond_noise.sample([
+                        world_pos.x as f32 / 8.0,
+                        world_pos.y as f32 / 8.0,
+                        world_pos.z as f32 / 8.0,
+                    ]) > 0.7
+                    {
+                        chunk.set_block(local_pos, BlockId::DiamondOre);
+                    } else {
+                        chunk.set_block(local_pos, BlockId::Stone);
+                    }
                 } else if world_pos.y <= 2 {
                     chunk.set_block(local_pos, BlockId::Sand);
                 } else if world_pos.y < height {
