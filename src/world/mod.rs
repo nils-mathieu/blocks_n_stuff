@@ -376,7 +376,7 @@ impl World {
     ) -> Result<QueryResult, QueryError> {
         // FIXME: This is the naive implementation.
         // It's pretty easy to come up with a better one that increases the cursor by the right
-        // amount every time.
+        // amount every time. + that would allow us to properly compute which face has been hit.
 
         const STEP: f32 = 0.05;
 
@@ -424,8 +424,57 @@ impl World {
             {
                 // Hit!
 
+                let xf = if direction.x > 0.0 {
+                    cur.x - world_pos.x as f32
+                } else {
+                    1.0 - (cur.x - world_pos.x as f32)
+                };
+
+                let yf = if direction.y > 0.0 {
+                    cur.y - world_pos.y as f32
+                } else {
+                    1.0 - (cur.y - world_pos.y as f32)
+                };
+
+                let zf = if direction.z > 0.0 {
+                    cur.z - world_pos.z as f32
+                } else {
+                    1.0 - (cur.z - world_pos.z as f32)
+                };
+
+                #[allow(clippy::collapsible_else_if)]
+                let face = if xf < yf {
+                    if xf < zf {
+                        if direction.x > 0.0 {
+                            Face::NegX
+                        } else {
+                            Face::X
+                        }
+                    } else {
+                        if direction.z > 0.0 {
+                            Face::NegZ
+                        } else {
+                            Face::Z
+                        }
+                    }
+                } else {
+                    if yf < zf {
+                        if direction.y > 0.0 {
+                            Face::NegY
+                        } else {
+                            Face::Y
+                        }
+                    } else {
+                        if direction.z > 0.0 {
+                            Face::NegZ
+                        } else {
+                            Face::Z
+                        }
+                    }
+                };
+
                 return Ok(QueryResult {
-                    face: Face::Y, // TODO: compute the face
+                    face,
                     local_pos,
                     world_pos,
                     chunk_pos: current_chunk,
