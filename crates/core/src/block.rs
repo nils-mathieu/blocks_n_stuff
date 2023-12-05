@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 use bytemuck::{Contiguous, Zeroable};
-use glam::Vec3;
+use glam::IVec3;
 
 use crate::TextureId;
 
@@ -224,14 +224,14 @@ pub enum Face {
 
 impl Face {
     /// Returns the normal vector of the face.
-    pub fn normal(self) -> Vec3 {
+    pub fn normal(self) -> IVec3 {
         match self {
-            Self::X => Vec3::X,
-            Self::NegX => Vec3::NEG_X,
-            Self::Y => Vec3::Y,
-            Self::NegY => Vec3::NEG_Y,
-            Self::Z => Vec3::Z,
-            Self::NegZ => Vec3::NEG_Z,
+            Self::X => IVec3::X,
+            Self::NegX => IVec3::NEG_X,
+            Self::Y => IVec3::Y,
+            Self::NegY => IVec3::NEG_Y,
+            Self::Z => IVec3::Z,
+            Self::NegZ => IVec3::NEG_Z,
         }
     }
 }

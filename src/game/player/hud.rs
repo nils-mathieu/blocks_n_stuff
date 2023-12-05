@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use bns_app::{Ctx, KeyCode};
+use bns_core::BlockId;
 use bns_render::data::{RenderData, Sprite, Ui};
 use bns_render::{DynamicVertexBuffer, Gpu, Texture, TextureFormat};
 
@@ -42,6 +43,9 @@ pub struct Hud {
 
     /// The index of the currently selected hotbar slot.
     hotbar_slot: usize,
+
+    /// The materials that are currently available in the hotbar.
+    materials: [Option<BlockId>; HOTBAR_SLOT_COUNT],
 }
 
 impl Hud {
@@ -64,7 +68,24 @@ impl Hud {
             hotbar_slot: 0,
             ui_texture,
             instances: DynamicVertexBuffer::new_with_data(gpu, &[Sprite::dummy(); 3]),
+            materials: [
+                Some(BlockId::Dirt),
+                Some(BlockId::Grass),
+                Some(BlockId::Cobblestone),
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+            ],
         }
+    }
+
+    /// Returns the material currently selected in the hotbar.
+    #[inline]
+    pub fn current_material(&self) -> Option<BlockId> {
+        self.materials[self.hotbar_slot]
     }
 
     /// Rebuilds the UI.

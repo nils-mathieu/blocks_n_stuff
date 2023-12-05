@@ -9,7 +9,7 @@ mod hud;
 pub use hud::*;
 
 use bns_app::{Ctx, KeyCode, MouseButton};
-use bns_core::{BlockId, Chunk, ChunkPos};
+use bns_core::{BlockId, Chunk, ChunkPos, Face};
 
 use glam::{IVec3, Vec2, Vec3};
 
@@ -170,6 +170,8 @@ impl Player {
             self.sprinting = false;
         }
 
+        self.hud.tick(ctx);
+
         // Outline the block that's currently being looked at.
         self.looking_at = world
             .query_line(self.position, self.camera.view.look_at(), self.max_reach)
@@ -179,6 +181,15 @@ impl Player {
         if ctx.pressing(MouseButton::Left) {
             if let Some(looking_at) = self.looking_at {
                 world.set_block(looking_at.world_pos, BlockId::Air);
+            }
+        }
+
+        if ctx.just_pressed(MouseButton::Right) {
+            if let Some(looking_at) = self.looking_at {
+                if let Some(material) = self.hud.current_material() {
+                    let target = looking_at.world_pos + looking_at.face.normal();
+                    world.set_block(target, material);
+                }
             }
         }
 
@@ -197,12 +208,6 @@ impl Player {
             * ctx.delta_seconds();
         let vdelta = vertical_movement_input * self.fly_speed * ctx.delta_seconds();
         self.position += Vec3::new(hdelta.x, vdelta, hdelta.y);
-
-        // ======================================
-        // Other
-        // ======================================
-
-        self.hud.tick(ctx);
     }
 
     /// Renders the player's HUD.
@@ -250,6 +255,8 @@ pub struct LookingAt {
     pub block: BlockId,
     /// The distance from the player to the block.
     pub distance: f32,
+    /// The face of the block that the player is looking at.
+    pub face: Face,
 }
 
 impl LookingAt {
@@ -259,6 +266,7 @@ impl LookingAt {
             world_pos: query.world_pos,
             block: query.chunk.get_block(query.local_pos),
             distance: query.hit.distance(pos),
+            face: query.face,
         }
     }
 }
