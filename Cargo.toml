@@ -22,6 +22,7 @@ panic = "abort"
 
 [lints.clippy]
 "print_stdout" = "warn"
+"print_stderr" = "warn"
 
 [workspace.package]
 edition = "2021"

@@ -6,7 +6,6 @@ use std::panic::PanicInfo;
 ///
 /// This function is expected to block until the user closes the message box.
 #[allow(unused_variables)]
-#[cfg(not(debug_assertions))]
 fn display_message_box(message: &str) {
     #[cfg(target_os = "windows")]
     {
@@ -65,7 +64,15 @@ fn custom_panic_hook(info: &PanicInfo) {
     #[cfg(not(target_arch = "wasm32"))]
     {
         use std::io::Write;
-        let _ = writeln!(std::io::stderr(), "\x1B[1;31mpanic\x1B[0m: {message}");
+        let stderr = std::io::stderr();
+        let mut stderr = stderr.lock();
+
+        let _ = writeln!(stderr, "\x1B[1;31mpanic\x1B[0m: {message}");
+
+        // Print the backtrace on debug builds.
+        if cfg!(debug_assertions) {
+            let _ = writeln!(stderr, "\n{}", std::backtrace::Backtrace::force_capture());
+        }
     }
 
     // Except on WASM, where we use the browser's console.
@@ -85,8 +92,7 @@ fn custom_panic_hook(info: &PanicInfo) {
 
     // Display the message to the user using a message box.
     // Only do that in release though, because it's a bit annoying when debugging.
-    #[cfg(not(debug_assertions))]
-    {
+    if cfg!(not(debug_assertions)) {
         // This `Once` is used to avoid showing multiple message boxes if multiple threads panic
         // at the same time.
         // The `call_once` method will block if another thread is already calling it, and will
