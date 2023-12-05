@@ -6,8 +6,6 @@ use bns_render::{Renderer, RendererConfig, Surface};
 
 use crate::game::Game;
 
-mod asset;
-
 /// Runs the application until completion.
 pub fn run() {
     // On web, we need everything to be executed by the browser's executor (because of some
@@ -41,6 +39,7 @@ async fn run_async() {
     });
 
     let mut surface = Surface::new(app.opaque_window()).await;
+    let assets = crate::assets::Assets::load(surface.gpu()).await;
     let mut renderer = Renderer::new(
         surface.gpu().clone(),
         RendererConfig {
@@ -49,7 +48,7 @@ async fn run_async() {
     );
     renderer
         .gpu()
-        .set_texture_atlas(&asset::load_texture_atlas().await);
+        .set_texture_atlas(&crate::assets::load_texture_atlas().await);
     let mut render_data = Some(RenderData::new(surface.gpu()));
 
     let mut game = Game::new(surface.gpu().clone(), bns_rng::entropy());
@@ -96,7 +95,7 @@ async fn run_async() {
         };
 
         let mut data = render_data.take().unwrap();
-        game.render(ctx, &mut data);
+        game.render(ctx, &assets, &mut data);
         renderer.render(frame.target(), &mut data);
         frame.present();
         render_data = Some(data.reset());

@@ -3,9 +3,11 @@ use std::sync::Arc;
 use bns_app::{Ctx, KeyCode};
 use bns_core::BlockId;
 use bns_render::data::{RenderData, Sprite, Ui};
-use bns_render::{DynamicVertexBuffer, Gpu, Texture, TextureFormat};
+use bns_render::{DynamicVertexBuffer, Gpu};
 
 use glam::Vec2;
+
+use crate::assets::Assets;
 
 const BASE_TEXTURE_SIZE: Vec2 = Vec2::new(182.0, 45.0);
 const UI_SCALE: Vec2 = Vec2::new(400.0, 400.0 * BASE_TEXTURE_SIZE.y / BASE_TEXTURE_SIZE.x);
@@ -36,8 +38,6 @@ const HOTBAR_SLOT_WIDTH: f32 = HOTBAR_BACKGROUND_SCREEN_SIZE.x / HOTBAR_SLOT_COU
 
 /// The Head-Up Display (HUD) of the player.
 pub struct Hud {
-    /// The texture that contains all UI elements of the head-up display.
-    ui_texture: Texture,
     /// The buffer that contains the instances of the UI elements.
     instances: DynamicVertexBuffer<Sprite>,
 
@@ -51,22 +51,8 @@ pub struct Hud {
 impl Hud {
     /// Creates a new [`Hud`] instance.
     pub fn new(gpu: Arc<Gpu>) -> Self {
-        bns_log::trace!("loading texture 'assets/ui.png'...");
-        let mut texture =
-            bns_image::Image::load_png(std::fs::File::open("assets/ui.png").unwrap()).unwrap();
-        texture.ensure_rgba();
-        texture.ensure_srgb();
-        let ui_texture = Texture::new(
-            &gpu,
-            texture.metadata.width,
-            texture.metadata.height,
-            TextureFormat::Rgba8UnormSrgb,
-            &texture.pixels,
-        );
-
         Self {
             hotbar_slot: 0,
-            ui_texture,
             instances: DynamicVertexBuffer::new_with_data(gpu, &[Sprite::dummy(); 3]),
             materials: [
                 Some(BlockId::Dirt),
@@ -182,10 +168,10 @@ impl Hud {
     }
 
     /// Renders the HUD.
-    pub fn render<'res>(&'res self, frame: &mut RenderData<'res>) {
+    pub fn render<'res>(&'res self, assets: &'res Assets, frame: &mut RenderData<'res>) {
         frame.ui.push(Ui::Sprite {
             instances: self.instances.slice(),
-            texture: &self.ui_texture,
+            texture: &assets.ui,
         })
     }
 }

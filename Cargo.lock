@@ -211,6 +211,7 @@ dependencies = [
  "bytemuck",
  "glam",
  "hashbrown",
+ "parking_lot",
  "pollster",
  "profiling",
  "quanta",

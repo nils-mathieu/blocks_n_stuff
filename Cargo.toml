@@ -64,6 +64,7 @@ smallvec = "1"
 quanta = "0.12"
 bytemuck = "1"
 profiling = "1"
+parking_lot = "0.12"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 pollster = "0.3"

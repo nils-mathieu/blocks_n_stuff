@@ -13,6 +13,7 @@ use bns_core::{BlockId, Chunk, ChunkPos, Face};
 
 use glam::{IVec3, Vec2, Vec3};
 
+use crate::assets::Assets;
 use crate::world::{QueryResult, World};
 
 /// Contains the state of the player, including camera orientation and computed intent.
@@ -211,8 +212,8 @@ impl Player {
     }
 
     /// Renders the player's HUD.
-    pub fn render_hud<'res>(&'res self, frame: &mut RenderData<'res>) {
-        self.hud.render(frame);
+    pub fn render_hud<'res>(&'res self, assets: &'res Assets, frame: &mut RenderData<'res>) {
+        self.hud.render(assets, frame);
     }
 
     /// Re-computes the chunks that are in view of the player.

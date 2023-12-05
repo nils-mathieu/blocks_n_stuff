@@ -1,5 +1,5 @@
 use bns_core::TextureId;
-use bns_render::{TextureAtlasConfig, TextureFormat};
+use bns_render::{Gpu, Texture, TextureAtlasConfig, TextureFormat};
 
 /// Loads the texture atlas from the asset directory.
 pub async fn load_texture_atlas() -> TextureAtlasConfig<'static> {
@@ -35,6 +35,35 @@ pub async fn load_texture_atlas() -> TextureAtlasConfig<'static> {
             bns_image::ColorSpace::Linear => TextureFormat::Rgba8Unorm,
         },
     }
+}
+
+/// Contains all the loaded assets.
+pub struct Assets {
+    /// The texture that contains UI elements.
+    pub ui: Texture,
+}
+
+impl Assets {
+    /// Loads the assets.
+    pub async fn load(gpu: &Gpu) -> Self {
+        Self {
+            ui: load_texture(gpu, "ui").await,
+        }
+    }
+}
+
+/// Loads the provided texture.
+async fn load_texture(gpu: &Gpu, asset_path: &str) -> Texture {
+    let mut image = load_image(asset_path).await;
+    image.ensure_srgb();
+    image.ensure_rgba();
+    Texture::new(
+        gpu,
+        image.metadata.width,
+        image.metadata.height,
+        TextureFormat::Rgba8UnormSrgb,
+        &image.pixels,
+    )
 }
 
 /// Loads the image from the asset directory.

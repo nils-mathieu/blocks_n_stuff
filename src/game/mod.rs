@@ -13,6 +13,7 @@ use glam::{Vec2, Vec3};
 
 use self::debug::DebugThings;
 use self::player::{LookingAt, Player};
+use crate::assets::Assets;
 use crate::world::World;
 
 pub mod player;
@@ -148,7 +149,12 @@ impl Game {
 
     /// Renders the game.
     #[profiling::function]
-    pub fn render<'res>(&'res mut self, ctx: &mut Ctx, frame: &mut RenderData<'res>) {
+    pub fn render<'res>(
+        &'res mut self,
+        ctx: &mut Ctx,
+        assets: &'res Assets,
+        frame: &mut RenderData<'res>,
+    ) {
         // Initialize the frame.
         let projection = self.player.camera().projection.matrix();
         let view = self.player.camera().view.matrix(self.player.position());
@@ -188,7 +194,7 @@ impl Game {
             }
         }
 
-        self.player.render_hud(frame);
+        self.player.render_hud(assets, frame);
 
         // Outline the block that the player is looking at.
         if let Some(looking_at) = self.player.looking_at() {
