@@ -104,6 +104,7 @@ impl Player {
     }
 
     /// Tick the player state.
+    #[profiling::function]
     pub fn tick(&mut self, ctx: &mut Ctx) {
         // ======================================
         // Controls & Events
@@ -133,6 +134,13 @@ impl Player {
         let horizontal_movement_input = compute_horizontal_movement_input(ctx);
         let vertical_movement_input = compute_vertical_movement_input(ctx);
 
+        if ctx.just_pressed(KeyCode::ControlLeft) && ctx.pressing(KeyCode::KeyW) {
+            self.sprinting = true;
+        }
+        if !ctx.pressing(KeyCode::KeyW) {
+            self.sprinting = false;
+        }
+
         // ======================================
         // Movement
         // ======================================
@@ -142,15 +150,16 @@ impl Player {
         } else {
             1.0
         };
-        let hdelta = Vec2::from_angle(self.camera.view.yaw()).rotate(horizontal_movement_input)
+        let hdelta = Vec2::from_angle(-self.camera.view.yaw()).rotate(horizontal_movement_input)
             * self.speed
             * sprint_factor
             * ctx.delta_seconds();
-        let vdelta = vertical_movement_input * self.fly_speed * sprint_factor * ctx.delta_seconds();
+        let vdelta = vertical_movement_input * self.fly_speed * ctx.delta_seconds();
         self.position += Vec3::new(hdelta.x, vdelta, hdelta.y);
     }
 
     /// Re-computes the chunks that are in view of the player.
+    #[profiling::function]
     pub fn compute_chunks_in_view(&mut self) {
         const CHUNK_RADIUS: f32 = (Chunk::SIDE as f32) * 0.8660254; // sqrt(3) / 2
 

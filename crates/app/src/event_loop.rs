@@ -42,7 +42,6 @@ pub fn create_event_loop() -> EventLoop<UserEvent> {
 /// # Panics
 ///
 /// This function panics if the window cannot be created.
-#[allow(unused_mut)]
 pub fn create_window(event_loop: &EventLoop<UserEvent>, config: Config) -> Arc<Window> {
     bns_log::trace!("creating the winit window...");
 
@@ -51,6 +50,10 @@ pub fn create_window(event_loop: &EventLoop<UserEvent>, config: Config) -> Arc<W
         .with_visible(false)
         .with_min_inner_size(PhysicalSize::<u32>::from(config.min_size))
         .with_fullscreen(config.fullscreen.then_some(Fullscreen::Borderless(None)));
+
+    if let Some(size) = config.size {
+        builder = builder.with_inner_size(PhysicalSize::<u32>::from(size));
+    }
 
     #[cfg(target_arch = "wasm32")]
     {

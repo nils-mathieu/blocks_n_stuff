@@ -31,6 +31,13 @@ async fn run_async() {
         title: "Blocks 'n Stuff",
         min_size: (300, 300),
         fullscreen: cfg!(not(debug_assertions)),
+
+        // On platform other than web, we require a specific window size that's decently
+        // large. But on web, we leave the css do that for us.
+        #[cfg(not(target_arch = "wasm32"))]
+        size: Some((1280, 720)),
+        #[cfg(target_arch = "wasm32")]
+        size: None,
     });
 
     let mut surface = Surface::new(app.opaque_window()).await;

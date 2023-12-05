@@ -107,6 +107,7 @@ impl DebugThings {
     }
 
     /// Renders the debug overlay.
+    #[profiling::function]
     pub fn render<'res>(&'res mut self, current_chunk: ChunkPos, frame: &mut RenderData<'res>) {
         // If the overlay is enabled, render it.
         if self.overlay {

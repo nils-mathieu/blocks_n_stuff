@@ -60,6 +60,7 @@ pub struct Message<'a> {
 
 impl<'a> Message<'a> {
     /// Logs this message.
+    #[profiling::function]
     pub fn log(self) {
         imp::log(self);
     }

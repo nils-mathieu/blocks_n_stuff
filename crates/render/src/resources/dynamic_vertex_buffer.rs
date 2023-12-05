@@ -23,6 +23,7 @@ pub struct DynamicVertexBuffer<T> {
 
 impl<T> DynamicVertexBuffer<T> {
     /// Creates a new [`DynamicVertexBuffer`] instance.
+    #[profiling::function]
     pub fn new(gpu: Arc<Gpu>, initial_size: u32) -> Self {
         let buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some(type_name::<T>()),
@@ -42,6 +43,7 @@ impl<T> DynamicVertexBuffer<T> {
     }
 
     /// Creates a new [`DynamicVertexBuffer`] instance with the provided data.
+    #[profiling::function]
     pub fn new_with_data(gpu: Arc<Gpu>, data: &[T]) -> Self
     where
         T: NoUninit,
@@ -78,6 +80,7 @@ impl<T> DynamicVertexBuffer<T> {
     }
 
     /// Extends the buffer with the provided data.
+    #[profiling::function]
     pub fn extend(&mut self, data: &[T])
     where
         T: NoUninit,

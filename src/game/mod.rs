@@ -136,11 +136,10 @@ impl Game {
     }
 
     /// Renders the game.
+    #[profiling::function]
     pub fn render<'res>(&'res mut self, ctx: &mut Ctx, frame: &mut RenderData<'res>) {
-        let projection = self.player.camera().view.matrix(self.player.position());
-        let view = self.player.camera().projection.matrix();
-        println!("view: {:#?}", view);
-        println!("projection: {:#?}", projection);
+        let projection = self.player.camera().projection.matrix();
+        let view = self.player.camera().view.matrix(self.player.position());
         frame.uniforms = FrameUniforms {
             inverse_projection: projection.inverse(),
             inverse_view: view.inverse(),
