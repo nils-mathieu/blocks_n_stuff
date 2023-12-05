@@ -1,5 +1,5 @@
 use bns_core::{AppearanceMetadata, BlockId, Chunk, Face, LocalPos};
-use bns_rng::noises::{Mixer, Simplex2};
+use bns_rng::noises::{Mixer, SuperSimplex2};
 use bns_rng::{FromRng, Noise};
 
 use glam::IVec3;
@@ -10,7 +10,7 @@ use crate::GenCtx;
 
 #[derive(FromRng)]
 pub struct OakForest {
-    dirt_noise: Simplex2,
+    dirt_noise: SuperSimplex2,
     pebble_noise: Mixer<2>,
     daffodil_noise: Mixer<2>,
 }

@@ -1,5 +1,5 @@
 use bns_core::{BlockId, Chunk, ChunkPos, LocalPos};
-use bns_rng::noises::Simplex2;
+use bns_rng::noises::SuperSimplex2;
 use bns_rng::Noise;
 
 use crate::biome::BiomeId;
@@ -13,7 +13,7 @@ pub struct BasicGeologicalStage<'a> {
     pub dirt: BlockId,
     pub min_dirt_depth: i32,
     pub max_dirt_depth: i32,
-    pub dirt_noise: &'a Simplex2,
+    pub dirt_noise: &'a SuperSimplex2,
 }
 
 impl BasicGeologicalStage<'_> {

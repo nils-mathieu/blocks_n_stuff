@@ -34,6 +34,7 @@ pub enum BlockId {
     Pebbles,
     Cobblestone,
     MossyCobblestone,
+    DiamondOre,
 }
 
 // SAFETY:
@@ -168,6 +169,11 @@ impl BlockId {
             // MossyCobblestone
             BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::MossyCobblestone),
+                visibility: BlockVisibility::Opaque,
+            },
+            // DiamondOre
+            BlockInfo {
+                appearance: BlockAppearance::uniform(TextureId::DiamondOre),
                 visibility: BlockVisibility::Opaque,
             },
         ];

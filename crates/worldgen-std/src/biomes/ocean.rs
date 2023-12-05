@@ -1,5 +1,5 @@
 use bns_core::{BlockId, Chunk, LocalPos};
-use bns_rng::noises::Simplex2;
+use bns_rng::noises::SuperSimplex2;
 use bns_rng::{FromRng, Noise};
 
 use glam::IVec3;
@@ -10,9 +10,9 @@ use crate::GenCtx;
 
 #[derive(FromRng)]
 pub struct Ocean {
-    dirt_noise: Simplex2,
+    dirt_noise: SuperSimplex2,
     // negative value = deep ocean, positive value = shallow ocean
-    floor_noise: Simplex2,
+    floor_noise: SuperSimplex2,
 }
 
 impl Ocean {

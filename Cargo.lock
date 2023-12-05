@@ -279,6 +279,7 @@ dependencies = [
  "bns-rng-derive",
  "getrandom",
  "js-sys",
+ "profiling",
 ]
 
 [[package]]

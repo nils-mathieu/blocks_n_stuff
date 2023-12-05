@@ -1,5 +1,5 @@
-mod simplex;
-pub use simplex::*;
+mod super_simplex;
+pub use super_simplex::*;
 
 mod mixer;
 pub use mixer::*;

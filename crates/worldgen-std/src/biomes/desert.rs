@@ -1,5 +1,5 @@
 use bns_core::{BlockId, Chunk};
-use bns_rng::noises::Simplex2;
+use bns_rng::noises::SuperSimplex2;
 use bns_rng::FromRng;
 use glam::IVec3;
 
@@ -9,7 +9,7 @@ use crate::GenCtx;
 
 #[derive(FromRng)]
 pub struct Desert {
-    dirt_noise: Simplex2,
+    dirt_noise: SuperSimplex2,
 }
 
 impl Biome for Desert {

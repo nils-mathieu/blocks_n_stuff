@@ -1,4 +1,4 @@
-use bns_rng::noises::{Mixer, Simplex2, Voronoi2};
+use bns_rng::noises::{Mixer, SuperSimplex2, Voronoi2};
 use bns_rng::{FromRng, Noise};
 
 use glam::IVec2;
@@ -32,9 +32,9 @@ pub struct Climate {
 /// The map used to determine the climate of a tile.
 #[derive(FromRng, Clone, Debug)]
 pub struct ClimateMap {
-    continentality: Simplex2,
-    temperature: Simplex2,
-    humidity: Simplex2,
+    continentality: SuperSimplex2,
+    temperature: SuperSimplex2,
+    humidity: SuperSimplex2,
 }
 
 impl ClimateMap {
@@ -84,8 +84,8 @@ pub type BiomeCell = IVec2;
 #[derive(FromRng, Clone, Debug)]
 pub struct BiomeCellMap {
     base_noise: Voronoi2,
-    displacement_x: Simplex2,
-    displacement_y: Simplex2,
+    displacement_x: SuperSimplex2,
+    displacement_y: SuperSimplex2,
 }
 
 impl BiomeCellMap {

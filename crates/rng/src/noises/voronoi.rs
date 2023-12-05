@@ -22,6 +22,7 @@ impl Voronoi2 {
 impl Noise<[f32; 2]> for Voronoi2 {
     type Output = [i32; 2];
 
+    #[profiling::function]
     fn sample(&self, coords: [f32; 2]) -> Self::Output {
         let xi = crate::utility::floor_i32(coords[0]);
         let yi = crate::utility::floor_i32(coords[1]);

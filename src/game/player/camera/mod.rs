@@ -1,9 +1,10 @@
 mod perspective;
 mod view;
 
-use glam::Vec3;
 pub use perspective::*;
 pub use view::*;
+
+use glam::Vec3;
 
 /// Contains the current state of the camera.
 pub struct Camera {

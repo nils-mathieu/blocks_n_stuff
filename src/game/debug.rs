@@ -5,6 +5,7 @@ use bns_app::{Ctx, KeyCode};
 use bns_core::ChunkPos;
 use bns_render::data::{
     CharacterInstance, CharacterInstanceCursor, Color, LineInstance, LineVertexFlags, RenderData,
+    Ui,
 };
 use bns_render::{DynamicVertexBuffer, Gpu};
 
@@ -119,9 +120,7 @@ impl DebugThings {
                     .extend(self.overlay_buffer.as_slice());
             }
 
-            frame
-                .ui
-                .push(bns_render::data::Ui::Text(self.overlay_gpu_buffer.slice()));
+            frame.ui.push(Ui::Text(self.overlay_gpu_buffer.slice()));
         }
 
         const CHUNK_SIZE: f32 = bns_core::Chunk::SIDE as f32;
