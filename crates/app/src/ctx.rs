@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use hashbrown::HashMap;
 use rustc_hash::FxHasher;
+use winit::event::MouseScrollDelta;
 use winit::window::{CursorGrabMode, Fullscreen, Window};
 
 pub use winit::keyboard::{KeyCode, NamedKey, NativeKey, NativeKeyCode, SmolStr};
@@ -27,6 +28,9 @@ pub struct Ctx {
 
     /// The amount of movement accumulated by the mouse since the last tick.
     mouse_delta: (f64, f64),
+
+    /// The amount of scroll data accumulated by the mouse since the last tick.
+    mouse_scroll: (f64, f64),
 
     /// Whether the window currently has focus.
     focused: bool,
@@ -76,6 +80,7 @@ impl Ctx {
             since_last_tick: Duration::ZERO,
             delta_seconds: 0.0,
             clock,
+            mouse_scroll: (0.0, 0.0),
         }
     }
 
@@ -140,6 +145,20 @@ impl Ctx {
         self.typed.push_str(text);
     }
 
+    /// Notifies the context that the mouse has been scrolled.
+    pub(crate) fn notify_mouse_scrolled(&mut self, delta: MouseScrollDelta) {
+        match delta {
+            MouseScrollDelta::LineDelta(dx, dy) => {
+                self.mouse_scroll.0 += dx as f64;
+                self.mouse_scroll.1 += dy as f64;
+            }
+            MouseScrollDelta::PixelDelta(delta) => {
+                self.mouse_scroll.0 += delta.x;
+                self.mouse_scroll.1 += delta.y;
+            }
+        }
+    }
+
     /// Notifies the context that the tick function has started.
     pub(crate) fn notify_start_of_tick(&mut self) {
         let now = self.clock.now();
@@ -156,6 +175,7 @@ impl Ctx {
         self.mouse_delta = (0.0, 0.0);
         self.focus_just_changed = false;
         self.typed.clear();
+        self.mouse_scroll = (0.0, 0.0);
         self.buttons
             .values_mut()
             .for_each(ButtonState::notify_end_of_tick);
@@ -331,6 +351,24 @@ impl Ctx {
     #[inline]
     pub fn focus_just_changed(&self) -> bool {
         self.focus_just_changed
+    }
+
+    /// Returns the amount of scroll data accumulated by the mouse since the last tick.
+    #[inline]
+    pub fn mouse_scroll(&self) -> (f64, f64) {
+        self.mouse_scroll
+    }
+
+    /// Returns the amount of horizontal scroll data accumulated by the mouse since the last tick.
+    #[inline]
+    pub fn mouse_scroll_x(&self) -> f64 {
+        self.mouse_scroll.0
+    }
+
+    /// Returns the amount of vertical scroll data accumulated by the mouse since the last tick.
+    #[inline]
+    pub fn mouse_scroll_y(&self) -> f64 {
+        self.mouse_scroll.1
     }
 }
 

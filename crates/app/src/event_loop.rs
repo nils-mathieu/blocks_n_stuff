@@ -139,6 +139,7 @@ where
 
                     ctx.notify_end_of_tick();
                 }
+                WindowEvent::MouseWheel { delta, .. } => ctx.notify_mouse_scrolled(delta),
                 _ => (),
             },
             Event::DeviceEvent { event, .. } => match event {

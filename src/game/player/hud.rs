@@ -67,46 +67,67 @@ impl Hud {
         }
     }
 
+    /// Rebuilds the UI.
+    pub fn rebuild_ui(&mut self, width: u32, height: u32) {
+        let hotbar_anchor = Vec2::new(width as f32 / 2.0, height as f32);
+        let crosshair_anchor = Vec2::new(width as f32 / 2.0, height as f32 / 2.0);
+
+        self.instances.edit(
+            0,
+            &[
+                Sprite::dummy()
+                    .with_uv_rect(HOTBAR_BACKGROUND_POS, HOTBAR_BACKGROUND_SIZE)
+                    .with_rect(
+                        hotbar_anchor
+                            - Vec2::new(
+                                HOTBAR_BACKGROUND_SCREEN_SIZE.x / 2.0,
+                                HOTBAR_BACKGROUND_SCREEN_SIZE.y + HOTBAR_PADDING_BOTTOM,
+                            ),
+                        HOTBAR_BACKGROUND_SCREEN_SIZE,
+                    ),
+                Sprite::dummy()
+                    .with_uv_rect(HOTBAR_CURSOR_POS, HOTBAR_CURSOR_SIZE)
+                    .with_rect(
+                        hotbar_anchor
+                            - Vec2::new(
+                                HOTBAR_BACKGROUND_SCREEN_SIZE.x / 2.0,
+                                HOTBAR_BACKGROUND_SCREEN_SIZE.y + HOTBAR_PADDING_BOTTOM,
+                            )
+                            + Vec2::X * HOTBAR_SLOT_WIDTH * self.hotbar_slot as f32,
+                        HOTBAR_CURSOR_SCREEN_SIZE,
+                    ),
+                Sprite::dummy()
+                    .with_uv_rect(CROSSHAIR_POS, CROSSHAIR_SIZE)
+                    .with_rect(
+                        crosshair_anchor - CROSSHAIR_SCREEN_SIZE / 2.0,
+                        CROSSHAIR_SCREEN_SIZE,
+                    ),
+            ],
+        );
+    }
+
     /// Ticks the HUD.
     pub fn tick(&mut self, ctx: &mut Ctx) {
         if ctx.just_resized() {
-            let (width, height) = ctx.size();
-            let hotbar_anchor = Vec2::new(width as f32 / 2.0, height as f32);
-            let crosshair_anchor = Vec2::new(width as f32 / 2.0, height as f32 / 2.0);
+            self.rebuild_ui(ctx.width(), ctx.height());
+        }
 
-            // We need to place the hotbar in the center of the screen.
-            self.instances.edit(
-                0,
-                &[
-                    Sprite::dummy()
-                        .with_uv_rect(HOTBAR_BACKGROUND_POS, HOTBAR_BACKGROUND_SIZE)
-                        .with_rect(
-                            hotbar_anchor
-                                - Vec2::new(
-                                    HOTBAR_BACKGROUND_SCREEN_SIZE.x / 2.0,
-                                    HOTBAR_BACKGROUND_SCREEN_SIZE.y + HOTBAR_PADDING_BOTTOM,
-                                ),
-                            HOTBAR_BACKGROUND_SCREEN_SIZE,
-                        ),
-                    Sprite::dummy()
-                        .with_uv_rect(HOTBAR_CURSOR_POS, HOTBAR_CURSOR_SIZE)
-                        .with_rect(
-                            hotbar_anchor
-                                - Vec2::new(
-                                    HOTBAR_BACKGROUND_SCREEN_SIZE.x / 2.0,
-                                    HOTBAR_BACKGROUND_SCREEN_SIZE.y + HOTBAR_PADDING_BOTTOM,
-                                )
-                                + HOTBAR_SLOT_WIDTH * self.hotbar_slot as f32,
-                            HOTBAR_CURSOR_SCREEN_SIZE,
-                        ),
-                    Sprite::dummy()
-                        .with_uv_rect(CROSSHAIR_POS, CROSSHAIR_SIZE)
-                        .with_rect(
-                            crosshair_anchor - CROSSHAIR_SCREEN_SIZE / 2.0,
-                            CROSSHAIR_SCREEN_SIZE,
-                        ),
-                ],
-            )
+        if ctx.mouse_scroll_y() > 0.0 {
+            if self.hotbar_slot == HOTBAR_SLOT_COUNT - 1 {
+                self.hotbar_slot = 0;
+            } else {
+                self.hotbar_slot += 1;
+            }
+
+            self.rebuild_ui(ctx.width(), ctx.height());
+        } else if ctx.mouse_scroll_y() < 0.0 {
+            if self.hotbar_slot == 0 {
+                self.hotbar_slot = HOTBAR_SLOT_COUNT - 1;
+            } else {
+                self.hotbar_slot -= 1;
+            }
+
+            self.rebuild_ui(ctx.width(), ctx.height());
         }
     }
 
