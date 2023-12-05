@@ -7,7 +7,7 @@ use glam::{IVec3, Vec3, Vec3Swizzles};
 use hashbrown::HashMap;
 use smallvec::SmallVec;
 
-use bns_core::{BlockFlags, BlockId, Chunk, ChunkPos, Face, LocalPos};
+use bns_core::{BlockFlags, BlockId, Chunk, ChunkPos, Face, InstanciatedBlock, LocalPos};
 use bns_render::Gpu;
 use bns_workers::{Priority, TaskPool, Worker};
 use bns_worldgen_core::WorldGenerator;
@@ -197,6 +197,29 @@ impl World {
             Some(ChunkEntry::Loaded(chunk)) => Some(chunk),
             _ => None,
         }
+    }
+
+    /// Gets the block at the provided position, or [`None`] if the chunk is not loaded yet.
+    pub fn get_block(&self, pos: IVec3) -> Option<InstanciatedBlock> {
+        let chunk_pos = ChunkPos::new(
+            pos.x.div_euclid(Chunk::SIDE),
+            pos.y.div_euclid(Chunk::SIDE),
+            pos.z.div_euclid(Chunk::SIDE),
+        );
+        let local_pos = unsafe {
+            LocalPos::from_xyz_unchecked(
+                pos.x - chunk_pos.x * Chunk::SIDE,
+                pos.y - chunk_pos.y * Chunk::SIDE,
+                pos.z - chunk_pos.z * Chunk::SIDE,
+            )
+        };
+
+        let chunk = match self.chunks.get(&chunk_pos) {
+            Some(ChunkEntry::Loaded(chunk)) => chunk,
+            _ => return None,
+        };
+
+        Some(chunk.data.get_instanciated_block(local_pos))
     }
 
     /// Makes sure that the chunks that have been generated in the background are loaded and

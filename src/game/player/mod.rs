@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use bns_render::data::RenderData;
 use bns_render::Gpu;
+use bns_worldgen_structure::{Structure, StructureEdit};
 pub use camera::*;
 
 mod hud;
@@ -55,6 +56,10 @@ pub struct Player {
 
     /// The HUD displayed in front the player.
     hud: Hud,
+
+    /// If a structure block has already been interacted with, this is the position of the first
+    /// block that was selected.
+    structure_block: Option<IVec3>,
 }
 
 impl Player {
@@ -80,6 +85,8 @@ impl Player {
             max_reach: 8.0,
 
             hud: Hud::new(gpu),
+
+            structure_block: None,
         }
     }
 
@@ -187,7 +194,27 @@ impl Player {
 
         if ctx.just_pressed(MouseButton::Right) {
             if let Some(looking_at) = self.looking_at {
-                if let Some(material) = self.hud.current_material() {
+                if looking_at.block == BlockId::StructureBlock {
+                    match self.structure_block.take() {
+                        Some(other) => {
+                            bns_log::trace!(
+                                "Structure block #2 registered: {}",
+                                looking_at.world_pos
+                            );
+
+                            let s = record_structure(world, other, looking_at.world_pos);
+                            write_structure_file(&s);
+                        }
+                        None => {
+                            bns_log::trace!(
+                                "Structure block #1 registered: {}",
+                                looking_at.world_pos
+                            );
+
+                            self.structure_block = Some(looking_at.world_pos);
+                        }
+                    }
+                } else if let Some(material) = self.hud.current_material() {
                     let target = looking_at.world_pos + looking_at.face.normal();
                     world.set_block(target, material);
                 }
@@ -309,4 +336,53 @@ fn compute_vertical_movement_input(ctx: &Ctx) -> f32 {
     }
 
     input
+}
+
+/// Record a [`Structure`] from the given world between the two given positions.
+fn record_structure(world: &World, a: IVec3, b: IVec3) -> Structure {
+    let mut edits = Vec::new();
+
+    let min = a.min(b);
+    let max = a.max(b);
+
+    for x in min.x..=max.x {
+        for y in min.y..=max.y {
+            for z in min.z..=max.z {
+                let pos = IVec3::new(x, y, z);
+                if let Some(block) = world.get_block(pos) {
+                    if matches!(block.id(), BlockId::Air | BlockId::StructureBlock) {
+                        edits.push(StructureEdit {
+                            position: pos - min,
+                            block,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    Structure {
+        edits,
+        bounds: max - min,
+        name: None,
+    }
+}
+
+/// Writes the provided list of blocks to a structure file.
+fn write_structure_file(blocks: &Structure) {
+    const FILE_NAME: &str = "structure.ron";
+
+    bns_log::info!("Writing '{FILE_NAME}'...");
+    let s = ron::ser::to_string_pretty(blocks, ron::ser::PrettyConfig::default()).unwrap();
+    download_file(FILE_NAME, &s);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn download_file(name: &str, data: &str) {
+    std::fs::write(name, data).unwrap();
+}
+
+#[cfg(target_arch = "wasm32")]
+fn download_file(name: &str, data: &str) {
+    todo!();
 }

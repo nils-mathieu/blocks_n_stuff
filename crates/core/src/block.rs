@@ -407,12 +407,23 @@ pub struct BlockInfo {
 /// This type isn't actually directly stored in the world for memory efficiency reasons. This type
 /// is most useful to serialize/deserialize easily a bunch of blocks (for example to store
 /// structures).
+#[derive(Clone)]
 pub struct InstanciatedBlock {
     id: BlockId,
     appearance: AppearanceMetadata,
 }
 
 impl InstanciatedBlock {
+    /// Creates a new [`InstanciatedBlock`] instance.
+    ///
+    /// # Safety
+    ///
+    /// The provided appearance metadata must be valid for the associated block ID.
+    #[inline]
+    pub unsafe fn new_unchecked(id: BlockId, appearance: AppearanceMetadata) -> Self {
+        Self { id, appearance }
+    }
+
     /// Returns the ID of the block.
     #[inline]
     pub fn id(&self) -> BlockId {
@@ -425,6 +436,25 @@ impl InstanciatedBlock {
     #[inline]
     pub fn appearance(&self) -> AppearanceMetadata {
         self.appearance
+    }
+}
+
+impl std::fmt::Debug for InstanciatedBlock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut f = f.debug_struct("InstanciatedBlock");
+        f.field("id", &self.id);
+
+        #[allow(clippy::single_match)]
+        unsafe {
+            match self.id.info().appearance {
+                BlockAppearance::Flat(..) => {
+                    f.field("appearance", &self.appearance.flat);
+                }
+                _ => (),
+            }
+        }
+
+        f.finish()
     }
 }
 

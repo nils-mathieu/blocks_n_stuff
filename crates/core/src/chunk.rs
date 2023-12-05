@@ -5,7 +5,7 @@ use std::ops::{Index, IndexMut};
 use bytemuck::Zeroable;
 use glam::IVec3;
 
-use crate::{AppearanceMetadata, BlockId};
+use crate::{AppearanceMetadata, BlockId, InstanciatedBlock};
 
 const X_MASK: u16 = 0b11111;
 const Y_MASK: u16 = 0b11111 << 5;
@@ -285,6 +285,14 @@ impl Chunk {
             Some(data) => unsafe { data[pos].assume_init() },
             None => AppearanceMetadata { no_metadata: () },
         }
+    }
+
+    /// Returns an [`InstanciatedBlock`] for the block at the provided position.
+    #[inline]
+    pub fn get_instanciated_block(&self, pos: LocalPos) -> InstanciatedBlock {
+        // SAFETY:
+        //  We know that a chunk always contain valid blocks and associated metadata.
+        unsafe { InstanciatedBlock::new_unchecked(self.get_block(pos), self.get_appearance(pos)) }
     }
 
     /// Returns a mutable reference to the block at the provided position.

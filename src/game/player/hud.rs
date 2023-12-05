@@ -62,7 +62,7 @@ impl Hud {
                 Some(BlockId::OakLeaves),
                 Some(BlockId::PineLog),
                 Some(BlockId::PineLeaves),
-                None,
+                Some(BlockId::StructureBlock),
                 None,
             ],
         }

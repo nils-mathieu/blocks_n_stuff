@@ -1,0 +1,15 @@
+[package]
+name = "bns-worldgen-structure"
+version = "0.1.0"
+
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+bns-core = { path = "../core" }
+
+glam = { version = "0.24", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
