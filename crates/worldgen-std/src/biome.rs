@@ -76,7 +76,7 @@ pub trait Biome {
     fn geological_stage(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk);
 
     /// Prints debug information about itself in the provided buffer.
-    fn debug_info(&self, buf: &mut String, pos: IVec3);
+    fn debug_info(&self, w: &mut dyn std::fmt::Write, pos: IVec3) -> std::fmt::Result;
 }
 
 /// The registry of all available biomes.

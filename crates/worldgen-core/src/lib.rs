@@ -22,5 +22,5 @@ pub trait WorldGenerator: Send + Sync {
 
     /// Prints debug information about a particular position in the world using the provided
     /// buffer.
-    fn debug_info(&self, buf: &mut String, pos: IVec3);
+    fn debug_info(&self, buf: &mut dyn std::fmt::Write, pos: IVec3) -> std::fmt::Result;
 }

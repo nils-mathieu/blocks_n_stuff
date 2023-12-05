@@ -109,14 +109,13 @@ impl Game {
             self.debug.overlay_buffer(),
             "Position: {:.2} {:.2} {:.2}\n\
             Chunk: {} {} {}\n\
-            Pitch: {:.2}\n\
-            Yaw: {:.2}\n\
+            Pitch: {:.2}, Yaw: {:.2}\n\
             \n\
             Loading chunks: {}\n\
             Loaded chunks: {}\n\
             Visible chunks: {}\n\
             \n\
-            Seed: {}\n",
+            Seed: {}",
             self.player.position().x,
             self.player.position().y,
             self.player.position().z,
@@ -130,6 +129,13 @@ impl Game {
             self.player.chunks_in_view().len(),
             self.seed,
         );
+
+        let _ = self.world.generator().debug_info(
+            self.debug.overlay_buffer(),
+            self.player.position().floor().as_ivec3(),
+        );
+
+        let _ = writeln!(self.debug.overlay_buffer());
 
         self.debug.tick(ctx);
     }

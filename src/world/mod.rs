@@ -152,6 +152,12 @@ impl World {
         }
     }
 
+    /// Returns the generator that the world uses to generate chunks.
+    #[inline]
+    pub fn generator(&self) -> &dyn WorldGenerator {
+        &*self.generator
+    }
+
     /// Returns the number of chunks that are currently being generated.
     #[inline]
     pub fn loading_chunk_count(&self) -> usize {

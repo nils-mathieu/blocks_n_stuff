@@ -158,4 +158,13 @@ impl BiomeMap {
 
         BiomeId::Plains
     }
+
+    pub fn debug_info(&self, w: &mut dyn std::fmt::Write, pos: IVec2) -> std::fmt::Result {
+        let climate = self.climate.sample(self.cells.sample(pos));
+        writeln!(
+            w,
+            "Climate: {:.2}, Temperature: {:.2}, Humidity: {:.2}",
+            climate.continentality, climate.temperature, climate.humidity
+        )
+    }
 }

@@ -5,11 +5,11 @@ use bns_rng::noises::Mixer;
 use bns_rng::{FromRng, Rng};
 use bns_worldgen_core::WorldGenerator;
 
-use glam::Vec3Swizzles;
+use glam::{IVec2, IVec3, Vec3Swizzles};
 
 use biome::BiomeRegistry;
 use biomemap::BiomeMap;
-use column_gen::Columns;
+use column_gen::{ColumnPos, Columns};
 
 mod biome;
 mod biomemap;
@@ -86,7 +86,17 @@ impl WorldGenerator for StandardWorldGenerator {
         self.ctx.columns.request_cleanup(center.xz(), h_radius);
     }
 
-    fn debug_info(&self, buf: &mut String, pos: glam::IVec3) {
-        let _ = (buf, pos);
+    fn debug_info(&self, w: &mut dyn std::fmt::Write, pos: IVec3) -> std::fmt::Result {
+        self.ctx.biomes.debug_info(w, pos.xz())?;
+
+        let col_pos = IVec2::new(pos.x.div_euclid(Chunk::SIDE), pos.z.div_euclid(Chunk::SIDE));
+        let local_pos = ColumnPos::from_world_pos(pos.xz());
+        let column = self.ctx.columns.get(col_pos);
+        let biomes = column.biome_stage(&self.ctx);
+        let biome = biomes.ids[local_pos];
+        self.ctx.biome_registry[biome]
+            .implementation
+            .debug_info(w, pos)?;
+        Ok(())
     }
 }

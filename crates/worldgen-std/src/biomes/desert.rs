@@ -29,7 +29,8 @@ impl Biome for Desert {
         .execute(pos, column, ctx, chunk);
     }
 
-    fn debug_info(&self, buf: &mut String, pos: glam::IVec3) {
-        let _ = (buf, pos);
+    fn debug_info(&self, w: &mut dyn std::fmt::Write, pos: glam::IVec3) -> std::fmt::Result {
+        let _ = (w, pos);
+        Ok(())
     }
 }
