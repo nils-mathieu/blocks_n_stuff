@@ -33,6 +33,7 @@ impl Camera {
     ///   the formula is `sphere_position - camera_position`.
     ///
     /// - `radius` - The radius of the sphere.
+    #[profiling::function]
     pub fn is_sphere_in_frustum(&self, relative_position: Vec3, radius: f32) -> bool {
         let rotation = self.view.rotation();
         let half_fov_y = self.projection.fov_y() * 0.5;

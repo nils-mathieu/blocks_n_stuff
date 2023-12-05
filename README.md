@@ -5,6 +5,8 @@ Awesome project, show-off project for my application at [*Hypixel Studos*][hs].
 This project is supposed to be sort of a Minecraft clone to show off my skills in graphics
 programming.
 
+A web version of this project is available at https://nils-mathieu.fr/blocks_n_stuff/.
+
 ## Technologies
 
 This project is written in Rust, because I absolutely love the language. It's fast and allows
