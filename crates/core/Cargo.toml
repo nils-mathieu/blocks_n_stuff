@@ -8,6 +8,9 @@ repository.workspace = true
 license.workspace = true
 publish.workspace = true
 
+[features]
+default = ["serde"]
+
 [dependencies]
 bytemuck = { version = "1", features = [
     "derive",
@@ -16,3 +19,4 @@ bytemuck = { version = "1", features = [
 ] }
 glam = "0.24"
 bitflags = "2"
+serde = { version = "1", features = ["derive"], optional = true }

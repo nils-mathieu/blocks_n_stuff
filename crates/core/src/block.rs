@@ -14,6 +14,7 @@ use crate::TextureId;
 /// type in favor of a more flexible system.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Contiguous)]
 #[repr(u8)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum BlockId {
     #[default]
     Air,
@@ -243,6 +244,7 @@ impl BlockId {
 
 /// The specific face of a bloc.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Face {
     /// The face is facing the positive X axis.
     X,
@@ -389,4 +391,109 @@ pub struct BlockInfo {
     pub visibility: BlockVisibility,
     /// The flags associated with the block.
     pub flags: BlockFlags,
+}
+
+/// A block that is instanciated in the world.
+///
+/// # Remarks
+///
+/// This type isn't actually directly stored in the world for memory efficiency reasons. This type
+/// is most useful to serialize/deserialize easily a bunch of blocks (for example to store
+/// structures).
+pub struct InstanciatedBlock {
+    id: BlockId,
+    appearance: AppearanceMetadata,
+}
+
+impl InstanciatedBlock {
+    /// Returns the ID of the block.
+    #[inline]
+    pub fn id(&self) -> BlockId {
+        self.id
+    }
+
+    /// Returns the appearance metadata of the block.
+    ///
+    /// The metadata is guaranteed to be valid for the associated block ID.
+    #[inline]
+    pub fn appearance(&self) -> AppearanceMetadata {
+        self.appearance
+    }
+}
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for InstanciatedBlock {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde_InstanciateBlock::*;
+
+        let appearance = unsafe {
+            match self.id.info().appearance {
+                BlockAppearance::Flat(..) => AppearanceMetadataHelper::Flat(self.appearance.flat),
+                _ => AppearanceMetadataHelper::NoMetadata,
+            }
+        };
+
+        let helper = InstanciatedBlockHelper {
+            id: self.id,
+            appearance,
+        };
+
+        helper.serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for InstanciatedBlock {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use serde_InstanciateBlock::*;
+
+        let helper = InstanciatedBlockHelper::deserialize(deserializer)?;
+
+        let appearance = match (helper.appearance, helper.id.info().appearance) {
+            (AppearanceMetadataHelper::Flat(face), BlockAppearance::Flat(..)) => {
+                AppearanceMetadata { flat: face }
+            }
+            (AppearanceMetadataHelper::NoMetadata, _) => AppearanceMetadata { no_metadata: () },
+            _ => return Err(serde::de::Error::custom("invalid appearance metadata")),
+        };
+
+        Ok(Self {
+            id: helper.id,
+            appearance,
+        })
+    }
+}
+
+#[cfg(feature = "serde")]
+#[allow(non_snake_case)]
+mod serde_InstanciateBlock {
+    use serde::{Deserialize, Serialize};
+
+    use crate::{BlockId, Face};
+
+    #[derive(Serialize, Deserialize)]
+    pub enum AppearanceMetadataHelper {
+        NoMetadata,
+        Flat(Face),
+    }
+
+    impl AppearanceMetadataHelper {
+        #[inline]
+        pub fn has_no_metadata(&self) -> bool {
+            matches!(self, Self::NoMetadata)
+        }
+    }
+
+    #[derive(Serialize, Deserialize)]
+    pub struct InstanciatedBlockHelper {
+        pub id: BlockId,
+        #[serde(skip_serializing_if = "AppearanceMetadataHelper::has_no_metadata")]
+        pub appearance: AppearanceMetadataHelper,
+    }
 }
