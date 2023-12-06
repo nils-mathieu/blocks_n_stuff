@@ -79,7 +79,9 @@ impl Renderer {
         rp.set_bind_group(0, &res.frame_uniforms_bind_group, &[]);
         rp.set_bind_group(1, &res.depth_buffer_bind_group, &[]);
 
-        self.fog_pipeline.render(&self.gpu, &mut rp);
+        if data.fog_enabled {
+            self.fog_pipeline.render(&self.gpu, &mut rp);
+        }
 
         drop(rp);
 

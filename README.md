@@ -39,6 +39,7 @@ This project uses the following thrid-party Rust libraries:
 | <kbd>R</kbd>          | Re-create world          |
 | <kbd>Arrow up</kbd>   | Increase render distance |
 | <kbd>Arrow down</kbd> | Decrease render distance |
+| <kbd>F10</kbd>        | Toggle fog               |
 
 ### Debug
 

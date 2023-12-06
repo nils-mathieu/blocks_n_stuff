@@ -44,6 +44,9 @@ pub struct RenderData<'res> {
 
     /// A collection of UI elements.
     pub ui: Vec<Ui<'res>>,
+
+    /// Whether fog should be enabled.
+    pub fog_enabled: bool,
 }
 
 impl<'res> RenderData<'res> {
@@ -54,6 +57,7 @@ impl<'res> RenderData<'res> {
             quads: Quads::new(gpu),
             lines: Vec::new(),
             ui: Vec::new(),
+            fog_enabled: true,
         }
     }
 
@@ -74,6 +78,7 @@ impl<'res> RenderData<'res> {
             quads: self.quads.reset(),
             lines: self.lines,
             ui,
+            fog_enabled: true,
         }
     }
 }

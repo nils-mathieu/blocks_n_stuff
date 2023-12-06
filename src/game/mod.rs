@@ -43,6 +43,9 @@ pub struct Game {
     seed: u64,
     /// Some state that's only used for debugging purposes.
     debug: DebugThings,
+
+    /// Whether or not the fog is enabled.
+    fog_enabled: bool,
 }
 
 impl Game {
@@ -61,6 +64,7 @@ impl Game {
             since_last_cleanup: Duration::ZERO,
             seed,
             debug,
+            fog_enabled: true,
         }
     }
 
@@ -75,6 +79,10 @@ impl Game {
             let generator = Arc::new(StandardWorldGenerator::from_seed::<DefaultRng>(self.seed));
             self.world = World::new(self.gpu.clone(), generator);
             self.seed = seed;
+        }
+
+        if ctx.just_pressed(KeyCode::F10) {
+            self.fog_enabled = !self.fog_enabled;
         }
 
         self.since_last_cleanup += ctx.since_last_tick();
@@ -180,6 +188,7 @@ impl Game {
             flags: FrameFlags::UNDERWATER,
             _padding: [0; 2],
         };
+        frame.fog_enabled = self.fog_enabled;
 
         // Register the world geometry.
         let mut total_quad_count = 0;
