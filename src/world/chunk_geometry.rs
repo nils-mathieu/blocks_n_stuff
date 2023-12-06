@@ -6,8 +6,6 @@ use bns_render::data::{QuadFlags, QuadInstance};
 use bns_render::{DynamicVertexBuffer, Gpu};
 use bytemuck::NoUninit;
 
-use self::coord::IntoCoord;
-
 /// The built geometry of a chunk. This is a wrapper around a vertex buffer that
 /// contains the quad instances of the chunk.
 pub struct ChunkGeometry {
@@ -93,61 +91,9 @@ impl ChunkBuildContext {
     /// faces of the chunk are never built.
     #[profiling::function]
     pub fn build_inner(&mut self, data: &Chunk) {
-        for a in 1..Chunk::SIDE - 1 {
-            let a = unsafe { coord::Inner::new_unchecked(a) };
-
-            for b in 1..Chunk::SIDE - 1 {
-                let b = unsafe { coord::Inner::new_unchecked(b) };
-
-                for c in 1..Chunk::SIDE - 1 {
-                    let c = unsafe { coord::Inner::new_unchecked(c) };
-
-                    // 1. The inner voxels of the chunks (that are not at the boundary) are
-                    //    iterated without checking for the bounds because we know that each block
-                    //    is surrounded by other blocks *within that same chunk*.
-
-                    // We need to iterate in reverse order (z -> y -> x) for cache locality.
-                    build_block(data, c, b, a, self);
-                }
-
-                // 2. The outer voxels of the chunk can be mostly built, minus the faces that are
-                //    culled by the neighboring chunks.
-
-                build_block(data, coord::Min, b, a, self);
-                build_block(data, coord::Max, b, a, self);
-                build_block(data, b, coord::Min, a, self);
-                build_block(data, b, coord::Max, a, self);
-                build_block(data, b, a, coord::Min, self);
-                build_block(data, b, a, coord::Max, self);
-            }
-
-            // 3. The voxels at the corners of the chunk are built, minus the faces that are
-            //    culled by the neighboring chunks.
-
-            build_block(data, coord::Min, coord::Min, a, self);
-            build_block(data, coord::Min, coord::Max, a, self);
-            build_block(data, coord::Max, coord::Min, a, self);
-            build_block(data, coord::Max, coord::Max, a, self);
-            build_block(data, coord::Min, a, coord::Min, self);
-            build_block(data, coord::Min, a, coord::Max, self);
-            build_block(data, coord::Max, a, coord::Min, self);
-            build_block(data, coord::Max, a, coord::Max, self);
-            build_block(data, a, coord::Min, coord::Min, self);
-            build_block(data, a, coord::Min, coord::Max, self);
-            build_block(data, a, coord::Max, coord::Min, self);
-            build_block(data, a, coord::Max, coord::Max, self);
+        for local_pos in LocalPos::iter_all() {
+            build_block(data, local_pos, self);
         }
-
-        // 4. The eight corner voxels of the chunk are built, minus the faces that are
-        //    culled by the neighboring chunks.
-        build_block(data, coord::Min, coord::Min, coord::Min, self);
-        build_block(data, coord::Min, coord::Min, coord::Max, self);
-        build_block(data, coord::Min, coord::Max, coord::Min, self);
-        build_block(data, coord::Min, coord::Max, coord::Max, self);
-        build_block(data, coord::Max, coord::Min, coord::Min, self);
-        build_block(data, coord::Max, coord::Min, coord::Max, self);
-        build_block(data, coord::Max, coord::Max, coord::Min, self);
-        build_block(data, coord::Max, coord::Max, coord::Max, self);
     }
 
     /// Builds the boundary of the provided chunk based on its content and the content of the
@@ -335,44 +281,31 @@ bitflags! {
 
 impl CulledFaces {
     /// Returns the [`CulledFaces`] of the block within `chunk` at the provided position.
-    pub fn of(chunk: &Chunk, x: impl IntoCoord, y: impl IntoCoord, z: impl IntoCoord) -> Self {
+    pub fn of(chunk: &Chunk, pos: LocalPos) -> Self {
+        const MAX: i32 = Chunk::SIDE - 1;
+        const MIN: i32 = 0;
+
         unsafe {
-            let x = x.into_coord();
-            let y = y.into_coord();
-            let z = z.into_coord();
-            let x_val = x.value();
-            let y_val = y.value();
-            let z_val = z.value();
-
-            // Returns the visibility of the block at the provided position.
-            //
-            // The provided coordinates must be in bounds.
-            let block =
-                |x: i32, y: i32, z: i32| chunk.get_block(LocalPos::from_xyz_unchecked(x, y, z));
-
-            // SAFETY:
-            //  The `IntoCoord` trait is unsafe and requires the implementor to return a value that is
-            //  in bounds.
-            let me = block(x_val, y_val, z_val);
+            let me = chunk.get_block(pos);
 
             let mut result = CulledFaces::empty();
 
-            if x.is_max() || is_face_culled(me, block(x_val + 1, y_val, z_val)) {
+            if pos.x() == MAX || is_face_culled(me, chunk.get_block(pos.add_x_unchecked(1))) {
                 result |= CulledFaces::X;
             }
-            if x.is_min() || is_face_culled(me, block(x_val - 1, y_val, z_val)) {
+            if pos.x() == MIN || is_face_culled(me, chunk.get_block(pos.add_x_unchecked(-1))) {
                 result |= CulledFaces::NEG_X;
             }
-            if y.is_max() || is_face_culled(me, block(x_val, y_val + 1, z_val)) {
+            if pos.y() == MAX || is_face_culled(me, chunk.get_block(pos.add_y_unchecked(1))) {
                 result |= CulledFaces::Y;
             }
-            if y.is_min() || is_face_culled(me, block(x_val, y_val - 1, z_val)) {
+            if pos.y() == MIN || is_face_culled(me, chunk.get_block(pos.add_y_unchecked(-1))) {
                 result |= CulledFaces::NEG_Y;
             }
-            if z.is_max() || is_face_culled(me, block(x_val, y_val, z_val + 1)) {
+            if pos.z() == MAX || is_face_culled(me, chunk.get_block(pos.add_z_unchecked(1))) {
                 result |= CulledFaces::Z;
             }
-            if z.is_min() || is_face_culled(me, block(x_val, y_val, z_val - 1)) {
+            if pos.z() == MIN || is_face_culled(me, chunk.get_block(pos.add_z_unchecked(-1))) {
                 result |= CulledFaces::NEG_Z;
             }
 
@@ -397,19 +330,8 @@ fn is_face_culled(me: BlockId, other: BlockId) -> bool {
 /// into a version that does not perform bound checks at the chunk's boundaries. In the case
 /// where the coordinates are known to be within the chunk's boundaries,
 /// [`Coord`](coord::Coord) can be used as an input.
-fn build_block(
-    chunk: &Chunk,
-    x: impl IntoCoord,
-    y: impl IntoCoord,
-    z: impl IntoCoord,
-    ctx: &mut ChunkBuildContext,
-) {
-    // SAFETY:
-    //  The `Value` trait is unsafe and requires the implementor to return a value that is
-    //  in bounds.
-    let pos = unsafe { LocalPos::from_xyz_unchecked(x.value(), y.value(), z.value()) };
-
-    let culled = CulledFaces::of(chunk, x, y, z);
+fn build_block(chunk: &Chunk, pos: LocalPos, ctx: &mut ChunkBuildContext) {
+    let culled = CulledFaces::of(chunk, pos);
     build_voxel(pos, chunk, culled, ctx);
 }
 
@@ -645,114 +567,5 @@ fn build_single_face_bottom(
         }),
         BlockAppearance::Liquid(_) => (),
         BlockAppearance::Flat(_) => (),
-    }
-}
-
-mod coord {
-    use bns_core::Chunk;
-
-    /// A possible chunk coordinate on one axis.
-    ///
-    /// This type is used to make sure that the optimizer understand that some values are always
-    /// within the chunk's boundaries.
-    #[derive(Debug, Copy, Clone)]
-    pub enum Coord {
-        Min,
-
-        /// The inner value must be in the range `1..Chunk::SIDE - 1`.
-        Inner(i32),
-
-        Max,
-    }
-
-    impl Coord {
-        /// Returns whether the coordinate is the minimum value.
-        #[inline]
-        pub fn is_max(self) -> bool {
-            matches!(self, Self::Max)
-        }
-
-        /// Returns whether the coordinate is the maximum value.
-        #[inline]
-        pub fn is_min(self) -> bool {
-            matches!(self, Self::Min)
-        }
-
-        /// Returns the value of the coordinate.
-        #[inline]
-        pub fn value(self) -> i32 {
-            match self {
-                Self::Min => 0,
-                Self::Inner(value) => value,
-                Self::Max => Chunk::SIDE - 1,
-            }
-        }
-    }
-
-    /// A trait that returns the visibility of a block at a given position.
-    ///
-    /// This trait is used to monomorphize the `build_block` function and avoid bound checks
-    /// at the chunk's boundaries. See [`build_block`](super::build_block) for more information.
-    ///
-    /// # Safety
-    ///
-    /// The value returned by [`Coord`] instance must be valid (i.e. if it contains the `Inner`
-    /// variant, then the inner value must be in the range `1..Chunk::SIDE - 1`).
-    pub unsafe trait IntoCoord: Copy {
-        /// A possible coordinate.
-        fn into_coord(self) -> Coord;
-
-        /// Returns the value of the coordinate.
-        #[inline]
-        fn value(self) -> i32 {
-            self.into_coord().value()
-        }
-    }
-
-    /// An implementation of [`IntoCoord`].
-    ///
-    /// The inner value must be in the range `q..Chunk::SIDE - 1`.
-    #[derive(Copy, Clone)]
-    pub struct Inner(i32);
-
-    impl Inner {
-        /// Creates a new [`Inner`] instance without checking the value.
-        ///
-        /// # Safety
-        ///
-        /// The value must be in the range `1..Chunk::SIDE - 1`.
-        #[inline]
-        pub unsafe fn new_unchecked(value: i32) -> Self {
-            Self(value)
-        }
-    }
-
-    unsafe impl IntoCoord for Inner {
-        #[inline]
-        fn into_coord(self) -> Coord {
-            Coord::Inner(self.0)
-        }
-    }
-
-    /// An implementation of [`IntoCoord`] that returns the minimum value.
-    #[derive(Copy, Clone)]
-    pub struct Min;
-
-    unsafe impl IntoCoord for Min {
-        #[inline]
-        fn into_coord(self) -> Coord {
-            Coord::Min
-        }
-    }
-
-    /// An implementation of [`IntoCoord`] that returns the maximum value.
-    #[derive(Copy, Clone)]
-    pub struct Max;
-
-    unsafe impl IntoCoord for Max {
-        #[inline]
-        fn into_coord(self) -> Coord {
-            Coord::Max
-        }
     }
 }

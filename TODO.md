@@ -3,7 +3,7 @@
 - [ ] Infinite terrain generation.
   - [x] Modular biomes.
   - [x] Base terrain.
-  - [ ] Structures (trees, big rocks, etc).
+  - [x] Structures (trees, big rocks, etc).
 - [ ] Basic graphics.
   - [x] Optimized voxel renderer.
   - [x] Skybox.
