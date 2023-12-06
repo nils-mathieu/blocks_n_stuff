@@ -64,6 +64,16 @@ impl Biome for Ocean {
         }
     }
 
+    fn register_structures(
+        &self,
+        pos: ChunkPos,
+        column: &ColumnGen,
+        ctx: &GenCtx,
+        structures: &mut crate::structure::StructureRegistry,
+    ) {
+        let _ = (pos, column, ctx, structures);
+    }
+
     fn debug_info(&self, w: &mut dyn std::fmt::Write, pos: glam::IVec3) -> std::fmt::Result {
         let _ = (w, pos);
         Ok(())

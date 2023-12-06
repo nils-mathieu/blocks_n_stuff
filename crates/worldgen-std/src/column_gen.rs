@@ -1,14 +1,11 @@
-use std::hash::BuildHasherDefault;
 use std::ops::{Index, IndexMut};
-use std::sync::{Arc, OnceLock};
+use std::sync::OnceLock;
 
 use bns_core::{Chunk, LocalPos};
 use bns_rng::Noise;
+
 use bytemuck::Zeroable;
 use glam::IVec2;
-use hashbrown::HashMap;
-use parking_lot::RwLock;
-use rustc_hash::FxHasher;
 use smallvec::SmallVec;
 
 use crate::biome::BiomeId;
@@ -243,7 +240,7 @@ impl ColumnGen {
                     // column.
                     let biome = if sampled_chunk != self.pos {
                         // We need to query the heightmap of the column at that position.
-                        let col = ctx.columns.get(sampled_chunk);
+                        let col = ctx.cache.get_column(sampled_chunk);
                         col.biome_stage(ctx).ids[ColumnPos::from_world_pos(sampled_pos)]
                     } else {
                         self.biome_stage(ctx).ids[ColumnPos::from_world_pos(sampled_pos)]
@@ -299,61 +296,5 @@ impl ColumnGen {
 
             ret
         })
-    }
-}
-
-/// A collection of [`ColumnGen`] instances, which can be retrieved when needed.
-#[derive(Default)]
-pub struct Columns {
-    /// The columns that have been generated so far.
-    columns: RwLock<HashMap<IVec2, Arc<ColumnGen>, BuildHasherDefault<FxHasher>>>,
-}
-
-impl Columns {
-    /// Attempt to get a [`ColumnGen`] instance from the cache, or create a new one if it's not
-    /// present.
-    pub fn get(&self, pos: IVec2) -> Arc<ColumnGen> {
-        // Try to get the column from the cache.
-        let lock = self.columns.read();
-
-        // Try to get the column from the cache.
-        if let Some(col) = lock.get(&pos) {
-            return col.clone();
-        }
-
-        // We do not have the column in cache.
-        // We have to write to the map.
-        drop(lock);
-
-        // `entry` is necessary here, because we might have raced with another thread to
-        // initialize the column.
-        self.columns
-            .write()
-            .entry(pos)
-            .or_insert_with(|| Arc::new(ColumnGen::new(pos)))
-            .clone()
-    }
-
-    /// Hints the collection that some columns are unlikely to be used anymore, and can therefor
-    /// be unloaded.
-    pub fn request_cleanup(&self, center: IVec2, radius: u32) {
-        let mut to_remove = SmallVec::<[IVec2; 16]>::new();
-
-        // Only acquire a read to
-        //  Don't block everyone while we're computing the distances.
-        //  Don't block anything if there's nothing to remove.
-        let guard = self.columns.read();
-
-        for pos in guard.keys() {
-            if pos.distance_squared(center) as u32 > radius * radius {
-                to_remove.push(*pos);
-            }
-        }
-
-        drop(guard);
-
-        let mut guard = self.columns.write();
-        to_remove.iter().for_each(|pos| drop(guard.remove(pos)));
-        guard.shrink_to_fit();
     }
 }

@@ -45,13 +45,18 @@ pub trait Rng {
 }
 
 /// A trait for types that can be generated from a random number generator.
-pub trait FromRng: Sized {
+pub trait FromRng {
     /// Generates a new instance of `Self` from the provided random number generator.
-    fn from_rng(rng: &mut impl Rng) -> Self;
+    fn from_rng(rng: &mut impl Rng) -> Self
+    where
+        Self: Sized;
 
     /// Generates a new instance of `Self` using the provided random number generator initialized
     /// with the provided seed.
-    fn from_seed<R: Rng>(seed: u64) -> Self {
+    fn from_seed<R: Rng>(seed: u64) -> Self
+    where
+        Self: Sized,
+    {
         Self::from_rng(&mut R::from_seed(seed))
     }
 }

@@ -9,14 +9,25 @@ use rustc_hash::FxHasher;
 
 /// A unique identifier for a structure to be spawned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct StructureId {
+struct Key {
     /// The world-space position of the structure.
-    pub position: IVec3,
+    position: IVec3,
     /// An additional identifier
-    pub id: u32,
+    id: u32,
 }
 
-impl Hash for StructureId {
+impl Key {
+    /// Returns the [`Key`] that corresponds to the provided [`PendingStructure`].
+    #[inline]
+    pub fn of_pending_structure(pending: &PendingStructure) -> Self {
+        Self {
+            position: pending.position,
+            id: pending.id,
+        }
+    }
+}
+
+impl Hash for Key {
     #[inline]
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         #[cfg(target_pointer_width = "64")]
@@ -33,13 +44,19 @@ impl Hash for StructureId {
     }
 }
 
+/// A unique identifier used to discriminate between two structures wanting to be spawned
+/// at the same location.
+pub type StructureRegistryId = u32;
+
 /// A structure that hasn't been inserted into the world completely yet.
 #[derive(Debug)]
-struct PendingStructure {
+pub struct PendingStructure {
     /// The position of the insertion (the origin of the spawned structure in world-space).
-    position: IVec3,
+    pub position: IVec3,
+    /// The ID of the structure.
+    pub id: StructureRegistryId,
     /// The structure itself.
-    contents: Structure<'static>,
+    pub contents: Structure<'static>,
 }
 
 impl PendingStructure {
@@ -84,7 +101,7 @@ impl PendingStructure {
 #[derive(Debug, Default)]
 pub struct StructureRegistry {
     /// The list of pending structures.
-    pending: HashMap<StructureId, PendingStructure, BuildHasherDefault<FxHasher>>,
+    pending: HashMap<Key, PendingStructure, BuildHasherDefault<FxHasher>>,
 }
 
 impl StructureRegistry {
@@ -97,13 +114,8 @@ impl StructureRegistry {
     }
 
     /// Inserts a structure into the registry.
-    pub fn insert(&mut self, id: StructureId, contents: Structure<'static>) {
-        self.pending.insert(
-            id,
-            PendingStructure {
-                position: id.position,
-                contents,
-            },
-        );
+    pub fn insert(&mut self, structure: PendingStructure) {
+        self.pending
+            .insert(Key::of_pending_structure(&structure), structure);
     }
 }

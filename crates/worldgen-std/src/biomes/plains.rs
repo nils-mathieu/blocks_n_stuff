@@ -4,10 +4,8 @@ use bns_rng::{FromRng, Noise};
 
 use glam::IVec2;
 
-use super::structures;
 use crate::biome::{Biome, BiomeId};
 use crate::column_gen::ColumnGen;
-use crate::structure::StructureId;
 use crate::GenCtx;
 
 #[derive(FromRng)]
@@ -17,8 +15,6 @@ pub struct Plains {
     pebble_noise: Mixer<2>,
     daffodil_noise: Mixer<2>,
     diamond_noise: SuperSimplex3,
-    tree_noise: Mixer<2>,
-    tree_type_noise: Mixer<2>,
 }
 
 impl Plains {
@@ -26,7 +22,6 @@ impl Plains {
     pub const HEIGHT_MAP_OFFSET: f32 = 5.0;
     pub const PEBBLE_PROBABILITY: u64 = 600;
     pub const DAFFODIL_PROBABILITY: u64 = 600;
-    pub const TREE_PROBABILITY: u64 = 5000;
 }
 
 impl Biome for Plains {
@@ -104,26 +99,18 @@ impl Biome for Plains {
                         *chunk.get_appearance_mut(local_pos) = AppearanceMetadata { flat: Face::Y };
                     }
                 }
-
-                let tree_value = self
-                    .tree_noise
-                    .sample([world_pos.x as u64, world_pos.z as u64]);
-                if tree_value % Self::TREE_PROBABILITY == 0 {
-                    let tree_type = self
-                        .tree_type_noise
-                        .sample([world_pos.x as u64, world_pos.z as u64]);
-                    let tree =
-                        structures::OAK_TREES[tree_type as usize % structures::OAK_TREES.len()];
-                    ctx.structures.write().insert(
-                        StructureId {
-                            id: 0x12393483,
-                            position: world_pos,
-                        },
-                        tree.clone(),
-                    );
-                }
             }
         }
+    }
+
+    fn register_structures(
+        &self,
+        pos: ChunkPos,
+        column: &ColumnGen,
+        ctx: &GenCtx,
+        structures: &mut crate::structure::StructureRegistry,
+    ) {
+        let _ = (pos, column, ctx, structures);
     }
 
     fn debug_info(&self, w: &mut dyn std::fmt::Write, pos: glam::IVec3) -> std::fmt::Result {
