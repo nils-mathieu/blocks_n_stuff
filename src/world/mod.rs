@@ -201,18 +201,7 @@ impl World {
 
     /// Gets the block at the provided position, or [`None`] if the chunk is not loaded yet.
     pub fn get_block(&self, pos: IVec3) -> Option<InstanciatedBlock> {
-        let chunk_pos = ChunkPos::new(
-            pos.x.div_euclid(Chunk::SIDE),
-            pos.y.div_euclid(Chunk::SIDE),
-            pos.z.div_euclid(Chunk::SIDE),
-        );
-        let local_pos = unsafe {
-            LocalPos::from_xyz_unchecked(
-                pos.x - chunk_pos.x * Chunk::SIDE,
-                pos.y - chunk_pos.y * Chunk::SIDE,
-                pos.z - chunk_pos.z * Chunk::SIDE,
-            )
-        };
+        let (chunk_pos, local_pos) = bns_core::utility::chunk_and_local_pos(pos);
 
         let chunk = match self.chunks.get(&chunk_pos) {
             Some(ChunkEntry::Loaded(chunk)) => chunk,
