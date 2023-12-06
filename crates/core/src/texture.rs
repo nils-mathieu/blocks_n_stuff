@@ -71,43 +71,89 @@ impl TextureId {
     /// The extension of the file name is not included.
     #[inline]
     pub fn file_name(self) -> &'static str {
-        const NAMES: [&str; TextureId::COUNT] = [
-            "stone",
-            "dirt",
-            "grass_side",
-            "grass_top",
-            "andesite",
-            "clay",
-            "diorite",
-            "granite",
-            "gravel",
-            "podzol_top",
-            "podzol_side",
-            "red_sand",
-            "sand",
-            "sandstone_top",
-            "sandstone_bottom",
-            "sandstone_side",
-            "red_sandstone_top",
-            "red_sandstone_bottom",
-            "red_sandstone_side",
-            "water",
-            "bedrock",
-            "daffodil",
-            "pebbles",
-            "cobblestone",
-            "mossy_cobblestone",
-            "diamond_ore",
-            "oak_log_top",
-            "oak_log_side",
-            "oak_leaves",
-            "pine_log_top",
-            "pine_log_side",
-            "pine_leaves",
-            "structure_block",
-            "structure_origin_block",
-        ];
-        unsafe { NAMES.get_unchecked(self as usize) }
+        match self {
+            Self::Stone => "stone",
+            Self::Dirt => "dirt",
+            Self::GrassSide => "grass_side",
+            Self::GrassTop => "grass_top",
+            Self::Andesite => "andesite",
+            Self::Clay => "clay",
+            Self::Diorite => "diorite",
+            Self::Granite => "granite",
+            Self::Gravel => "gravel",
+            Self::PodzolTop => "podzol_top",
+            Self::PodzolSide => "podzol_side",
+            Self::RedSand => "red_sand",
+            Self::Sand => "sand",
+            Self::SandstoneTop => "sandstone_top",
+            Self::SandstoneBottom => "sandstone_bottom",
+            Self::SandstoneSide => "sandstone_side",
+            Self::RedSandstoneTop => "red_sandstone_top",
+            Self::RedSandstoneBottom => "red_sandstone_bottom",
+            Self::RedSandstoneSide => "red_sandstone_side",
+            Self::Water => "water",
+            Self::Bedrock => "bedrock",
+            Self::Daffodil => "daffodil",
+            Self::Pebbles => "pebbles",
+            Self::Cobblestone => "cobblestone",
+            Self::MossyCobblestone => "mossy_cobblestone",
+            Self::DiamondOre => "diamond_ore",
+            Self::OakLogTop => "oak_log_top",
+            Self::OakLogSide => "oak_log_side",
+            Self::OakLeaves => "oak_leaves",
+            Self::PineLogTop => "pine_log_top",
+            Self::PineLogSide => "pine_log_side",
+            Self::PineLeaves => "pine_leaves",
+            Self::StructureBlock => "structure_block",
+            Self::StructureOriginBlock => "structure_origin_block",
+        }
+    }
+
+    /// Returns the PNG image that's embedded in the binary for this texture.
+    #[cfg(feature = "embedded-textures")]
+    pub const fn embeded_texture(self) -> &'static [u8] {
+        macro_rules! include_asset {
+            ($name:literal) => {
+                include_bytes!(concat!("../../../assets/", $name, ".png"))
+            };
+        }
+
+        match self {
+            Self::Stone => include_asset!("stone"),
+            Self::Dirt => include_asset!("dirt"),
+            Self::GrassSide => include_asset!("grass_side"),
+            Self::GrassTop => include_asset!("grass_top"),
+            Self::Andesite => include_asset!("andesite"),
+            Self::Clay => include_asset!("clay"),
+            Self::Diorite => include_asset!("diorite"),
+            Self::Granite => include_asset!("granite"),
+            Self::Gravel => include_asset!("gravel"),
+            Self::PodzolTop => include_asset!("podzol_top"),
+            Self::PodzolSide => include_asset!("podzol_side"),
+            Self::RedSand => include_asset!("red_sand"),
+            Self::Sand => include_asset!("sand"),
+            Self::SandstoneTop => include_asset!("sandstone_top"),
+            Self::SandstoneBottom => include_asset!("sandstone_bottom"),
+            Self::SandstoneSide => include_asset!("sandstone_side"),
+            Self::RedSandstoneTop => include_asset!("red_sandstone_top"),
+            Self::RedSandstoneBottom => include_asset!("red_sandstone_bottom"),
+            Self::RedSandstoneSide => include_asset!("red_sandstone_side"),
+            Self::Water => include_asset!("water"),
+            Self::Bedrock => include_asset!("bedrock"),
+            Self::Daffodil => include_asset!("daffodil"),
+            Self::Pebbles => include_asset!("pebbles"),
+            Self::Cobblestone => include_asset!("cobblestone"),
+            Self::MossyCobblestone => include_asset!("mossy_cobblestone"),
+            Self::DiamondOre => include_asset!("diamond_ore"),
+            Self::OakLogTop => include_asset!("oak_log_top"),
+            Self::OakLogSide => include_asset!("oak_log_side"),
+            Self::OakLeaves => include_asset!("oak_leaves"),
+            Self::PineLogTop => include_asset!("pine_log_top"),
+            Self::PineLogSide => include_asset!("pine_log_side"),
+            Self::PineLeaves => include_asset!("pine_leaves"),
+            Self::StructureBlock => include_asset!("structure_block"),
+            Self::StructureOriginBlock => include_asset!("structure_origin_block"),
+        }
     }
 
     /// Returns an iterator over all the [`TextureId`] instances.

@@ -62,22 +62,19 @@ impl BlockId {
     /// future we need to load custom textures (with potentially different appearances), we will
     /// need to load this dynamically and store it somewhere.
     #[inline]
-    pub const fn info(self) -> &'static BlockInfo {
-        const INFOS: [BlockInfo; BlockId::COUNT] = [
-            // Air
-            BlockInfo {
+    pub const fn info(self) -> BlockInfo {
+        match self {
+            Self::Air => BlockInfo {
                 appearance: BlockAppearance::Invisible,
                 visibility: BlockVisibility::Invisible,
                 flags: BlockFlags::empty(),
             },
-            // Stone
-            BlockInfo {
+            Self::Stone => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Stone),
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // Grass
-            BlockInfo {
+            Self::Grass => BlockInfo {
                 appearance: BlockAppearance::Regular {
                     top: TextureId::GrassTop,
                     bottom: TextureId::Dirt,
@@ -86,44 +83,37 @@ impl BlockId {
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // Dirt
-            BlockInfo {
+            Self::Dirt => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Dirt),
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // Andesite
-            BlockInfo {
+            Self::Andesite => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Andesite),
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // Clay
-            BlockInfo {
+            Self::Clay => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Clay),
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // Diorite
-            BlockInfo {
+            Self::Diorite => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Diorite),
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // Granite
-            BlockInfo {
+            Self::Granite => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Granite),
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // Gravel
-            BlockInfo {
+            Self::Gravel => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Gravel),
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // Podzol
-            BlockInfo {
+            Self::Podzol => BlockInfo {
                 appearance: BlockAppearance::Regular {
                     top: TextureId::PodzolTop,
                     bottom: TextureId::Dirt,
@@ -132,20 +122,17 @@ impl BlockId {
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // RedSand
-            BlockInfo {
+            Self::RedSand => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::RedSand),
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // Sand
-            BlockInfo {
+            Self::Sand => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Sand),
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // Sandstone
-            BlockInfo {
+            Self::Sandstone => BlockInfo {
                 appearance: BlockAppearance::Regular {
                     top: TextureId::SandstoneTop,
                     bottom: TextureId::SandstoneBottom,
@@ -154,8 +141,7 @@ impl BlockId {
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // RedSandstone
-            BlockInfo {
+            Self::RedSandstone => BlockInfo {
                 appearance: BlockAppearance::Regular {
                     top: TextureId::RedSandstoneTop,
                     bottom: TextureId::RedSandstoneBottom,
@@ -164,50 +150,42 @@ impl BlockId {
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // Water
-            BlockInfo {
+            Self::Water => BlockInfo {
                 appearance: BlockAppearance::Liquid(TextureId::Water),
                 visibility: BlockVisibility::Transparent,
                 flags: BlockFlags::CULLS_ITSELF,
             },
-            // Bedrock
-            BlockInfo {
+            Self::Bedrock => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Bedrock),
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // Daffodil
-            BlockInfo {
+            Self::Daffodil => BlockInfo {
                 appearance: BlockAppearance::Flat(TextureId::Daffodil),
                 visibility: BlockVisibility::SemiOpaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // Pebbles
-            BlockInfo {
+            Self::Pebbles => BlockInfo {
                 appearance: BlockAppearance::Flat(TextureId::Pebbles),
                 visibility: BlockVisibility::SemiOpaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // Cobblestone
-            BlockInfo {
+            Self::Cobblestone => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Cobblestone),
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // MossyCobblestone
-            BlockInfo {
+            Self::MossyCobblestone => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::MossyCobblestone),
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // DiamondOre
-            BlockInfo {
+            Self::DiamondOre => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::DiamondOre),
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // OakLog
-            BlockInfo {
+            Self::OakLog => BlockInfo {
                 appearance: BlockAppearance::Regular {
                     top: TextureId::OakLogTop,
                     bottom: TextureId::OakLogTop,
@@ -216,14 +194,12 @@ impl BlockId {
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // OakLeaves
-            BlockInfo {
+            Self::OakLeaves => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::OakLeaves),
                 visibility: BlockVisibility::SemiOpaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // PineLog
-            BlockInfo {
+            Self::PineLog => BlockInfo {
                 appearance: BlockAppearance::Regular {
                     top: TextureId::PineLogTop,
                     bottom: TextureId::PineLogTop,
@@ -232,27 +208,22 @@ impl BlockId {
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // PineLeaves
-            BlockInfo {
+            Self::PineLeaves => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::PineLeaves),
                 visibility: BlockVisibility::SemiOpaque,
                 flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
             },
-            // StructureBlock
-            BlockInfo {
+            Self::StructureBlock => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::StructureBlock),
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::TANGIBLE,
             },
-            // StructureOriginBlock
-            BlockInfo {
+            Self::StructureOriginBlock => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::StructureOriginBlock),
                 visibility: BlockVisibility::Opaque,
                 flags: BlockFlags::TANGIBLE,
             },
-        ];
-
-        &INFOS[self as usize]
+        }
     }
 }
 
