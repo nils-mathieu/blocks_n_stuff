@@ -1,0 +1,809 @@
+(
+    bounds: (9, 13, 9),
+    edits: [
+        (
+            position: (1, 7, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 8, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (1, 8, 7),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 6, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 7, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 7, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 7, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 7, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 7, 7),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 7, 8),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 8, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 8, 6),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (2, 8, 7),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 9, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 0, 5),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (3, 1, 5),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (3, 2, 5),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (3, 5, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 6, 4),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (3, 6, 5),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (3, 6, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 7, 2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 7, 3),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (3, 7, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 7, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 7, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 7, 7),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 8, 2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 8, 3),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (3, 8, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 8, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 9, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 9, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 9, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 9, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 10, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 10, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 10, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 11, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 11, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 0, 5),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 0, 6),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 1, 5),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 1, 6),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 2, 5),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 3, 5),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 4, 5),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 5, 5),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 6, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 6, 4),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 6, 5),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 7, 2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 7, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 7, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 7, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 7, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 7, 7),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 8, 2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 8, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 8, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 8, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 8, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 8, 7),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 9, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 9, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 9, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 10, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 10, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 10, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 10, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 11, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 11, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 11, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 12, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 0, 4),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (5, 5, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 6, 2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 6, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 6, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 6, 5),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (5, 6, 6),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (5, 6, 7),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 7, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 7, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 7, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 7, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 7, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 7, 8),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 8, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 8, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 8, 6),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (5, 8, 7),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (5, 8, 8),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 9, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 9, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 9, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 9, 7),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 10, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 10, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 10, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 10, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 11, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 11, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 11, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 12, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 12, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 12, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (6, 6, 2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 6, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 6, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 6, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 6, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 7, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 7, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 7, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 7, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (6, 7, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (6, 8, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 8, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 8, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (6, 8, 7),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 9, 2),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (6, 9, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 9, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 9, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 10, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 10, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (6, 11, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (7, 6, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (7, 6, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (7, 7, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (7, 7, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (7, 8, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (8, 7, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+    ],
+)

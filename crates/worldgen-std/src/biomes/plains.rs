@@ -2,11 +2,17 @@ use bns_core::{AppearanceMetadata, BlockId, Chunk, Face, LocalPos};
 use bns_rng::noises::{Mixer, SuperSimplex2, SuperSimplex3};
 use bns_rng::{FromRng, Noise};
 
+use bns_worldgen_structure::{include_structure, Structure, StructureEdit};
 use glam::{IVec2, IVec3};
 
 use crate::biome::{Biome, BiomeId};
 use crate::column_gen::ColumnGen;
 use crate::GenCtx;
+
+const OAK_TREE_1: Structure<&[StructureEdit]> = include_structure!("structures/oak_tree_1.ron");
+const OAK_TREE_2: Structure<&[StructureEdit]> = include_structure!("structures/oak_tree_2.ron");
+const OAK_TREE_3: Structure<&[StructureEdit]> = include_structure!("structures/oak_tree_3.ron");
+const OAK_TREE_4: Structure<&[StructureEdit]> = include_structure!("structures/oak_tree_4.ron");
 
 #[derive(FromRng)]
 pub struct Plains {

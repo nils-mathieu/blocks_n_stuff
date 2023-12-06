@@ -8,8 +8,11 @@ repository.workspace = true
 license.workspace = true
 publish.workspace = true
 
+[features]
+default = ["macros"]
+macros = ["dep:bns-worldgen-structure-macros"]
+
 [dependencies]
 bns-core = { path = "../core" }
-
-glam = { version = "0.24", features = ["serde"] }
-serde = { version = "1.0", features = ["derive"] }
+bns-worldgen-structure-types = { path = "types" }
+bns-worldgen-structure-macros = { path = "macros", optional = true }

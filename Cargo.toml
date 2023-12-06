@@ -41,6 +41,8 @@ members = [
     "crates/worldgen-core",
     "crates/worldgen-std",
     "crates/worldgen-structure",
+    "crates/worldgen-structure/macros",
+    "crates/worldgen-structure/types",
     "crates/workers",
     "crates/log",
     "crates/app",

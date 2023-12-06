@@ -328,6 +328,7 @@ dependencies = [
  "bns-core",
  "bns-rng",
  "bns-worldgen-core",
+ "bns-worldgen-structure",
  "bytemuck",
  "glam",
  "hashbrown",
@@ -339,6 +340,26 @@ dependencies = [
 
 [[package]]
 name = "bns-worldgen-structure"
+version = "0.1.0"
+dependencies = [
+ "bns-core",
+ "bns-worldgen-structure-macros",
+ "bns-worldgen-structure-types",
+]
+
+[[package]]
+name = "bns-worldgen-structure-macros"
+version = "0.1.0"
+dependencies = [
+ "bns-core",
+ "bns-worldgen-structure-types",
+ "proc-macro2",
+ "quote",
+ "ron",
+]
+
+[[package]]
+name = "bns-worldgen-structure-types"
 version = "0.1.0"
 dependencies = [
  "bns-core",

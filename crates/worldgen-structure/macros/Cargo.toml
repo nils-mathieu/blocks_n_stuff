@@ -1,0 +1,21 @@
+[package]
+name = "bns-worldgen-structure-macros"
+version = "0.1.0"
+
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1"
+proc-macro2 = "1"
+
+ron = "0.8"
+
+bns-worldgen-structure-types = { path = "../types" }
+bns-core = { path = "../../core" }

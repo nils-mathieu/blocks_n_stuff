@@ -11,6 +11,7 @@ publish.workspace = true
 [dependencies]
 bns-core = { path = "../core" }
 bns-worldgen-core = { path = "../worldgen-core" }
+bns-worldgen-structure = { path = "../worldgen-structure" }
 bns-rng = { path = "../rng" }
 
 glam = "0.24"

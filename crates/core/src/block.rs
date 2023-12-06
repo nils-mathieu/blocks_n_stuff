@@ -420,7 +420,7 @@ impl InstanciatedBlock {
     ///
     /// The provided appearance metadata must be valid for the associated block ID.
     #[inline]
-    pub unsafe fn new_unchecked(id: BlockId, appearance: AppearanceMetadata) -> Self {
+    pub const unsafe fn new_unchecked(id: BlockId, appearance: AppearanceMetadata) -> Self {
         Self { id, appearance }
     }
 
@@ -521,8 +521,9 @@ mod serde_InstanciateBlock {
 
     use crate::{BlockId, Face};
 
-    #[derive(Serialize, Deserialize)]
+    #[derive(Default, Serialize, Deserialize)]
     pub enum AppearanceMetadataHelper {
+        #[default]
         NoMetadata,
         Flat(Face),
     }
@@ -537,7 +538,10 @@ mod serde_InstanciateBlock {
     #[derive(Serialize, Deserialize)]
     pub struct InstanciatedBlockHelper {
         pub id: BlockId,
-        #[serde(skip_serializing_if = "AppearanceMetadataHelper::has_no_metadata")]
+        #[serde(
+            skip_serializing_if = "AppearanceMetadataHelper::has_no_metadata",
+            default
+        )]
         pub appearance: AppearanceMetadataHelper,
     }
 }
