@@ -34,7 +34,9 @@ impl LocalPos {
     ///
     /// The index must be less than [`Chunk::SIZE`].
     #[inline]
+    #[track_caller]
     pub unsafe fn new_unchecked(index: usize) -> Self {
+        debug_assert!(index < Chunk::SIZE);
         Self(index as u16)
     }
 
@@ -45,6 +47,7 @@ impl LocalPos {
     ///
     /// This function assumes that the coordinates are less than [`Chunk::SIDE`].
     #[inline]
+    #[track_caller]
     pub unsafe fn from_xyz_unchecked(x: i32, y: i32, z: i32) -> Self {
         let index = x + y * Chunk::SIDE + z * Chunk::SIDE * Chunk::SIDE;
         Self::new_unchecked(index as usize)
@@ -66,9 +69,9 @@ impl LocalPos {
     /// Creates a new [`LocalPos`] from the given world position.
     #[inline]
     pub fn from_world_pos(pos: IVec3) -> Self {
-        let x = pos.x.div_euclid(pos.x);
-        let y = pos.y.div_euclid(pos.y);
-        let z = pos.z.div_euclid(pos.z);
+        let x = pos.x.rem_euclid(Chunk::SIDE);
+        let y = pos.y.rem_euclid(Chunk::SIDE);
+        let z = pos.z.rem_euclid(Chunk::SIDE);
         unsafe { Self::from_xyz_unchecked(x, y, z) }
     }
 
@@ -319,7 +322,7 @@ impl Chunk {
     /// Sets the block at the provided position.
     pub fn set_block(&mut self, pos: LocalPos, block: InstanciatedBlock) {
         unsafe {
-            if block.id() != BlockId::Air {
+            if block.id() != BlockId::Air || self.blocks.is_some() {
                 *self.get_block_mut(pos) = block.id();
             }
             if block.id().info().appearance.has_metadata() {
@@ -438,20 +441,22 @@ impl ChunkPos {
 
     /// If the provided `world_pos` is part of the chunk with this position, returns its
     /// local position within that chunk.
-    pub fn checked_local_pos(self, world_pos: IVec3) -> Option<LocalPos> {
+    pub fn checked_local_pos(self, mut world_pos: IVec3) -> Option<LocalPos> {
         let origin = self.origin();
 
-        let x = world_pos.x.checked_sub(origin.x)?;
-        let y = world_pos.y.checked_sub(origin.y)?;
-        let z = world_pos.z.checked_sub(origin.z)?;
+        if world_pos.x < origin.x || world_pos.y < origin.y || world_pos.z < origin.z {
+            return None;
+        }
 
-        if x >= Chunk::SIDE || y >= Chunk::SIDE || z >= Chunk::SIDE {
+        world_pos -= origin;
+
+        if world_pos.x >= Chunk::SIDE || world_pos.y >= Chunk::SIDE || world_pos.z >= Chunk::SIDE {
             return None;
         }
 
         // SAFETY:
         //  We just made sure that the coordinates were in bounds.
-        Some(unsafe { LocalPos::from_xyz_unchecked(x, y, z) })
+        Some(unsafe { LocalPos::from_xyz_unchecked(world_pos.x, world_pos.y, world_pos.z) })
     }
 }
 

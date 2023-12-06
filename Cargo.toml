@@ -15,10 +15,19 @@ opt-level = 3
 
 [profile.dev]
 opt-level = 1
+debug = false
 panic = "abort"
+
+[profile.dev-debug]
+inherits = "dev"
+debug = true
+opt-level = 0
 
 [profile.release]
 panic = "abort"
+# strip = true
+# lto = true
+# codegen-units = 8
 
 [lints.clippy]
 "print_stdout" = "warn"

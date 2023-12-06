@@ -4,18 +4,24 @@ use bns_rng::{FromRng, Noise};
 
 use crate::biome::{Biome, BiomeId};
 use crate::column_gen::ColumnGen;
+use crate::structure::StructureId;
 use crate::GenCtx;
+
+use super::structures;
 
 #[derive(FromRng)]
 pub struct OakForest {
     dirt_noise: SuperSimplex2,
     pebble_noise: Mixer<2>,
     daffodil_noise: Mixer<2>,
+    tree_noise: Mixer<2>,
+    tree_type_noise: Mixer<2>,
 }
 
 impl OakForest {
     pub const PEBBLE_PROBABILITY: u64 = 100;
     pub const DAFFODIL_PROBABILITY: u64 = 300;
+    pub const TREE_PROBABILITY: u64 = 100;
 }
 
 impl Biome for OakForest {
@@ -76,6 +82,24 @@ impl Biome for OakForest {
                         *chunk.get_block_mut(local_pos) = BlockId::Daffodil;
                         *chunk.get_appearance_mut(local_pos) = AppearanceMetadata { flat: Face::Y };
                     }
+                }
+
+                let tree_value = self
+                    .tree_noise
+                    .sample([world_pos.x as u64, world_pos.z as u64]);
+                if tree_value % Self::TREE_PROBABILITY == 0 {
+                    let tree_type = self
+                        .tree_type_noise
+                        .sample([world_pos.x as u64, world_pos.z as u64]);
+                    let tree =
+                        structures::OAK_TREES[tree_type as usize % structures::OAK_TREES.len()];
+                    ctx.structures.write().insert(
+                        StructureId {
+                            id: 0x134243,
+                            position: world_pos,
+                        },
+                        tree.clone(),
+                    );
                 }
             }
         }
