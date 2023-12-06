@@ -282,7 +282,6 @@ impl Face {
 }
 
 /// Some metadata about the appearance of a block.
-#[derive(Clone, Copy)]
 pub union AppearanceMetadata {
     /// The block has no associated metadata.
     pub no_metadata: (),
@@ -290,6 +289,24 @@ pub union AppearanceMetadata {
     ///
     /// This metadata indicates which direction of the block is facing.
     pub flat: Face,
+}
+
+impl AppearanceMetadata {
+    /// Clones this [`BlockAppearance`] knowing that it's that of `id`.
+    ///
+    /// # Safety
+    ///
+    /// The provided block ID must be the same as the one associated with this
+    /// [`AppearanceMetadata`].
+    pub unsafe fn clone_with(&self, id: BlockId) -> Self {
+        match id.info().appearance {
+            BlockAppearance::Flat(..) => {
+                let face = self.flat;
+                Self { flat: face }
+            }
+            _ => Self { no_metadata: () },
+        }
+    }
 }
 
 /// Describes the appearance of a block.
@@ -407,14 +424,16 @@ pub struct BlockInfo {
 /// This type isn't actually directly stored in the world for memory efficiency reasons. This type
 /// is most useful to serialize/deserialize easily a bunch of blocks (for example to store
 /// structures).
-#[derive(Clone)]
-pub struct InstanciatedBlock {
+pub struct BlockInstance {
     id: BlockId,
     appearance: AppearanceMetadata,
 }
 
-impl InstanciatedBlock {
-    /// Creates a new [`InstanciatedBlock`] instance with no metadata.
+impl BlockInstance {
+    /// The [`BlockInstance`] representing air.
+    pub const AIR: Self = Self::new(BlockId::Air);
+
+    /// Creates a new [`BlockInstance`] instance with no metadata.
     ///
     /// If the provided block requires some metadata, the function will automatically select
     /// a default value for it.
@@ -427,7 +446,7 @@ impl InstanciatedBlock {
         unsafe { Self::new_unchecked(id, appearance) }
     }
 
-    /// Creates a new [`InstanciatedBlock`] instance.
+    /// Creates a new [`BlockInstance`] instance.
     ///
     /// # Safety
     ///
@@ -447,21 +466,41 @@ impl InstanciatedBlock {
     ///
     /// The metadata is guaranteed to be valid for the associated block ID.
     #[inline]
-    pub fn appearance(&self) -> AppearanceMetadata {
-        self.appearance
+    pub fn appearance(&self) -> &AppearanceMetadata {
+        &self.appearance
+    }
+
+    /// Breaks this [`BlockInstance`] into its ID and appearance metadata.
+    ///
+    /// # Remarks
+    ///
+    /// After this function is called, the inner [`AppearanceMetadata`] will no longer
+    /// be dropped properly.
+    #[inline]
+    pub fn into_parts(self) -> (BlockId, AppearanceMetadata) {
+        (self.id, self.appearance)
     }
 }
 
-impl From<BlockId> for InstanciatedBlock {
+impl Clone for BlockInstance {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id,
+            appearance: unsafe { self.appearance.clone_with(self.id) },
+        }
+    }
+}
+
+impl From<BlockId> for BlockInstance {
     #[inline]
     fn from(id: BlockId) -> Self {
         Self::new(id)
     }
 }
 
-impl std::fmt::Debug for InstanciatedBlock {
+impl std::fmt::Debug for BlockInstance {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut f = f.debug_struct("InstanciatedBlock");
+        let mut f = f.debug_struct("BlockInstance");
         f.field("id", &self.id);
 
         #[allow(clippy::single_match)]
@@ -478,7 +517,7 @@ impl std::fmt::Debug for InstanciatedBlock {
     }
 }
 
-impl PartialEq<BlockId> for InstanciatedBlock {
+impl PartialEq<BlockId> for BlockInstance {
     #[inline]
     fn eq(&self, other: &BlockId) -> bool {
         self.id == *other
@@ -486,7 +525,7 @@ impl PartialEq<BlockId> for InstanciatedBlock {
 }
 
 #[cfg(feature = "serde")]
-impl serde::Serialize for InstanciatedBlock {
+impl serde::Serialize for BlockInstance {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -500,7 +539,7 @@ impl serde::Serialize for InstanciatedBlock {
             }
         };
 
-        let helper = InstanciatedBlockHelper {
+        let helper = BlockInstanceHelper {
             id: self.id,
             appearance,
         };
@@ -510,14 +549,14 @@ impl serde::Serialize for InstanciatedBlock {
 }
 
 #[cfg(feature = "serde")]
-impl<'de> serde::Deserialize<'de> for InstanciatedBlock {
+impl<'de> serde::Deserialize<'de> for BlockInstance {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         use serde_InstanciateBlock::*;
 
-        let helper = InstanciatedBlockHelper::deserialize(deserializer)?;
+        let helper = BlockInstanceHelper::deserialize(deserializer)?;
 
         let appearance = match (helper.appearance, helper.id.info().appearance) {
             (AppearanceMetadataHelper::Flat(face), BlockAppearance::Flat(..)) => {
@@ -556,7 +595,7 @@ mod serde_InstanciateBlock {
     }
 
     #[derive(Serialize, Deserialize)]
-    pub struct InstanciatedBlockHelper {
+    pub struct BlockInstanceHelper {
         pub id: BlockId,
         #[serde(
             skip_serializing_if = "AppearanceMetadataHelper::has_no_metadata",

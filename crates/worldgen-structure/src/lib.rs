@@ -1,6 +1,6 @@
 #[doc(hidden)]
 pub mod __private_macro {
-    pub use bns_core as core;
+    pub use bns_core;
 }
 
 #[cfg(feature = "macros")]

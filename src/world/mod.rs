@@ -7,7 +7,7 @@ use glam::{IVec3, Vec3};
 use hashbrown::HashMap;
 use smallvec::SmallVec;
 
-use bns_core::{BlockFlags, Chunk, ChunkPos, Face, InstanciatedBlock, LocalPos};
+use bns_core::{BlockFlags, BlockInstance, Chunk, ChunkPos, Face, LocalPos};
 use bns_render::Gpu;
 use bns_workers::{Priority, TaskPool, Worker};
 use bns_worldgen_core::WorldGenerator;
@@ -200,7 +200,7 @@ impl World {
     }
 
     /// Gets the block at the provided position, or [`None`] if the chunk is not loaded yet.
-    pub fn get_block(&self, pos: IVec3) -> Option<InstanciatedBlock> {
+    pub fn get_block(&self, pos: IVec3) -> Option<BlockInstance> {
         let (chunk_pos, local_pos) = bns_core::utility::chunk_and_local_pos(pos);
 
         let chunk = match self.chunks.get(&chunk_pos) {
@@ -208,7 +208,7 @@ impl World {
             _ => return None,
         };
 
-        Some(chunk.data.get_instanciated_block(local_pos))
+        Some(chunk.data.get_block_instance(local_pos))
     }
 
     /// Makes sure that the chunks that have been generated in the background are loaded and
@@ -557,7 +557,7 @@ impl World {
     /// This function returns `true` if the block was successfully replaced, or `false` if the
     /// the provided position was part of an unloaded chunk.
     #[profiling::function]
-    pub fn set_block(&mut self, world_pos: IVec3, block: InstanciatedBlock) -> bool {
+    pub fn set_block(&mut self, world_pos: IVec3, block: BlockInstance) -> bool {
         let chunk_pos = ChunkPos::new(
             world_pos.x.div_euclid(Chunk::SIDE),
             world_pos.y.div_euclid(Chunk::SIDE),

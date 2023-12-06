@@ -1,9 +1,10 @@
 use std::path::PathBuf;
 
-use bns_core::BlockAppearance;
-use bns_worldgen_structure_types::Structure;
+use bns_core::{BlockAppearance, BlockId, BlockInstance, Face};
+use bns_worldgen_structure_types::{Structure, StructureEdit};
+use glam::IVec3;
 
-use proc_macro::{Span, TokenStream, TokenTree};
+use proc_macro2::{Span, TokenStream, TokenTree};
 use quote::{quote, quote_spanned};
 
 fn get_base_dir() -> PathBuf {
@@ -20,7 +21,7 @@ impl Error {
     fn to_compile_error(&self) -> TokenStream {
         let span = self.span;
         let message = self.message.clone();
-        quote_spanned!( span.into() => compile_error!(#message) ).into()
+        quote_spanned!( span => compile_error!(#message) )
     }
 }
 
@@ -65,6 +66,85 @@ fn create_ident(name: &str) -> proc_macro2::Ident {
     proc_macro2::Ident::new(name, proc_macro2::Span::call_site())
 }
 
+fn quote_vec3(val: IVec3) -> proc_macro2::TokenStream {
+    let [x, y, z] = val.into();
+    quote! { ::glam::IVec3::new(#x, #y, #z) }
+}
+
+fn quote_block_id(id: BlockId) -> TokenStream {
+    let variant = create_ident(&format!("{:?}", id));
+
+    quote! {
+        ::bns_worldgen_structure::__private_macro::bns_core::BlockId::#variant
+    }
+}
+
+fn quote_face(face: Face) -> TokenStream {
+    let variant = create_ident(&format!("{:?}", face));
+
+    quote! {
+        ::bns_worldgen_structure::__private_macro::bns_core::Face::#variant
+    }
+}
+
+fn quote_block_appearance(b: &BlockInstance) -> TokenStream {
+    let core = quote! { ::bns_worldgen_structure::__private_macro::bns_core };
+
+    match b.id().info().appearance {
+        BlockAppearance::Flat(_) => {
+            let face = quote_face(unsafe { b.appearance().flat });
+            quote! { #core ::AppearanceMetadata { flat: #core ::Face:: #face } }
+        }
+        _ => quote! { #core ::AppearanceMetadata { no_metadata: () } },
+    }
+}
+
+fn quote_block_instance(b: &BlockInstance) -> TokenStream {
+    let core = quote! { ::bns_worldgen_structure::__private_macro::bns_core };
+
+    let block_id = quote_block_id(b.id());
+    let appearance = quote_block_appearance(b);
+
+    quote! {
+        unsafe {
+            #core ::InstanciatedBlock::new_unchecked(
+                #block_id,
+                #appearance,
+            )
+        }
+    }
+}
+
+fn quote_structure_edit(e: &StructureEdit) -> TokenStream {
+    let position = quote_vec3(e.position);
+    let block = quote_block_instance(&e.block);
+
+    quote! {
+        ::bns_worldgen_structure::StructureEdit {
+            position: #position,
+            block: #block,
+        }
+    }
+}
+
+fn quote_structure(s: &Structure) -> TokenStream {
+    let edits = s.edits.iter().map(quote_structure_edit);
+
+    let name = s.name.as_ref().map_or(
+        quote! { ::core::option::Option::None },
+        |name| quote! { ::core::option::Option::Some(#name) },
+    );
+    let bounds = quote_vec3(s.bounds);
+
+    quote! {
+        ::bns_worldgen_structure::Structure {
+            name: #name,
+            bounds: #bounds,
+            edits: ::std::borrow::Cow::Borrowed(&[ #(#edits,)* ]),
+        }
+    }
+}
+
 fn include_structure_impl(input: TokenStream) -> Result<TokenStream, Error> {
     let path = read_input(input)?;
     let path = get_base_dir().join(path);
@@ -79,67 +159,21 @@ fn include_structure_impl(input: TokenStream) -> Result<TokenStream, Error> {
         span: Span::call_site(),
     })?;
 
-    let core = quote! { ::bns_worldgen_structure::__private_macro::core };
-
-    let name = structure.name.map_or(
-        quote! { ::core::option::Option::None },
-        |name| quote! { ::core::option::Option::Some(#name) },
-    );
-    let x = structure.bounds.x;
-    let y = structure.bounds.y;
-    let z = structure.bounds.z;
-    let bounds = quote! { ::glam::IVec3::new(#x, #y, #z) };
-    let edits = structure.edits.iter().map(|e| {
-        let x = e.position.x;
-        let y = e.position.y;
-        let z = e.position.z;
-        let id = create_ident(&format!("{:?}", e.block.id()));
-        let appearance = e.block.appearance();
-        let appearance = match e.block.id().info().appearance {
-            BlockAppearance::Flat(_) => {
-                let face = unsafe { appearance.flat };
-                let face = create_ident(&format!("{:?}", face));
-                quote! { #core ::AppearanceMetadata { flat: #core ::Face:: #face } }
-            }
-            _ => quote! { #core ::AppearanceMetadata { no_metadata: () } },
-        };
-
-        let block = quote! {
-            unsafe {
-                #core ::InstanciatedBlock::new_unchecked(
-                    #core ::BlockId:: #id,
-                    #appearance,
-                )
-            }
-        };
-
-        quote! {
-            ::bns_worldgen_structure::StructureEdit {
-                position: ::glam::IVec3::new(#x, #y, #z),
-                block: #block,
-            }
-        }
-    });
-
-    let path = proc_macro2::Literal::string(path.to_str().unwrap());
+    let file_dependency = path.to_str().unwrap();
+    let structure = quote_structure(&structure);
     Ok(quote! {
         {
-            let _ = ::core::include_bytes!(#path);
-            ::bns_worldgen_structure::Structure {
-                name: #name,
-                bounds: #bounds,
-                edits: ::std::borrow::Cow::Borrowed(&[ #(#edits,)* ]),
-            }
+            let _ = ::core::include_bytes!(#file_dependency);
+            #structure
         }
-    }
-    .into())
+    })
 }
 
 /// Includes a structure by parsing it from a `.ron` file.
 #[proc_macro]
-pub fn include_structure(input: TokenStream) -> TokenStream {
-    match include_structure_impl(input) {
-        Ok(stream) => stream,
-        Err(err) => err.to_compile_error(),
+pub fn include_structure(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    match include_structure_impl(input.into()) {
+        Ok(stream) => stream.into(),
+        Err(err) => err.to_compile_error().into(),
     }
 }

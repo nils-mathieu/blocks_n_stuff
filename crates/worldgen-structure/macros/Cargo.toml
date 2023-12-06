@@ -19,3 +19,4 @@ ron = "0.8"
 
 bns-worldgen-structure-types = { path = "../types" }
 bns-core = { path = "../../core" }
+glam = "0.24"

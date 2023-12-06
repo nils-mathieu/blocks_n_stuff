@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use bns_core::InstanciatedBlock;
+use bns_core::BlockInstance;
 use glam::IVec3;
 
 /// An edition that a structure can apply.
@@ -11,7 +11,7 @@ pub struct StructureEdit {
     /// This position is relative ot the structure's origin.
     pub position: IVec3,
     /// The block that must be inserted.
-    pub block: InstanciatedBlock,
+    pub block: BlockInstance,
 }
 
 /// A structure that's made of [`StructureEdit`]s.

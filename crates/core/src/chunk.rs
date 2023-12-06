@@ -6,7 +6,7 @@ use std::ops::{Index, IndexMut};
 use bytemuck::Zeroable;
 use glam::{IVec2, IVec3, Vec3};
 
-use crate::{AppearanceMetadata, BlockId, InstanciatedBlock};
+use crate::{AppearanceMetadata, BlockId, BlockInstance};
 
 const X_MASK: u16 = 0b11111;
 const Y_MASK: u16 = 0b11111 << 5;
@@ -282,22 +282,28 @@ impl Chunk {
 
     /// Returns the [`AppearanceMetadata`] of the block at the provided position.
     #[inline]
-    pub fn get_appearance(&self, pos: LocalPos) -> AppearanceMetadata {
+    pub fn get_appearance(&self, pos: LocalPos) -> &AppearanceMetadata {
         match &self.appearances {
             // SAFETY:
             //  An `AppearanceMetadata` instance is always initialized, even if it's because of a
             //  zero-sized field in the union.
-            Some(data) => unsafe { data[pos].assume_init() },
-            None => AppearanceMetadata { no_metadata: () },
+            Some(data) => unsafe { data[pos].assume_init_ref() },
+            None => &AppearanceMetadata { no_metadata: () },
         }
     }
 
-    /// Returns an [`InstanciatedBlock`] for the block at the provided position.
-    #[inline]
-    pub fn get_instanciated_block(&self, pos: LocalPos) -> InstanciatedBlock {
-        // SAFETY:
-        //  We know that a chunk always contain valid blocks and associated metadata.
-        unsafe { InstanciatedBlock::new_unchecked(self.get_block(pos), self.get_appearance(pos)) }
+    /// Clones the block instance at the provided position.
+    ///
+    /// # Remarks
+    ///
+    /// This is usually very cheap and will be just a regular copy. However, it's possible that
+    /// some blocks have heavy metadata.
+    ///
+    /// Calling this function for those blocks should be avoided when possible.
+    pub fn get_block_instance(&self, pos: LocalPos) -> BlockInstance {
+        let block = self.get_block(pos);
+        let appearance = unsafe { self.get_appearance(pos).clone_with(block) };
+        unsafe { BlockInstance::new_unchecked(block, appearance) }
     }
 
     /// Returns a mutable reference to the block at the provided position.
@@ -320,13 +326,15 @@ impl Chunk {
     }
 
     /// Sets the block at the provided position.
-    pub fn set_block(&mut self, pos: LocalPos, block: InstanciatedBlock) {
+    pub fn set_block(&mut self, pos: LocalPos, block: BlockInstance) {
+        let (block, appearance) = block.into_parts();
+
         unsafe {
-            if block.id() != BlockId::Air || self.blocks.is_some() {
-                *self.get_block_mut(pos) = block.id();
+            if block != BlockId::Air || self.blocks.is_some() {
+                *self.get_block_mut(pos) = block;
             }
-            if block.id().info().appearance.has_metadata() {
-                *self.get_appearance_mut(pos) = block.appearance();
+            if block.info().appearance.has_metadata() {
+                *self.get_appearance_mut(pos) = appearance;
             }
         }
     }

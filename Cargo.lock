@@ -353,6 +353,7 @@ version = "0.1.0"
 dependencies = [
  "bns-core",
  "bns-worldgen-structure-types",
+ "glam",
  "proc-macro2",
  "quote",
  "ron",
