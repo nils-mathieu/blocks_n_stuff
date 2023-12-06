@@ -167,7 +167,7 @@ impl BlockId {
             BlockInfo {
                 appearance: BlockAppearance::Liquid(TextureId::Water),
                 visibility: BlockVisibility::Transparent,
-                flags: BlockFlags::empty(),
+                flags: BlockFlags::CULLS_ITSELF,
             },
             // Bedrock
             BlockInfo {
@@ -398,6 +398,9 @@ bitflags! {
         const TANGIBLE = 1 << 0;
         /// It's not possible to walk through the block.
         const SOLID = 1 << 1;
+        /// Whether the block culls itself (this only applies if the block is not opaque or
+        /// invisible).
+        const CULLS_ITSELF = 1 << 2;
     }
 }
 

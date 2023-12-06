@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bitflags::bitflags;
-use bns_core::{BlockAppearance, BlockId, BlockVisibility, Chunk, Face, LocalPos};
+use bns_core::{BlockAppearance, BlockFlags, BlockId, BlockVisibility, Chunk, Face, LocalPos};
 use bns_render::data::{QuadFlags, QuadInstance};
 use bns_render::{DynamicVertexBuffer, Gpu};
 use bytemuck::NoUninit;
@@ -211,14 +211,7 @@ impl ChunkBuildContext {
                     LocalPos::from_xyz_unchecked(a, 0, b),
                 )
             },
-            |pos| {
-                build_single_face_top(
-                    pos,
-                    data,
-                    QuadFlags::from_chunk_index(pos.index()) | QuadFlags::Y,
-                    self,
-                )
-            },
+            |pos| build_single_face_top(pos, data, QuadFlags::from_chunk_index(pos.index()), self),
         )
     }
 
@@ -236,12 +229,7 @@ impl ChunkBuildContext {
                 )
             },
             |pos| {
-                build_single_face_bottom(
-                    pos,
-                    data,
-                    QuadFlags::from_chunk_index(pos.index()) | QuadFlags::NEG_Y,
-                    self,
-                )
+                build_single_face_bottom(pos, data, QuadFlags::from_chunk_index(pos.index()), self)
             },
         )
     }
@@ -359,34 +347,32 @@ impl CulledFaces {
             // Returns the visibility of the block at the provided position.
             //
             // The provided coordinates must be in bounds.
-            let vis_at = |x: i32, y: i32, z: i32| {
-                let block = chunk.get_block(LocalPos::from_xyz_unchecked(x, y, z));
-                (block, block.info().visibility)
-            };
+            let block =
+                |x: i32, y: i32, z: i32| chunk.get_block(LocalPos::from_xyz_unchecked(x, y, z));
 
             // SAFETY:
             //  The `IntoCoord` trait is unsafe and requires the implementor to return a value that is
             //  in bounds.
-            let me = vis_at(x_val, y_val, z_val);
+            let me = block(x_val, y_val, z_val);
 
             let mut result = CulledFaces::empty();
 
-            if x.is_max() || is_face_culled(me, vis_at(x_val + 1, y_val, z_val)) {
+            if x.is_max() || is_face_culled(me, block(x_val + 1, y_val, z_val)) {
                 result |= CulledFaces::X;
             }
-            if x.is_min() || is_face_culled(me, vis_at(x_val - 1, y_val, z_val)) {
+            if x.is_min() || is_face_culled(me, block(x_val - 1, y_val, z_val)) {
                 result |= CulledFaces::NEG_X;
             }
-            if y.is_max() || is_face_culled(me, vis_at(x_val, y_val + 1, z_val)) {
+            if y.is_max() || is_face_culled(me, block(x_val, y_val + 1, z_val)) {
                 result |= CulledFaces::Y;
             }
-            if y.is_min() || is_face_culled(me, vis_at(x_val, y_val - 1, z_val)) {
+            if y.is_min() || is_face_culled(me, block(x_val, y_val - 1, z_val)) {
                 result |= CulledFaces::NEG_Y;
             }
-            if z.is_max() || is_face_culled(me, vis_at(x_val, y_val, z_val + 1)) {
+            if z.is_max() || is_face_culled(me, block(x_val, y_val, z_val + 1)) {
                 result |= CulledFaces::Z;
             }
-            if z.is_min() || is_face_culled(me, vis_at(x_val, y_val, z_val - 1)) {
+            if z.is_min() || is_face_culled(me, block(x_val, y_val, z_val - 1)) {
                 result |= CulledFaces::NEG_Z;
             }
 
@@ -397,13 +383,10 @@ impl CulledFaces {
 
 /// Returns whether a face of `me` against `other` should be culled.
 #[inline]
-fn is_face_culled(
-    (me_id, me_vis): (BlockId, BlockVisibility),
-    (other_id, other_vis): (BlockId, BlockVisibility),
-) -> bool {
-    me_vis == BlockVisibility::Invisible
-        || other_vis == BlockVisibility::Opaque
-        || (me_id == other_id)
+fn is_face_culled(me: BlockId, other: BlockId) -> bool {
+    me.info().visibility == BlockVisibility::Invisible
+        || other.info().visibility == BlockVisibility::Opaque
+        || (me == other && me.info().flags.contains(BlockFlags::CULLS_ITSELF))
 }
 
 /// Builds the geometry of one of the inner voxels of the provided chunk.
@@ -446,7 +429,7 @@ fn build_chunk_boundary(
             let (pos, other_pos) = coords(a, b);
             let me = data.get_block(pos);
             let other = other.get_block(other_pos);
-            if !is_face_culled((me, me.info().visibility), (other, other.info().visibility)) {
+            if !is_face_culled(me, other) {
                 build(pos)
             }
         }
@@ -611,13 +594,17 @@ fn build_single_face_top(
         BlockAppearance::Invisible => (),
         BlockAppearance::Regular { top, .. } => {
             buffer.push(QuadInstance {
-                flags,
+                flags: flags | QuadFlags::Y,
                 texture: top as u32,
             });
         }
         BlockAppearance::Liquid(surface) => {
             buffer.push(QuadInstance {
-                flags: flags | QuadFlags::OFFSET_1,
+                flags: flags | QuadFlags::OFFSET_1 | QuadFlags::Y,
+                texture: surface as u32,
+            });
+            buffer.push(QuadInstance {
+                flags: flags | QuadFlags::NEG_Y | QuadFlags::OFFSET_7,
                 texture: surface as u32,
             });
         }
@@ -628,7 +615,7 @@ fn build_single_face_top(
 
             if face == Face::Y {
                 buffer.push(QuadInstance {
-                    flags: flags | QuadFlags::OVERLAY,
+                    flags: flags | QuadFlags::OVERLAY | QuadFlags::Y,
                     texture: texture as u32,
                 });
             }
@@ -653,7 +640,7 @@ fn build_single_face_bottom(
     match block.info().appearance {
         BlockAppearance::Invisible => (),
         BlockAppearance::Regular { bottom, .. } => buffer.push(QuadInstance {
-            flags,
+            flags: flags | QuadFlags::NEG_Y,
             texture: bottom as u32,
         }),
         BlockAppearance::Liquid(_) => (),
