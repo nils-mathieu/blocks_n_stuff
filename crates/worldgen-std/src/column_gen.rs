@@ -135,7 +135,7 @@ impl ColumnPos {
 
     /// Returns a [`IVec2`] containing the X and Z coordinates of the position.
     #[inline]
-    pub fn to_vec2(self) -> IVec2 {
+    pub fn to_ivec2(self) -> IVec2 {
         IVec2::new(self.x(), self.z())
     }
 }
@@ -177,14 +177,15 @@ impl ColumnGen {
     }
 
     /// Gets the biome stage of the column, or initializes it if it's not present.
-    #[profiling::function]
     pub fn biome_stage(&self, ctx: &GenCtx) -> &BiomeStage {
         self.biome_stage.get_or_init(|| {
+            profiling::scope!("ColumnGen::biome_stage");
+
             let mut ids = ColumnStore::new(BiomeId::Plains);
             let mut unique_biomes = SmallVec::new();
 
             for pos in ColumnPos::iter_all() {
-                let world_pos = self.pos * Chunk::SIDE + pos.to_vec2();
+                let world_pos = self.pos * Chunk::SIDE + pos.to_ivec2();
                 let biome = ctx.biomes.sample(world_pos, &ctx.biome_registry);
                 ids[pos] = biome;
 
@@ -201,6 +202,8 @@ impl ColumnGen {
     #[profiling::function]
     pub fn height_stage(&self, ctx: &GenCtx) -> &ColumnStore<i32> {
         self.height_stage.get_or_init(|| {
+            profiling::scope!("ColumnGen::height_stage");
+
             let mut ret = ColumnStore::new(0);
 
             let chunk_origin = self.pos * Chunk::SIDE;
@@ -260,7 +263,7 @@ impl ColumnGen {
             };
 
             for pos in ColumnPos::iter_all() {
-                let world_pos = chunk_origin + pos.to_vec2();
+                let world_pos = chunk_origin + pos.to_ivec2();
 
                 let c00 = world_pos.div_euclid(IVec2::splat(HEIGHT_MAP_GRANULARITY));
                 let c10 = c00 + IVec2::new(1, 0);

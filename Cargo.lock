@@ -325,6 +325,7 @@ dependencies = [
 name = "bns-worldgen-std"
 version = "0.1.0"
 dependencies = [
+ "bitflags 2.4.1",
  "bns-core",
  "bns-rng",
  "bns-worldgen-core",

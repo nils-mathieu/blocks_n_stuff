@@ -447,6 +447,18 @@ impl ChunkPos {
         self.as_ivec3().distance_squared(other.as_ivec3())
     }
 
+    /// Returns whether the chunk with this position contains the provided world-space position.
+    pub fn contains_pos(self, pos: IVec3) -> bool {
+        let origin = self.origin();
+
+        pos.x >= origin.x
+            && pos.x < origin.x + Chunk::SIDE
+            && pos.y >= origin.y
+            && pos.y < origin.y + Chunk::SIDE
+            && pos.z >= origin.z
+            && pos.z < origin.z + Chunk::SIDE
+    }
+
     /// If the provided `world_pos` is part of the chunk with this position, returns its
     /// local position within that chunk.
     pub fn checked_local_pos(self, mut world_pos: IVec3) -> Option<LocalPos> {

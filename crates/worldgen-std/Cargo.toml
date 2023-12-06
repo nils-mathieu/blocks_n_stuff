@@ -21,3 +21,4 @@ hashbrown = "0.14"
 rustc-hash = "1"
 parking_lot = { version = "0.12", features = ["arc_lock"] }
 profiling = "1"
+bitflags = "2"

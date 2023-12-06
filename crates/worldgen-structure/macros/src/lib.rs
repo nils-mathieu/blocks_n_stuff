@@ -107,7 +107,7 @@ fn quote_block_instance(b: &BlockInstance) -> TokenStream {
 
     quote! {
         unsafe {
-            #core ::InstanciatedBlock::new_unchecked(
+            #core ::BlockInstance::new_unchecked(
                 #block_id,
                 #appearance,
             )
@@ -132,7 +132,7 @@ fn quote_structure(s: &Structure) -> TokenStream {
 
     let name = s.name.as_ref().map_or(
         quote! { ::core::option::Option::None },
-        |name| quote! { ::core::option::Option::Some(#name) },
+        |name| quote! { ::core::option::Option::Some(::std::borrow::Cow::Borrow(#name)) },
     );
     let bounds = quote_vec3(s.bounds);
 
@@ -149,12 +149,12 @@ fn include_structure_impl(input: TokenStream) -> Result<TokenStream, Error> {
     let path = read_input(input)?;
     let path = get_base_dir().join(path);
 
-    let file = std::fs::File::open(&path).map_err(|err| Error {
+    let file = std::fs::read_to_string(&path).map_err(|err| Error {
         message: format!("failed to open '{}': {}", path.display(), err),
         span: Span::call_site(),
     })?;
 
-    let structure: Structure = ron::de::from_reader(file).map_err(|err| Error {
+    let structure: Structure = ron::de::from_str(&file).map_err(|err| Error {
         message: format!("failed to parse '{}': {}", path.display(), err),
         span: Span::call_site(),
     })?;

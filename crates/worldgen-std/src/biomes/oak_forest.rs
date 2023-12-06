@@ -1,21 +1,28 @@
 use bns_core::{AppearanceMetadata, BlockId, Chunk, ChunkPos, Face, LocalPos};
 use bns_rng::noises::{Mixer, SuperSimplex2};
 use bns_rng::{FromRng, Noise};
+use glam::IVec3;
 
 use crate::biome::{Biome, BiomeId};
-use crate::column_gen::ColumnGen;
+use crate::chunk_gen::{PendingStructure, StructureTransformations};
+use crate::column_gen::{ColumnGen, ColumnPos};
 use crate::GenCtx;
+
+use super::structures;
 
 #[derive(FromRng)]
 pub struct OakForest {
     dirt_noise: SuperSimplex2,
     pebble_noise: Mixer<2>,
     daffodil_noise: Mixer<2>,
+    tree_noise: Mixer<2>,
+    tree_value: Mixer<2>,
 }
 
 impl OakForest {
     pub const PEBBLE_PROBABILITY: u64 = 100;
     pub const DAFFODIL_PROBABILITY: u64 = 300;
+    pub const TREE_PROBABILITY: u64 = 200;
 }
 
 impl Biome for OakForest {
@@ -53,7 +60,7 @@ impl Biome for OakForest {
                 }
             } else if world_pos.y <= 0 {
                 chunk.set_block(local_pos, BlockId::Water.into());
-            } else if world_pos.y == height + 1 {
+            } else if world_pos.y == height + 1 && world_pos.y >= 4 {
                 if self
                     .pebble_noise
                     .sample([world_pos.x as u64, world_pos.z as u64])
@@ -86,9 +93,41 @@ impl Biome for OakForest {
         pos: ChunkPos,
         column: &ColumnGen,
         ctx: &GenCtx,
-        structures: &mut crate::structure::StructureRegistry,
+        out: &mut Vec<PendingStructure>,
     ) {
-        let _ = (pos, column, ctx, structures);
+        let origin = pos.origin();
+
+        for local_pos in ColumnPos::iter_all() {
+            if column.biome_stage(ctx).ids[local_pos] != BiomeId::OakForest {
+                continue;
+            }
+
+            let height = column.height_stage(ctx)[local_pos];
+
+            if height < origin.y || height >= origin.y + Chunk::SIDE {
+                continue;
+            }
+
+            let world_pos = origin + IVec3::new(local_pos.x(), height, local_pos.z());
+
+            if self
+                .tree_noise
+                .sample([world_pos.x as u64, world_pos.z as u64])
+                % Self::TREE_PROBABILITY
+                == 0
+            {
+                let value = self
+                    .tree_value
+                    .sample([world_pos.x as u64, world_pos.z as u64])
+                    as usize;
+
+                out.push(PendingStructure {
+                    position: world_pos,
+                    contents: structures::OAK_TREES[value % structures::OAK_TREES.len()].clone(),
+                    transformations: StructureTransformations::IDENTITY,
+                });
+            }
+        }
     }
 
     fn debug_info(&self, w: &mut dyn std::fmt::Write, pos: glam::IVec3) -> std::fmt::Result {

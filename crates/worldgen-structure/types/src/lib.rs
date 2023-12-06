@@ -19,7 +19,8 @@ pub struct StructureEdit {
 pub struct Structure<'a> {
     /// The name of the structure.
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub name: Option<String>,
+    #[serde(borrow)]
+    pub name: Option<Cow<'a, str>>,
     /// The maximum bound of the structure.
     pub bounds: IVec3,
     /// The editions that the structure applies.

@@ -3,6 +3,7 @@ use bns_rng::noises::SuperSimplex2;
 use bns_rng::{FromRng, Noise};
 
 use crate::biome::{Biome, BiomeId};
+use crate::chunk_gen::PendingStructure;
 use crate::column_gen::ColumnGen;
 use crate::GenCtx;
 
@@ -69,9 +70,9 @@ impl Biome for Ocean {
         pos: ChunkPos,
         column: &ColumnGen,
         ctx: &GenCtx,
-        structures: &mut crate::structure::StructureRegistry,
+        out: &mut Vec<PendingStructure>,
     ) {
-        let _ = (pos, column, ctx, structures);
+        let _ = (pos, column, ctx, out);
     }
 
     fn debug_info(&self, w: &mut dyn std::fmt::Write, pos: glam::IVec3) -> std::fmt::Result {

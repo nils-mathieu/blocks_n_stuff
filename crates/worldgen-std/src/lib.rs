@@ -11,8 +11,6 @@ use glam::{IVec2, IVec3, Vec3Swizzles};
 use biome::BiomeRegistry;
 use biomemap::BiomeMap;
 use column_gen::ColumnPos;
-use parking_lot::RwLock;
-use structure::StructureRegistry;
 
 mod biome;
 mod biomemap;
@@ -20,7 +18,6 @@ mod biomes;
 mod cache;
 mod chunk_gen;
 mod column_gen;
-mod structure;
 
 /// Contains the context required to generate new chunks.
 pub struct GenCtx {
@@ -51,15 +48,12 @@ impl FromRng for GenCtx {
 pub struct StandardWorldGenerator {
     /// The context required to generate new chunks.
     ctx: GenCtx,
-    /// The list of structures that can be generated.
-    structures: RwLock<StructureRegistry>,
 }
 
 impl FromRng for StandardWorldGenerator {
     fn from_rng(rng: &mut impl Rng) -> Self {
         Self {
             ctx: GenCtx::from_rng(rng),
-            structures: RwLock::new(StructureRegistry::default()),
         }
     }
 }
@@ -80,7 +74,21 @@ impl WorldGenerator for StandardWorldGenerator {
                 .implementation
                 .build(chunk_pos, &col, &self.ctx, &mut ret);
         }
-        self.structures.read().write_chunk(chunk_pos, &mut ret);
+
+        // Insert the structures that were requested by the biomes.
+        {
+            let bounds = self.ctx.biome_registry.max_structure_size();
+            for x in -bounds..=bounds {
+                for y in -bounds..=bounds {
+                    for z in -bounds..=bounds {
+                        let pos = chunk_pos + IVec3::new(x, y, z);
+                        for s in self.ctx.cache.get_chunk(pos).structures(&self.ctx) {
+                            s.write_to(chunk_pos, &mut ret);
+                        }
+                    }
+                }
+            }
+        }
 
         // Add a layer of bedrock at the bottom of the world.
         if chunk_pos.y == -4 {
@@ -98,14 +106,15 @@ impl WorldGenerator for StandardWorldGenerator {
     }
 
     fn debug_info(&self, w: &mut dyn std::fmt::Write, pos: IVec3) -> std::fmt::Result {
-        self.ctx.biomes.debug_info(w, pos.xz())?;
+        self.ctx
+            .biomes
+            .debug_info(w, &self.ctx.biome_registry, pos.xz())?;
 
         let col_pos = IVec2::new(pos.x.div_euclid(Chunk::SIDE), pos.z.div_euclid(Chunk::SIDE));
         let local_pos = ColumnPos::from_world_pos(pos.xz());
         let column = self.ctx.cache.get_column(col_pos);
         let biomes = column.biome_stage(&self.ctx);
         let biome = biomes.ids[local_pos];
-        writeln!(w, "Biome: {:?}", biome)?;
         self.ctx.biome_registry[biome]
             .implementation
             .debug_info(w, pos)?;
