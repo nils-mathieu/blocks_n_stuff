@@ -36,38 +36,11 @@ pub struct PendingStructure {
 }
 
 impl PendingStructure {
-    /// The bounds of the inserted structure in world-space.
-    pub fn bounds(&self) -> (IVec3, IVec3) {
-        let min = self.position;
-        let max = self.position + self.contents.bounds;
-        (min, max)
-    }
-
-    /// Returns whether this structure is at least partially part of the chunk at the provided
-    /// position.
-    pub fn is_part_of_chunk(&self, pos: ChunkPos) -> bool {
-        let (min, max) = self.bounds();
-
-        if min == max {
-            return false;
-        }
-
-        let min = ChunkPos::from_world_pos_i(min);
-        let max = ChunkPos::from_world_pos_i(max - IVec3::ONE);
-
-        min.x <= pos.x
-            && pos.x <= max.x
-            && min.z <= pos.z
-            && pos.z <= max.z
-            && min.y <= pos.y
-            && pos.y <= max.y
-    }
-
     /// Writes the part of the structure that's in the provided chunk.
     pub fn write_to(&self, pos: ChunkPos, chunk: &mut Chunk) {
-        if !self.is_part_of_chunk(pos) {
-            return;
-        }
+        // TODO: store somewheter in the pending structure a cached min and max bound for the
+        // structure so that we don't have to iterate over all the edits every time if the
+        // structure is not even in the chunk.
 
         for edit in self.contents.edits.iter() {
             if let Some(pos) = pos.checked_local_pos(self.position + edit.position) {

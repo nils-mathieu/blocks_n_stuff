@@ -47,6 +47,7 @@ pub enum TextureId {
     PineLogSide,
     PineLeaves,
     StructureBlock,
+    StructureOriginBlock,
 }
 
 impl TextureId {
@@ -104,6 +105,7 @@ impl TextureId {
             "pine_log_side",
             "pine_leaves",
             "structure_block",
+            "structure_origin_block",
         ];
         unsafe { NAMES.get_unchecked(self as usize) }
     }

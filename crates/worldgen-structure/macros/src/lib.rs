@@ -129,18 +129,14 @@ fn quote_structure_edit(e: &StructureEdit) -> TokenStream {
 
 fn quote_structure(s: &Structure) -> TokenStream {
     let edits = s.edits.iter().map(quote_structure_edit);
-
-    let name = s.name.as_ref().map_or(
-        quote! { ::core::option::Option::None },
-        |name| quote! { ::core::option::Option::Some(::std::borrow::Cow::Borrow(#name)) },
-    );
-    let bounds = quote_vec3(s.bounds);
+    let min = quote_vec3(s.min);
+    let max = quote_vec3(s.max);
 
     quote! {
         ::bns_worldgen_structure::Structure {
-            name: #name,
-            bounds: #bounds,
             edits: ::std::borrow::Cow::Borrowed(&[ #(#edits,)* ]),
+            min: #min,
+            max: #max,
         }
     }
 }

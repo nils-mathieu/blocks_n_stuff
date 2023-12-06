@@ -360,6 +360,8 @@ fn compute_vertical_movement_input(ctx: &Ctx) -> f32 {
 fn record_structure(world: &World, a: IVec3, b: IVec3) -> Structure {
     let mut edits = Vec::new();
 
+    let mut origin = None;
+
     let min = a.min(b);
     let max = a.max(b);
 
@@ -368,9 +370,14 @@ fn record_structure(world: &World, a: IVec3, b: IVec3) -> Structure {
             for z in min.z..=max.z {
                 let pos = IVec3::new(x, y, z);
                 if let Some(block) = world.get_block(pos) {
-                    if !matches!(block.id(), BlockId::Air | BlockId::StructureBlock) {
+                    if block.id() == BlockId::StructureOriginBlock {
+                        if origin.is_some() {
+                            bns_log::warning!("multiple origin blocks found in structure");
+                        }
+                        origin = Some(pos);
+                    } else if !matches!(block.id(), BlockId::Air | BlockId::StructureBlock) {
                         edits.push(StructureEdit {
-                            position: pos - min,
+                            position: pos,
                             block,
                         });
                     }
@@ -379,10 +386,18 @@ fn record_structure(world: &World, a: IVec3, b: IVec3) -> Structure {
         }
     }
 
+    if origin.is_none() {
+        bns_log::warning!("no origin block found in structure, falling back to center");
+    }
+
+    let origin = origin.unwrap_or(IVec3::new((min.x + max.x) / 2, min.y, (min.z + max.z) / 2));
+
+    edits.iter_mut().for_each(|x| x.position -= origin);
+
     Structure {
         edits: edits.into(),
-        bounds: max - min,
-        name: None,
+        min: min - origin,
+        max: max - origin,
     }
 }
 
