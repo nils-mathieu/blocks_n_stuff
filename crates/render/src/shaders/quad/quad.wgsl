@@ -159,7 +159,7 @@ var texture_atlas_sampler: sampler;
 const LIGHT_DIRECTION: vec3<f32> = vec3<f32>(1.3, -1.8, 1.5);
 const LIGHT_INTENCITY: f32 = 0.2;
 
-const AMBIANT_OCCLUSION_INTENCITY: f32 = 1.0;
+const AMBIANT_OCCLUSION_INTENCITY: f32 = 0.5;
 
 // Computes the occlusion mask for the given texture coordinates and flags.
 fn occlusion_mask(v: vec2<f32>, flags: u32) -> f32 {

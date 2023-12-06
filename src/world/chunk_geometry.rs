@@ -1,10 +1,14 @@
 use std::sync::Arc;
 
 use bitflags::bitflags;
-use bns_core::{BlockAppearance, BlockFlags, BlockId, BlockVisibility, Chunk, Face, LocalPos};
+use bns_core::{
+    BlockAppearance, BlockFlags, BlockId, BlockVisibility, Chunk, ChunkPos, Face, LocalPos,
+    TextureId,
+};
 use bns_render::data::{QuadFlags, QuadInstance};
 use bns_render::{DynamicVertexBuffer, Gpu};
 use bytemuck::NoUninit;
+use glam::IVec3;
 
 /// The built geometry of a chunk. This is a wrapper around a vertex buffer that
 /// contains the quad instances of the chunk.
@@ -76,198 +80,87 @@ impl ChunkBuildContext {
         }
     }
 
-    /// Resets the context for a new chunk.
+    /// Builds the geometry of the provided chunk.
     ///
-    /// This allows to reuse the same context for multiple chunks to save on allocations.
-    #[inline]
-    pub fn reset(&mut self) {
+    /// # Remarks
+    ///
+    /// This function must be followed by a call to [`ChunkBuildContext::apply`] to actually
+    /// upload the geometry to the GPU.
+    pub fn build<'a>(
+        &mut self,
+        pos: ChunkPos,
+        mut chunk_provider: impl FnMut(ChunkPos) -> Option<&'a Chunk>,
+    ) {
         self.opaque_quads.clear();
         self.transparent_quads.clear();
-    }
 
-    /// Builds the inner geometry of the provided chunk based on its content.
-    ///
-    /// Note that the neighboring chunks are *not* taken into account for culling, and the outer
-    /// faces of the chunk are never built.
-    #[profiling::function]
-    pub fn build_inner(&mut self, data: &Chunk) {
-        for local_pos in LocalPos::iter_all() {
-            build_block(data, local_pos, self);
+        // Get information about the requested chunk.
+        let Some(me) = chunk_provider(pos) else {
+            debug_assert!(false, "requested chunk not even present wtf are you doing)");
+            return;
+        };
+
+        // Build the inner geometry of the chunk. Avoid lookups to the chunk provider when
+        // possible (which is most of the time because most of the geometry is within the
+        // current chunk).
+        LocalPos::iter_all().for_each(|pos| build_block(me, pos, self));
+
+        // Lookup once each adjacent chunk.
+        // If they are available, we can build the boundary of the chunk.
+        if let Some(other) = chunk_provider(pos + IVec3::X) {
+            build_chunk_boundary_x(me, other, self);
+        }
+        if let Some(other) = chunk_provider(pos - IVec3::X) {
+            build_chunk_boundary_neg_x(me, other, self);
+        }
+        if let Some(other) = chunk_provider(pos + IVec3::Y) {
+            build_chunk_boundary_y(me, other, self);
+        }
+        if let Some(other) = chunk_provider(pos - IVec3::Y) {
+            build_chunk_boundary_neg_y(me, other, self);
+        }
+        if let Some(other) = chunk_provider(pos + IVec3::Z) {
+            build_chunk_boundary_z(me, other, self);
+        }
+        if let Some(other) = chunk_provider(pos - IVec3::Z) {
+            build_chunk_boundary_neg_z(me, other, self);
         }
     }
 
-    /// Builds the boundary of the provided chunk based on its content and the content of the
-    /// adjacent chunk (on the positive X axis).
-    #[profiling::function]
-    pub fn build_boundary_x(&mut self, data: &Chunk, other: &Chunk) {
-        build_chunk_boundary(
-            data,
-            other,
-            |a, b| unsafe {
-                (
-                    LocalPos::from_xyz_unchecked(Chunk::SIDE - 1, a, b),
-                    LocalPos::from_xyz_unchecked(0, a, b),
-                )
-            },
-            |pos| {
-                build_single_face_side(
-                    pos,
-                    data,
-                    QuadFlags::from_chunk_index(pos.index()) | QuadFlags::X,
-                    self,
-                )
-            },
-        )
-    }
-
-    /// Builds the boundary of the provided chunk based on its content and the content of the
-    /// adjacent chunk (on the negative X axis).
-    #[profiling::function]
-    pub fn build_boundary_neg_x(&mut self, data: &Chunk, other: &Chunk) {
-        build_chunk_boundary(
-            data,
-            other,
-            |a, b| unsafe {
-                (
-                    LocalPos::from_xyz_unchecked(0, a, b),
-                    LocalPos::from_xyz_unchecked(Chunk::SIDE - 1, a, b),
-                )
-            },
-            |pos| {
-                build_single_face_side(
-                    pos,
-                    data,
-                    QuadFlags::from_chunk_index(pos.index()) | QuadFlags::NEG_X,
-                    self,
-                )
-            },
-        )
-    }
-
-    /// Builds the boundary of the provided chunk based on its content and the content of the
-    /// adjacent chunk (on the positive Y axis).
-    #[profiling::function]
-    pub fn build_boundary_y(&mut self, data: &Chunk, other: &Chunk) {
-        build_chunk_boundary(
-            data,
-            other,
-            |a, b| unsafe {
-                (
-                    LocalPos::from_xyz_unchecked(a, Chunk::SIDE - 1, b),
-                    LocalPos::from_xyz_unchecked(a, 0, b),
-                )
-            },
-            |pos| build_single_face_top(pos, data, QuadFlags::from_chunk_index(pos.index()), self),
-        )
-    }
-
-    /// Builds the boundary of the provided chunk based on its content and the content of the
-    /// adjacent chunk (on the negative Y axis).
-    #[profiling::function]
-    pub fn build_boundary_neg_y(&mut self, data: &Chunk, other: &Chunk) {
-        build_chunk_boundary(
-            data,
-            other,
-            |a, b| unsafe {
-                (
-                    LocalPos::from_xyz_unchecked(a, 0, b),
-                    LocalPos::from_xyz_unchecked(a, Chunk::SIDE - 1, b),
-                )
-            },
-            |pos| {
-                build_single_face_bottom(pos, data, QuadFlags::from_chunk_index(pos.index()), self)
-            },
-        )
-    }
-
-    /// Builds the boundary of the provided chunk based on its content and the content of the
-    /// adjacent chunk (on the positive Z axis).
-    #[profiling::function]
-    pub fn build_boundary_z(&mut self, data: &Chunk, other: &Chunk) {
-        build_chunk_boundary(
-            data,
-            other,
-            |a, b| unsafe {
-                (
-                    LocalPos::from_xyz_unchecked(a, b, Chunk::SIDE - 1),
-                    LocalPos::from_xyz_unchecked(a, b, 0),
-                )
-            },
-            |pos| {
-                build_single_face_side(
-                    pos,
-                    data,
-                    QuadFlags::from_chunk_index(pos.index()) | QuadFlags::Z,
-                    self,
-                )
-            },
-        )
-    }
-
-    /// Builds the boundary of the provided chunk based on its content and the content of the
-    /// adjacent chunk (on the negative Z axis).
-    #[profiling::function]
-    pub fn build_boundary_neg_z(&mut self, data: &Chunk, other: &Chunk) {
-        build_chunk_boundary(
-            data,
-            other,
-            |a, b| unsafe {
-                (
-                    LocalPos::from_xyz_unchecked(a, b, 0),
-                    LocalPos::from_xyz_unchecked(a, b, Chunk::SIDE - 1),
-                )
-            },
-            |pos| {
-                build_single_face_side(
-                    pos,
-                    data,
-                    QuadFlags::from_chunk_index(pos.index()) | QuadFlags::NEG_Z,
-                    self,
-                )
-            },
-        )
-    }
-
-    /// Applies this [`ChunkBuildContext`] to the provided [`ChunkGeometry`] instance.
-    ///
-    /// The old geometry of the chunk is kept!
-    pub fn append_to(&self, geometry: &mut ChunkGeometry) {
-        fn extend_or_create<T>(gpu: &Arc<Gpu>, buf: &mut Option<DynamicVertexBuffer<T>>, data: &[T])
+    /// Overwrites the provided [`ChunkGeometry`] instance with this [`ChunkBuildContext`].
+    pub fn apply(&mut self, geometry: &mut ChunkGeometry) {
+        fn apply_inner<T>(gpu: &Arc<Gpu>, buf: &mut Option<DynamicVertexBuffer<T>>, data: &[T])
         where
             T: NoUninit,
         {
             match buf {
-                Some(buf) => buf.extend(data),
+                Some(buf) => {
+                    buf.clear();
+                    buf.extend(data);
+                }
                 None => *buf = Some(DynamicVertexBuffer::new_with_data(gpu.clone(), data)),
             }
         }
 
         if !self.opaque_quads.is_empty() {
-            extend_or_create(&self.gpu, &mut geometry.opaque_quads, &self.opaque_quads);
+            apply_inner(&self.gpu, &mut geometry.opaque_quads, &self.opaque_quads);
+        } else {
+            geometry.opaque_quads = None;
         }
         if !self.transparent_quads.is_empty() {
-            extend_or_create(
+            apply_inner(
                 &self.gpu,
                 &mut geometry.transparent_quads,
                 &self.transparent_quads,
             );
+        } else {
+            geometry.transparent_quads = None;
         }
-    }
-
-    /// Overwrites the provided [`ChunkGeometry`] instance with this [`ChunkBuildContext`].
-    pub fn overwrite_to(&mut self, geometry: &mut ChunkGeometry) {
-        if let Some(buf) = &mut geometry.opaque_quads {
-            buf.clear();
-        }
-        if let Some(buf) = &mut geometry.transparent_quads {
-            buf.clear();
-        }
-        self.append_to(geometry);
     }
 }
 
 bitflags! {
-    /// Voxel faces that have been culled.
+    /// Voxel faces that are visible.
     #[derive(Debug, Clone, Copy)]
     struct CulledFaces: u8 {
         const X = 1 << 0;
@@ -281,36 +174,52 @@ bitflags! {
 
 impl CulledFaces {
     /// Returns the [`CulledFaces`] of the block within `chunk` at the provided position.
+    ///
+    /// If `pos` is at the boundary of the chunk, the faces that are outside of the chunk are
+    /// always considered culled.
     pub fn of(chunk: &Chunk, pos: LocalPos) -> Self {
-        const MAX: i32 = Chunk::SIDE - 1;
-        const MIN: i32 = 0;
+        let me = chunk.get_block(pos);
 
-        unsafe {
-            let me = chunk.get_block(pos);
+        let mut result = CulledFaces::all();
 
-            let mut result = CulledFaces::empty();
-
-            if pos.x() == MAX || is_face_culled(me, chunk.get_block(pos.add_x_unchecked(1))) {
-                result |= CulledFaces::X;
-            }
-            if pos.x() == MIN || is_face_culled(me, chunk.get_block(pos.add_x_unchecked(-1))) {
-                result |= CulledFaces::NEG_X;
-            }
-            if pos.y() == MAX || is_face_culled(me, chunk.get_block(pos.add_y_unchecked(1))) {
-                result |= CulledFaces::Y;
-            }
-            if pos.y() == MIN || is_face_culled(me, chunk.get_block(pos.add_y_unchecked(-1))) {
-                result |= CulledFaces::NEG_Y;
-            }
-            if pos.z() == MAX || is_face_culled(me, chunk.get_block(pos.add_z_unchecked(1))) {
-                result |= CulledFaces::Z;
-            }
-            if pos.z() == MIN || is_face_culled(me, chunk.get_block(pos.add_z_unchecked(-1))) {
-                result |= CulledFaces::NEG_Z;
-            }
-
-            result
+        if pos
+            .next_x()
+            .is_some_and(|pos| !is_face_culled(me, chunk.get_block(pos)))
+        {
+            result.remove(CulledFaces::X)
         }
+        if pos
+            .prev_x()
+            .is_some_and(|pos| !is_face_culled(me, chunk.get_block(pos)))
+        {
+            result.remove(CulledFaces::NEG_X)
+        }
+        if pos
+            .next_y()
+            .is_some_and(|pos| !is_face_culled(me, chunk.get_block(pos)))
+        {
+            result.remove(CulledFaces::Y)
+        }
+        if pos
+            .prev_y()
+            .is_some_and(|pos| !is_face_culled(me, chunk.get_block(pos)))
+        {
+            result.remove(CulledFaces::NEG_Y)
+        }
+        if pos
+            .next_z()
+            .is_some_and(|pos| !is_face_culled(me, chunk.get_block(pos)))
+        {
+            result.remove(CulledFaces::Z)
+        }
+        if pos
+            .prev_z()
+            .is_some_and(|pos| !is_face_culled(me, chunk.get_block(pos)))
+        {
+            result.remove(CulledFaces::NEG_Z)
+        }
+
+        result
     }
 }
 
@@ -323,43 +232,8 @@ fn is_face_culled(me: BlockId, other: BlockId) -> bool {
 }
 
 /// Builds the geometry of one of the inner voxels of the provided chunk.
-///
-/// # Remarks
-///
-/// This function takes [`IntoCoord`] implementations as an input so that it can be monomorphized
-/// into a version that does not perform bound checks at the chunk's boundaries. In the case
-/// where the coordinates are known to be within the chunk's boundaries,
-/// [`Coord`](coord::Coord) can be used as an input.
 fn build_block(chunk: &Chunk, pos: LocalPos, ctx: &mut ChunkBuildContext) {
     let culled = CulledFaces::of(chunk, pos);
-    build_voxel(pos, chunk, culled, ctx);
-}
-
-/// Builds the boundary of the provided chunk based on its content and the content of the
-/// adjacent chunk.
-///
-/// The `coords` function is used to convert the coordinates of the chunk's face into a local
-/// position in the chunk/adjacent chunk.
-fn build_chunk_boundary(
-    data: &Chunk,
-    other: &Chunk,
-    mut coords: impl FnMut(i32, i32) -> (LocalPos, LocalPos),
-    mut build: impl FnMut(LocalPos),
-) {
-    for a in 0..Chunk::SIDE {
-        for b in 0..Chunk::SIDE {
-            let (pos, other_pos) = coords(a, b);
-            let me = data.get_block(pos);
-            let other = other.get_block(other_pos);
-            if !is_face_culled(me, other) {
-                build(pos)
-            }
-        }
-    }
-}
-
-/// Builds the quad instance for a singel voxel.
-fn build_voxel(pos: LocalPos, chunk: &Chunk, culled: CulledFaces, ctx: &mut ChunkBuildContext) {
     let block = chunk.get_block(pos);
     let metadata = chunk.get_appearance(pos);
 
@@ -373,40 +247,22 @@ fn build_voxel(pos: LocalPos, chunk: &Chunk, culled: CulledFaces, ctx: &mut Chun
         BlockAppearance::Invisible => (),
         BlockAppearance::Regular { top, bottom, side } => {
             if !culled.contains(CulledFaces::X) {
-                buffer.push(QuadInstance {
-                    flags: base_flags | QuadFlags::X,
-                    texture: side as u32,
-                });
+                build_regular_face_x(side, chunk, pos, buffer);
             }
             if !culled.contains(CulledFaces::NEG_X) {
-                buffer.push(QuadInstance {
-                    flags: base_flags | QuadFlags::NEG_X,
-                    texture: side as u32,
-                });
+                build_regular_face_neg_x(side, chunk, pos, buffer);
             }
             if !culled.contains(CulledFaces::Y) {
-                buffer.push(QuadInstance {
-                    flags: base_flags | QuadFlags::Y,
-                    texture: top as u32,
-                });
+                build_regular_face_y(top, chunk, pos, buffer);
             }
             if !culled.contains(CulledFaces::NEG_Y) {
-                buffer.push(QuadInstance {
-                    flags: base_flags | QuadFlags::NEG_Y,
-                    texture: bottom as u32,
-                });
+                build_regular_face_neg_y(bottom, chunk, pos, buffer);
             }
             if !culled.contains(CulledFaces::Z) {
-                buffer.push(QuadInstance {
-                    flags: base_flags | QuadFlags::Z,
-                    texture: side as u32,
-                });
+                build_regular_face_z(side, chunk, pos, buffer);
             }
             if !culled.contains(CulledFaces::NEG_Z) {
-                buffer.push(QuadInstance {
-                    flags: base_flags | QuadFlags::NEG_Z,
-                    texture: side as u32,
-                });
+                build_regular_face_neg_z(side, chunk, pos, buffer);
             }
         }
         BlockAppearance::Liquid(surface) => {
@@ -470,13 +326,125 @@ fn build_voxel(pos: LocalPos, chunk: &Chunk, culled: CulledFaces, ctx: &mut Chun
     }
 }
 
-/// Builds a single face of a block.
-fn build_single_face_side(
-    pos: LocalPos,
-    chunk: &Chunk,
-    flags: QuadFlags,
-    ctx: &mut ChunkBuildContext,
+/// Builds the boundary of the provided chunk based on its content and the content of the
+/// adjacent chunk.
+fn build_chunk_boundary_x(data: &Chunk, other: &Chunk, ctx: &mut ChunkBuildContext) {
+    build_chunk_boundary(
+        data,
+        other,
+        |a, b| unsafe {
+            (
+                LocalPos::from_xyz_unchecked(Chunk::SIDE - 1, a, b),
+                LocalPos::from_xyz_unchecked(0, a, b),
+            )
+        },
+        |pos| build_single_face_x(pos, data, ctx),
+    );
+}
+
+/// Builds the boundary of the provided chunk based on its content and the content of the
+/// adjacent chunk.
+fn build_chunk_boundary_neg_x(data: &Chunk, other: &Chunk, ctx: &mut ChunkBuildContext) {
+    build_chunk_boundary(
+        data,
+        other,
+        |a, b| unsafe {
+            (
+                LocalPos::from_xyz_unchecked(0, a, b),
+                LocalPos::from_xyz_unchecked(Chunk::SIDE - 1, a, b),
+            )
+        },
+        |pos| build_single_face_neg_x(pos, data, ctx),
+    );
+}
+
+/// Builds the boundary of the provided chunk based on its content and the content of the
+/// adjacent chunk.
+fn build_chunk_boundary_y(data: &Chunk, other: &Chunk, ctx: &mut ChunkBuildContext) {
+    build_chunk_boundary(
+        data,
+        other,
+        |a, b| unsafe {
+            (
+                LocalPos::from_xyz_unchecked(a, Chunk::SIDE - 1, b),
+                LocalPos::from_xyz_unchecked(a, 0, b),
+            )
+        },
+        |pos| build_single_face_y(pos, data, ctx),
+    );
+}
+
+/// Builds the boundary of the provided chunk based on its content and the content of the
+/// adjacent chunk.
+fn build_chunk_boundary_neg_y(data: &Chunk, other: &Chunk, ctx: &mut ChunkBuildContext) {
+    build_chunk_boundary(
+        data,
+        other,
+        |a, b| unsafe {
+            (
+                LocalPos::from_xyz_unchecked(a, 0, b),
+                LocalPos::from_xyz_unchecked(a, Chunk::SIDE - 1, b),
+            )
+        },
+        |pos| build_single_face_neg_y(pos, data, ctx),
+    );
+}
+
+/// Builds the boundary of the provided chunk based on its content and the content of the
+/// adjacent chunk.
+fn build_chunk_boundary_z(data: &Chunk, other: &Chunk, ctx: &mut ChunkBuildContext) {
+    build_chunk_boundary(
+        data,
+        other,
+        |a, b| unsafe {
+            (
+                LocalPos::from_xyz_unchecked(a, b, Chunk::SIDE - 1),
+                LocalPos::from_xyz_unchecked(a, b, 0),
+            )
+        },
+        |pos| build_single_face_z(pos, data, ctx),
+    );
+}
+
+/// Builds the boundary of the provided chunk based on its content and the content of the
+/// adjacent chunk.
+fn build_chunk_boundary_neg_z(data: &Chunk, other: &Chunk, ctx: &mut ChunkBuildContext) {
+    build_chunk_boundary(
+        data,
+        other,
+        |a, b| unsafe {
+            (
+                LocalPos::from_xyz_unchecked(a, b, 0),
+                LocalPos::from_xyz_unchecked(a, b, Chunk::SIDE - 1),
+            )
+        },
+        |pos| build_single_face_neg_z(pos, data, ctx),
+    );
+}
+
+/// Builds the boundary of the provided chunk based on its content and the content of the
+/// adjacent chunk.
+///
+/// The `coords` function is used to convert the coordinates of the chunk's face into a local
+/// position in the chunk/adjacent chunk.
+fn build_chunk_boundary(
+    data: &Chunk,
+    other: &Chunk,
+    mut coords: impl FnMut(i32, i32) -> (LocalPos, LocalPos),
+    mut build: impl FnMut(LocalPos),
 ) {
+    for a in 0..Chunk::SIDE {
+        for b in 0..Chunk::SIDE {
+            let (pos, other_pos) = coords(a, b);
+            if !is_face_culled(data.get_block(pos), other.get_block(other_pos)) {
+                build(pos)
+            }
+        }
+    }
+}
+
+/// Builds a single face of a block.
+fn build_single_face_x(pos: LocalPos, chunk: &Chunk, ctx: &mut ChunkBuildContext) {
     let block = chunk.get_block(pos);
 
     let buffer = match block.info().visibility {
@@ -487,10 +455,7 @@ fn build_single_face_side(
     match block.info().appearance {
         BlockAppearance::Invisible => (),
         BlockAppearance::Regular { side, .. } => {
-            buffer.push(QuadInstance {
-                flags,
-                texture: side as u32,
-            });
+            build_regular_face_x(side, chunk, pos, buffer);
         }
         BlockAppearance::Liquid(_) => (),
         BlockAppearance::Flat(_) => (),
@@ -498,12 +463,64 @@ fn build_single_face_side(
 }
 
 /// Builds a single face of a block.
-fn build_single_face_top(
-    pos: LocalPos,
-    chunk: &Chunk,
-    flags: QuadFlags,
-    ctx: &mut ChunkBuildContext,
-) {
+fn build_single_face_neg_x(pos: LocalPos, chunk: &Chunk, ctx: &mut ChunkBuildContext) {
+    let block = chunk.get_block(pos);
+
+    let buffer = match block.info().visibility {
+        BlockVisibility::SemiOpaque | BlockVisibility::Opaque => &mut ctx.opaque_quads,
+        BlockVisibility::Invisible | BlockVisibility::Transparent => &mut ctx.transparent_quads,
+    };
+
+    match block.info().appearance {
+        BlockAppearance::Invisible => (),
+        BlockAppearance::Regular { side, .. } => {
+            build_regular_face_neg_x(side, chunk, pos, buffer);
+        }
+        BlockAppearance::Liquid(_) => (),
+        BlockAppearance::Flat(_) => (),
+    }
+}
+
+/// Builds a single face of a block.
+fn build_single_face_z(pos: LocalPos, chunk: &Chunk, ctx: &mut ChunkBuildContext) {
+    let block = chunk.get_block(pos);
+
+    let buffer = match block.info().visibility {
+        BlockVisibility::SemiOpaque | BlockVisibility::Opaque => &mut ctx.opaque_quads,
+        BlockVisibility::Invisible | BlockVisibility::Transparent => &mut ctx.transparent_quads,
+    };
+
+    match block.info().appearance {
+        BlockAppearance::Invisible => (),
+        BlockAppearance::Regular { side, .. } => {
+            build_regular_face_z(side, chunk, pos, buffer);
+        }
+        BlockAppearance::Liquid(_) => (),
+        BlockAppearance::Flat(_) => (),
+    }
+}
+
+/// Builds a single face of a block.
+fn build_single_face_neg_z(pos: LocalPos, chunk: &Chunk, ctx: &mut ChunkBuildContext) {
+    let block = chunk.get_block(pos);
+
+    let buffer = match block.info().visibility {
+        BlockVisibility::SemiOpaque | BlockVisibility::Opaque => &mut ctx.opaque_quads,
+        BlockVisibility::Invisible | BlockVisibility::Transparent => &mut ctx.transparent_quads,
+    };
+
+    match block.info().appearance {
+        BlockAppearance::Invisible => (),
+        BlockAppearance::Regular { side, .. } => {
+            build_regular_face_neg_z(side, chunk, pos, buffer);
+        }
+        BlockAppearance::Liquid(_) => (),
+        BlockAppearance::Flat(_) => (),
+    }
+}
+
+/// Builds a single face of a block.
+fn build_single_face_y(pos: LocalPos, chunk: &Chunk, ctx: &mut ChunkBuildContext) {
     let block = chunk.get_block(pos);
     let metadata = chunk.get_appearance(pos);
 
@@ -515,18 +532,19 @@ fn build_single_face_top(
     match block.info().appearance {
         BlockAppearance::Invisible => (),
         BlockAppearance::Regular { top, .. } => {
-            buffer.push(QuadInstance {
-                flags: flags | QuadFlags::Y,
-                texture: top as u32,
-            });
+            build_regular_face_y(top, chunk, pos, buffer);
         }
         BlockAppearance::Liquid(surface) => {
             buffer.push(QuadInstance {
-                flags: flags | QuadFlags::OFFSET_1 | QuadFlags::Y,
+                flags: QuadFlags::from_chunk_index(pos.index())
+                    | QuadFlags::OFFSET_1
+                    | QuadFlags::Y,
                 texture: surface as u32,
             });
             buffer.push(QuadInstance {
-                flags: flags | QuadFlags::NEG_Y | QuadFlags::OFFSET_7,
+                flags: QuadFlags::from_chunk_index(pos.index())
+                    | QuadFlags::NEG_Y
+                    | QuadFlags::OFFSET_7,
                 texture: surface as u32,
             });
         }
@@ -537,7 +555,9 @@ fn build_single_face_top(
 
             if face == Face::Y {
                 buffer.push(QuadInstance {
-                    flags: flags | QuadFlags::OVERLAY | QuadFlags::Y,
+                    flags: QuadFlags::from_chunk_index(pos.index())
+                        | QuadFlags::OVERLAY
+                        | QuadFlags::Y,
                     texture: texture as u32,
                 });
             }
@@ -546,12 +566,7 @@ fn build_single_face_top(
 }
 
 /// Builds a single face of a block.
-fn build_single_face_bottom(
-    pos: LocalPos,
-    chunk: &Chunk,
-    flags: QuadFlags,
-    ctx: &mut ChunkBuildContext,
-) {
+fn build_single_face_neg_y(pos: LocalPos, chunk: &Chunk, ctx: &mut ChunkBuildContext) {
     let block = chunk.get_block(pos);
 
     let buffer = match block.info().visibility {
@@ -561,11 +576,205 @@ fn build_single_face_bottom(
 
     match block.info().appearance {
         BlockAppearance::Invisible => (),
-        BlockAppearance::Regular { bottom, .. } => buffer.push(QuadInstance {
-            flags: flags | QuadFlags::NEG_Y,
-            texture: bottom as u32,
-        }),
+        BlockAppearance::Regular { bottom, .. } => {
+            build_regular_face_neg_y(bottom, chunk, pos, buffer);
+        }
         BlockAppearance::Liquid(_) => (),
         BlockAppearance::Flat(_) => (),
     }
+}
+
+/// Computes the ambient occlusion flags for a face facing the positive X axis.
+fn compute_ambient_occlusion_x(chunk: &Chunk, pos: LocalPos) -> QuadFlags {
+    compute_ambient_occlusion(
+        chunk,
+        pos.prev_z(),
+        pos.next_z(),
+        pos.prev_y(),
+        pos.next_y(),
+    )
+}
+
+/// Computes the ambient occlusion flags for a face facing the negative X axis.
+fn compute_ambient_occlusion_neg_x(chunk: &Chunk, pos: LocalPos) -> QuadFlags {
+    compute_ambient_occlusion(
+        chunk,
+        pos.next_z(),
+        pos.prev_z(),
+        pos.prev_y(),
+        pos.next_y(),
+    )
+}
+
+/// Computes the ambient occlusion flags for a face facing the positive Y axis.
+fn compute_ambient_occlusion_y(chunk: &Chunk, pos: LocalPos) -> QuadFlags {
+    compute_ambient_occlusion(
+        chunk,
+        pos.prev_x(),
+        pos.next_x(),
+        pos.prev_z(),
+        pos.next_z(),
+    )
+}
+
+/// Computes the ambient occlusion flags for a face facing the negative Y axis.
+fn compute_ambient_occlusion_neg_y(chunk: &Chunk, pos: LocalPos) -> QuadFlags {
+    compute_ambient_occlusion(
+        chunk,
+        pos.prev_x(),
+        pos.next_x(),
+        pos.next_z(),
+        pos.prev_z(),
+    )
+}
+
+/// Computes the ambient occlusion flags for a face facing the positive Z axis.
+fn compute_ambient_occlusion_z(chunk: &Chunk, pos: LocalPos) -> QuadFlags {
+    compute_ambient_occlusion(
+        chunk,
+        pos.next_x(),
+        pos.prev_x(),
+        pos.prev_y(),
+        pos.next_y(),
+    )
+}
+
+/// Computes the ambient occlusion flags for a face facing the negative Z axis.
+fn compute_ambient_occlusion_neg_z(chunk: &Chunk, pos: LocalPos) -> QuadFlags {
+    compute_ambient_occlusion(
+        chunk,
+        pos.prev_x(),
+        pos.next_x(),
+        pos.prev_y(),
+        pos.next_y(),
+    )
+}
+
+/// Computes the ambient occlusion of a block face.
+#[inline]
+fn compute_ambient_occlusion(
+    chunk: &Chunk,
+    left: Option<LocalPos>,
+    right: Option<LocalPos>,
+    bottom: Option<LocalPos>,
+    top: Option<LocalPos>,
+) -> QuadFlags {
+    let mut flags = QuadFlags::empty();
+
+    if left.is_some_and(|pos| chunk.get_block(pos).info().visibility == BlockVisibility::Opaque) {
+        flags |= QuadFlags::OCCLUDED_LEFT
+    }
+
+    if right.is_some_and(|pos| chunk.get_block(pos).info().visibility == BlockVisibility::Opaque) {
+        flags |= QuadFlags::OCCLUDED_RIGHT
+    }
+
+    if bottom.is_some_and(|pos| chunk.get_block(pos).info().visibility == BlockVisibility::Opaque) {
+        flags |= QuadFlags::OCCLUDED_BOTTOM
+    }
+
+    if top.is_some_and(|pos| chunk.get_block(pos).info().visibility == BlockVisibility::Opaque) {
+        flags |= QuadFlags::OCCLUDED_TOP
+    }
+
+    flags
+}
+
+/// Builds a face that has the "Regular" appearance.
+fn build_regular_face_x(tex: TextureId, chunk: &Chunk, pos: LocalPos, out: &mut Vec<QuadInstance>) {
+    let mut flags = QuadFlags::from_chunk_index(pos.index()) | QuadFlags::X;
+
+    if let Some(pos) = pos.next_x() {
+        flags |= compute_ambient_occlusion_x(chunk, pos);
+    }
+
+    out.push(QuadInstance {
+        flags,
+        texture: tex as u32,
+    });
+}
+
+/// Builds a face that has the "Regular" appearance.
+fn build_regular_face_neg_x(
+    tex: TextureId,
+    chunk: &Chunk,
+    pos: LocalPos,
+    out: &mut Vec<QuadInstance>,
+) {
+    let mut flags = QuadFlags::from_chunk_index(pos.index()) | QuadFlags::NEG_X;
+
+    if let Some(pos) = pos.prev_x() {
+        flags |= compute_ambient_occlusion_neg_x(chunk, pos);
+    }
+
+    out.push(QuadInstance {
+        flags,
+        texture: tex as u32,
+    });
+}
+
+/// Builds a face that has the "Regular" appearance.
+fn build_regular_face_z(tex: TextureId, chunk: &Chunk, pos: LocalPos, out: &mut Vec<QuadInstance>) {
+    let mut flags = QuadFlags::from_chunk_index(pos.index()) | QuadFlags::Z;
+
+    if let Some(pos) = pos.next_z() {
+        flags |= compute_ambient_occlusion_z(chunk, pos);
+    }
+
+    out.push(QuadInstance {
+        flags,
+        texture: tex as u32,
+    });
+}
+
+/// Builds a face that has the "Regular" appearance.
+fn build_regular_face_neg_z(
+    tex: TextureId,
+    chunk: &Chunk,
+    pos: LocalPos,
+    out: &mut Vec<QuadInstance>,
+) {
+    let mut flags = QuadFlags::from_chunk_index(pos.index()) | QuadFlags::NEG_Z;
+
+    if let Some(pos) = pos.prev_z() {
+        flags |= compute_ambient_occlusion_neg_z(chunk, pos);
+    }
+
+    out.push(QuadInstance {
+        flags,
+        texture: tex as u32,
+    });
+}
+
+/// Builds a face that has the "Regular" appearance.
+fn build_regular_face_y(tex: TextureId, chunk: &Chunk, pos: LocalPos, out: &mut Vec<QuadInstance>) {
+    let mut flags = QuadFlags::from_chunk_index(pos.index()) | QuadFlags::Y;
+
+    if let Some(pos) = pos.next_y() {
+        flags |= compute_ambient_occlusion_y(chunk, pos);
+    }
+
+    out.push(QuadInstance {
+        flags,
+        texture: tex as u32,
+    });
+}
+
+/// Builds a face that has the "Regular" appearance.
+fn build_regular_face_neg_y(
+    tex: TextureId,
+    chunk: &Chunk,
+    pos: LocalPos,
+    out: &mut Vec<QuadInstance>,
+) {
+    let mut flags = QuadFlags::from_chunk_index(pos.index()) | QuadFlags::NEG_Y;
+
+    if let Some(pos) = pos.prev_y() {
+        flags |= compute_ambient_occlusion_neg_y(chunk, pos);
+    }
+
+    out.push(QuadInstance {
+        flags,
+        texture: tex as u32,
+    });
 }

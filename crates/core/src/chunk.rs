@@ -111,6 +111,42 @@ impl LocalPos {
         ((self.0 & Z_MASK) >> 10) as _
     }
 
+    /// Returns whether the X coordinate of the position is at the negative boundary of the chunk.
+    #[inline]
+    pub fn is_x_min(self) -> bool {
+        self.x() == 0
+    }
+
+    /// Returns whether the X coordinate of the position is at the positive boundary of the chunk.
+    #[inline]
+    pub fn is_x_max(self) -> bool {
+        self.x() == Chunk::SIDE - 1
+    }
+
+    /// Returns whether the Y coordinate of the position is at the negative boundary of the chunk.
+    #[inline]
+    pub fn is_y_min(self) -> bool {
+        self.y() == 0
+    }
+
+    /// Returns whether the Y coordinate of the position is at the positive boundary of the chunk.
+    #[inline]
+    pub fn is_y_max(self) -> bool {
+        self.y() == Chunk::SIDE - 1
+    }
+
+    /// Returns whether the Z coordinate of the position is at the negative boundary of the chunk.
+    #[inline]
+    pub fn is_z_min(self) -> bool {
+        self.z() == 0
+    }
+
+    /// Returns whether the Z coordinate of the position is at the positive boundary of the chunk.
+    #[inline]
+    pub fn is_z_max(self) -> bool {
+        self.z() == Chunk::SIDE - 1
+    }
+
     /// Returns the position as a [`IVec3`].
     #[inline]
     pub fn to_ivec3(self) -> IVec3 {
@@ -153,6 +189,72 @@ impl LocalPos {
     #[inline]
     pub fn index(self) -> usize {
         self.0 as usize
+    }
+
+    /// If the position is not at the positive boundary of the chunk, returns the position of the
+    /// next block in the positive X direction.
+    #[inline]
+    pub fn next_x(self) -> Option<Self> {
+        if self.is_x_max() {
+            None
+        } else {
+            Some(unsafe { Self::add_x_unchecked(self, 1) })
+        }
+    }
+
+    /// If the position is not at the negative boundary of the chunk, returns the position of the
+    /// next block in the negative X direction.
+    #[inline]
+    pub fn prev_x(self) -> Option<Self> {
+        if self.is_x_min() {
+            None
+        } else {
+            Some(unsafe { Self::add_x_unchecked(self, -1) })
+        }
+    }
+
+    /// If the position is not at the positive boundary of the chunk, returns the position of the
+    /// next block in the positive Y direction.
+    #[inline]
+    pub fn next_y(self) -> Option<Self> {
+        if self.is_y_max() {
+            None
+        } else {
+            Some(unsafe { Self::add_y_unchecked(self, 1) })
+        }
+    }
+
+    /// If the position is not at the negative boundary of the chunk, returns the position of the
+    /// next block in the negative Y direction.
+    #[inline]
+    pub fn prev_y(self) -> Option<Self> {
+        if self.is_y_min() {
+            None
+        } else {
+            Some(unsafe { Self::add_y_unchecked(self, -1) })
+        }
+    }
+
+    /// If the position is not at the positive boundary of the chunk, returns the position of the
+    /// next block in the positive Z direction.
+    #[inline]
+    pub fn next_z(self) -> Option<Self> {
+        if self.is_z_max() {
+            None
+        } else {
+            Some(unsafe { Self::add_z_unchecked(self, 1) })
+        }
+    }
+
+    /// If the position is not at the negative boundary of the chunk, returns the position of the
+    /// next block in the negative Z direction.
+    #[inline]
+    pub fn prev_z(self) -> Option<Self> {
+        if self.is_z_min() {
+            None
+        } else {
+            Some(unsafe { Self::add_z_unchecked(self, -1) })
+        }
     }
 
     /// Adds the provided value to the X coordinate of the position.

@@ -8,7 +8,7 @@
   - [x] Optimized voxel renderer.
   - [x] Skybox.
   - [x] Reloadable texture atlas.
-  - [ ] Ambiant occlusion.
+  - [ ] Ambient occlusion.
   - [x] Distance fog.
   - [ ] Underwater fog.
   - [x] Text rendering.
@@ -22,7 +22,7 @@
   - [ ] Dynamic lighting.
   - [ ] Shadows.
   - [ ] Animated water.
-  - [ ] Ambiant particles.
+  - [ ] Ambient particles.
 - [ ] Misc
   - [ ] Screenshots.
   - [ ] Command line.
