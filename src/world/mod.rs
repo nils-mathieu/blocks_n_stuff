@@ -7,7 +7,7 @@ use glam::{IVec3, Vec3};
 use hashbrown::HashMap;
 use smallvec::SmallVec;
 
-use bns_core::{BlockFlags, BlockId, Chunk, ChunkPos, Face, InstanciatedBlock, LocalPos};
+use bns_core::{BlockFlags, Chunk, ChunkPos, Face, InstanciatedBlock, LocalPos};
 use bns_render::Gpu;
 use bns_workers::{Priority, TaskPool, Worker};
 use bns_worldgen_core::WorldGenerator;
@@ -557,7 +557,7 @@ impl World {
     /// This function returns `true` if the block was successfully replaced, or `false` if the
     /// the provided position was part of an unloaded chunk.
     #[profiling::function]
-    pub fn set_block(&mut self, world_pos: IVec3, block: BlockId) -> bool {
+    pub fn set_block(&mut self, world_pos: IVec3, block: InstanciatedBlock) -> bool {
         let chunk_pos = ChunkPos::new(
             world_pos.x.div_euclid(Chunk::SIDE),
             world_pos.y.div_euclid(Chunk::SIDE),

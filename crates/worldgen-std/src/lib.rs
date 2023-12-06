@@ -10,6 +10,8 @@ use glam::{IVec2, IVec3, Vec3Swizzles};
 use biome::BiomeRegistry;
 use biomemap::BiomeMap;
 use column_gen::{ColumnPos, Columns};
+use parking_lot::RwLock;
+use structure::StructureRegistry;
 
 mod biome;
 mod biomemap;
@@ -26,6 +28,9 @@ pub struct GenCtx {
     /// The cache of new columns.
     pub columns: Columns,
 
+    /// The list of structures that can be generated.
+    pub structures: RwLock<StructureRegistry>,
+
     /// The noises used to randomly find samples in the biome map.
     pub heightmap_noises: [Mixer<2>; 8],
 }
@@ -37,6 +42,7 @@ impl FromRng for GenCtx {
             biome_registry: BiomeRegistry::from_rng(rng),
             columns: Columns::default(),
             heightmap_noises: FromRng::from_rng(rng),
+            structures: RwLock::new(StructureRegistry::default()),
         }
     }
 }
@@ -69,8 +75,9 @@ impl WorldGenerator for StandardWorldGenerator {
         for &biome in &col.biome_stage(&self.ctx).unique_biomes {
             self.ctx.biome_registry[biome]
                 .implementation
-                .geological_stage(chunk_pos, &col, &self.ctx, &mut ret);
+                .build(chunk_pos, &col, &self.ctx, &mut ret);
         }
+        self.ctx.structures.read().write_chunk(chunk_pos, &mut ret);
 
         // Add a layer of bedrock at the bottom of the world.
         if chunk_pos.y == -4 {

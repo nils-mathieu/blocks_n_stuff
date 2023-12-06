@@ -16,7 +16,7 @@ impl Biome for Desert {
         8.0
     }
 
-    fn geological_stage(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
+    fn build(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
         (super::utility::BasicGeologicalStage {
             biome_filter: BiomeId::Desert,
             min_dirt_depth: 4,

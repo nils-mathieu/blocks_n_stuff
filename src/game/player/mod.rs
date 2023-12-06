@@ -192,7 +192,7 @@ impl Player {
 
         if ctx.just_pressed(MouseButton::Left) {
             if let Some(looking_at) = self.looking_at {
-                world.set_block(looking_at.world_pos, BlockId::Air);
+                world.set_block(looking_at.world_pos, BlockId::Air.into());
             }
         }
 
@@ -220,7 +220,7 @@ impl Player {
                     }
                 } else if let Some(material) = self.hud.current_material() {
                     let target = looking_at.world_pos + looking_at.face.normal();
-                    world.set_block(target, material);
+                    world.set_block(target, material.into());
                 }
             }
         }

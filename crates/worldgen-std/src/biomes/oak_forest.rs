@@ -23,7 +23,7 @@ impl Biome for OakForest {
         14.0
     }
 
-    fn geological_stage(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
+    fn build(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
         let biome_ids = &column.biome_stage(ctx).ids;
 
         for local_pos in LocalPos::iter_all() {
@@ -43,16 +43,16 @@ impl Biome for OakForest {
 
             if world_pos.y <= height {
                 if world_pos.y < height - dirt_depth {
-                    chunk.set_block(local_pos, BlockId::Stone);
+                    chunk.set_block(local_pos, BlockId::Stone.into());
                 } else if world_pos.y <= 2 {
-                    chunk.set_block(local_pos, BlockId::Sand);
+                    chunk.set_block(local_pos, BlockId::Sand.into());
                 } else if world_pos.y < height {
-                    chunk.set_block(local_pos, BlockId::Dirt);
+                    chunk.set_block(local_pos, BlockId::Dirt.into());
                 } else {
-                    chunk.set_block(local_pos, BlockId::Grass);
+                    chunk.set_block(local_pos, BlockId::Grass.into());
                 }
             } else if world_pos.y <= 0 {
-                chunk.set_block(local_pos, BlockId::Water);
+                chunk.set_block(local_pos, BlockId::Water.into());
             } else if world_pos.y == height + 1 {
                 if self
                     .pebble_noise

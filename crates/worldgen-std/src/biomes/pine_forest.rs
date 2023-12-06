@@ -16,7 +16,7 @@ impl Biome for PineForest {
         25.0
     }
 
-    fn geological_stage(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
+    fn build(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
         (super::utility::BasicGeologicalStage {
             biome_filter: BiomeId::PineForest,
             min_dirt_depth: 5,

@@ -2,18 +2,13 @@ use bns_core::{AppearanceMetadata, BlockId, Chunk, ChunkPos, Face, LocalPos};
 use bns_rng::noises::{Mixer, SuperSimplex2, SuperSimplex3};
 use bns_rng::{FromRng, Noise};
 
-use bns_worldgen_structure::{include_structure, Structure};
 use glam::IVec2;
 
+use super::structures;
 use crate::biome::{Biome, BiomeId};
 use crate::column_gen::ColumnGen;
+use crate::structure::StructureId;
 use crate::GenCtx;
-
-const OAK_TREE_1: Structure = include_structure!("structures/oak_tree_1.ron");
-const OAK_TREE_2: Structure = include_structure!("structures/oak_tree_2.ron");
-const OAK_TREE_3: Structure = include_structure!("structures/oak_tree_3.ron");
-const OAK_TREE_4: Structure = include_structure!("structures/oak_tree_4.ron");
-const BIG_OAK_TREE_1: Structure = include_structure!("structures/big_oak_tree_1.ron");
 
 #[derive(FromRng)]
 pub struct Plains {
@@ -22,6 +17,7 @@ pub struct Plains {
     pebble_noise: Mixer<2>,
     daffodil_noise: Mixer<2>,
     diamond_noise: SuperSimplex3,
+    tree_noise: Mixer<2>,
 }
 
 impl Plains {
@@ -29,6 +25,7 @@ impl Plains {
     pub const HEIGHT_MAP_OFFSET: f32 = 5.0;
     pub const PEBBLE_PROBABILITY: u64 = 600;
     pub const DAFFODIL_PROBABILITY: u64 = 600;
+    pub const TREE_PROBABILITY: u64 = 1000;
 }
 
 impl Biome for Plains {
@@ -43,7 +40,7 @@ impl Biome for Plains {
         ret
     }
 
-    fn geological_stage(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
+    fn build(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
         let biome_ids = &column.biome_stage(ctx).ids;
 
         for local_pos in LocalPos::iter_all() {
@@ -69,19 +66,19 @@ impl Biome for Plains {
                         world_pos.z as f32 / 8.0,
                     ]) > 0.7
                     {
-                        chunk.set_block(local_pos, BlockId::DiamondOre);
+                        chunk.set_block(local_pos, BlockId::DiamondOre.into());
                     } else {
-                        chunk.set_block(local_pos, BlockId::Stone);
+                        chunk.set_block(local_pos, BlockId::Stone.into());
                     }
                 } else if world_pos.y <= 2 {
-                    chunk.set_block(local_pos, BlockId::Sand);
+                    chunk.set_block(local_pos, BlockId::Sand.into());
                 } else if world_pos.y < height {
-                    chunk.set_block(local_pos, BlockId::Dirt);
+                    chunk.set_block(local_pos, BlockId::Dirt.into());
                 } else {
-                    chunk.set_block(local_pos, BlockId::Grass);
+                    chunk.set_block(local_pos, BlockId::Grass.into());
                 }
             } else if world_pos.y <= 0 {
-                chunk.set_block(local_pos, BlockId::Water);
+                chunk.set_block(local_pos, BlockId::Water.into());
             } else if world_pos.y == height + 1 {
                 if self
                     .pebble_noise
@@ -105,6 +102,21 @@ impl Biome for Plains {
                         *chunk.get_block_mut(local_pos) = BlockId::Daffodil;
                         *chunk.get_appearance_mut(local_pos) = AppearanceMetadata { flat: Face::Y };
                     }
+                }
+
+                let tree_value = self
+                    .tree_noise
+                    .sample([world_pos.x as u64, world_pos.z as u64]);
+                if tree_value % Self::TREE_PROBABILITY == 0 {
+                    let tree =
+                        structures::OAK_TREES[tree_value as usize % structures::OAK_TREES.len()];
+                    ctx.structures.write().insert(
+                        StructureId {
+                            id: 0x12393483,
+                            position: world_pos,
+                        },
+                        tree.clone(),
+                    );
                 }
             }
         }

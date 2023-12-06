@@ -278,6 +278,7 @@ impl Chunk {
     }
 
     /// Returns the [`AppearanceMetadata`] of the block at the provided position.
+    #[inline]
     pub fn get_appearance(&self, pos: LocalPos) -> AppearanceMetadata {
         match &self.appearances {
             // SAFETY:
@@ -316,43 +317,15 @@ impl Chunk {
     }
 
     /// Sets the block at the provided position.
-    ///
-    /// # Safety
-    ///
-    /// This function assumes that the inserted block requires no additional metadata to be
-    /// valid.
-    ///
-    /// If the inserted block requires additional metadata, the [`Chunk::get_block_mut`] function
-    /// msut be used directly.
-    ///
-    /// # Panics
-    ///
-    /// In debug builds, this function panics if `block` requires some metadata.
-    #[inline]
-    pub unsafe fn set_block_unchecked(&mut self, pos: LocalPos, block: BlockId) {
-        if block == BlockId::Air {
-            return;
+    pub fn set_block(&mut self, pos: LocalPos, block: InstanciatedBlock) {
+        unsafe {
+            if block.id() != BlockId::Air {
+                *self.get_block_mut(pos) = block.id();
+            }
+            if block.id().info().appearance.has_metadata() {
+                *self.get_appearance_mut(pos) = block.appearance();
+            }
         }
-
-        debug_assert!(!block.info().appearance.has_metadata());
-
-        *self.get_block_mut(pos) = block;
-    }
-
-    /// Sets a block at the provided position.
-    ///
-    /// # Panics
-    ///
-    /// This function panics if `block` requires some metadata to be complete.
-    #[inline]
-    pub fn set_block(&mut self, pos: LocalPos, block: BlockId) {
-        if block == BlockId::Air && self.blocks.is_none() {
-            return;
-        }
-
-        assert!(!block.info().appearance.has_metadata());
-
-        unsafe { *self.get_block_mut(pos) = block };
     }
 
     /// Returns a mutable reference to the [`AppearanceMetadata`] of the block at the provided
@@ -461,6 +434,24 @@ impl ChunkPos {
     #[inline]
     pub fn distance_squared(self, other: Self) -> i32 {
         self.as_ivec3().distance_squared(other.as_ivec3())
+    }
+
+    /// If the provided `world_pos` is part of the chunk with this position, returns its
+    /// local position within that chunk.
+    pub fn checked_local_pos(self, world_pos: IVec3) -> Option<LocalPos> {
+        let origin = self.origin();
+
+        let x = world_pos.x.checked_sub(origin.x)?;
+        let y = world_pos.y.checked_sub(origin.y)?;
+        let z = world_pos.z.checked_sub(origin.z)?;
+
+        if x >= Chunk::SIDE || y >= Chunk::SIDE || z >= Chunk::SIDE {
+            return None;
+        }
+
+        // SAFETY:
+        //  We just made sure that the coordinates were in bounds.
+        Some(unsafe { LocalPos::from_xyz_unchecked(x, y, z) })
     }
 }
 

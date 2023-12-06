@@ -73,7 +73,7 @@ pub trait Biome {
     /// This function is expected to only place blocks that are part of the biome itself
     /// (potentially by checking the biome values in `column`). Additionally, this function
     /// is expected to losely follow the heightmap generated for the column.
-    fn geological_stage(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk);
+    fn build(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk);
 
     /// Prints debug information about itself in the provided buffer.
     fn debug_info(&self, w: &mut dyn std::fmt::Write, pos: IVec3) -> std::fmt::Result;

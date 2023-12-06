@@ -30,7 +30,7 @@ impl Biome for Ocean {
         }
     }
 
-    fn geological_stage(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
+    fn build(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
         let biome_ids = &column.biome_stage(ctx).ids;
 
         for local_pos in LocalPos::iter_all() {

@@ -12,4 +12,5 @@ pub use ocean::Ocean;
 pub use pine_forest::PineForest;
 pub use plains::Plains;
 
+mod structures;
 mod utility;

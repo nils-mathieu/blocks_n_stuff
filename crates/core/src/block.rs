@@ -61,7 +61,7 @@ impl BlockId {
     /// future we need to load custom textures (with potentially different appearances), we will
     /// need to load this dynamically and store it somewhere.
     #[inline]
-    pub fn info(self) -> &'static BlockInfo {
+    pub const fn info(self) -> &'static BlockInfo {
         const INFOS: [BlockInfo; BlockId::COUNT] = [
             // Air
             BlockInfo {
@@ -245,7 +245,7 @@ impl BlockId {
             },
         ];
 
-        unsafe { INFOS.get_unchecked(self as usize) }
+        &INFOS[self as usize]
     }
 }
 
@@ -414,6 +414,19 @@ pub struct InstanciatedBlock {
 }
 
 impl InstanciatedBlock {
+    /// Creates a new [`InstanciatedBlock`] instance with no metadata.
+    ///
+    /// If the provided block requires some metadata, the function will automatically select
+    /// a default value for it.
+    pub const fn new(id: BlockId) -> Self {
+        let appearance = match id.info().appearance {
+            BlockAppearance::Flat(..) => AppearanceMetadata { flat: Face::Y },
+            _ => AppearanceMetadata { no_metadata: () },
+        };
+
+        unsafe { Self::new_unchecked(id, appearance) }
+    }
+
     /// Creates a new [`InstanciatedBlock`] instance.
     ///
     /// # Safety
@@ -436,6 +449,13 @@ impl InstanciatedBlock {
     #[inline]
     pub fn appearance(&self) -> AppearanceMetadata {
         self.appearance
+    }
+}
+
+impl From<BlockId> for InstanciatedBlock {
+    #[inline]
+    fn from(id: BlockId) -> Self {
+        Self::new(id)
     }
 }
 

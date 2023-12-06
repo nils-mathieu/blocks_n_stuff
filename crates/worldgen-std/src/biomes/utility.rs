@@ -38,16 +38,16 @@ impl BasicGeologicalStage<'_> {
 
             if world_pos.y <= height {
                 if world_pos.y < height - dirt_depth {
-                    chunk.set_block(local_pos, BlockId::Stone);
+                    chunk.set_block(local_pos, BlockId::Stone.into());
                 } else if world_pos.y <= 2 {
-                    chunk.set_block(local_pos, BlockId::Sand);
+                    chunk.set_block(local_pos, BlockId::Sand.into());
                 } else if world_pos.y < height {
-                    chunk.set_block(local_pos, self.dirt);
+                    chunk.set_block(local_pos, self.dirt.into());
                 } else {
-                    chunk.set_block(local_pos, self.grass);
+                    chunk.set_block(local_pos, self.grass.into());
                 }
             } else if world_pos.y <= 0 {
-                chunk.set_block(local_pos, BlockId::Water);
+                chunk.set_block(local_pos, BlockId::Water.into());
             }
         }
     }
