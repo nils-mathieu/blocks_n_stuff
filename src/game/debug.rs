@@ -8,7 +8,7 @@ use bns_render::data::{
 };
 use bns_render::{DynamicVertexBuffer, Gpu};
 
-use glam::{Vec2, Vec3};
+use glam::{IVec3, Vec2, Vec3};
 
 /// Contains some state that's only used for debugging purposes, such
 /// as the debug overlay and the buffer to store chunk border lines.
@@ -141,19 +141,19 @@ impl DebugThings {
                 for z in -BOUND..=BOUND {
                     for y in -BOUND..=BOUND {
                         for x in -BOUND..=BOUND {
-                            let pos = ChunkPos::new(x, y, z);
+                            let offset = IVec3::new(x, y, z);
                             super::utility::push_aabb_lines(
                                 &mut frame.lines,
-                                (current_chunk + pos).as_vec3() * CHUNK_SIZE,
-                                (current_chunk + pos).as_vec3() * CHUNK_SIZE
+                                (current_chunk + offset).as_vec3() * CHUNK_SIZE,
+                                (current_chunk + offset).as_vec3() * CHUNK_SIZE
                                     + Vec3::splat(CHUNK_SIZE),
-                                if pos == ChunkPos::ZERO {
+                                if offset == IVec3::ZERO {
                                     Color::RED
                                 } else {
                                     Color::YELLOW
                                 },
-                                if pos == ChunkPos::ZERO { 3.0 } else { 2.0 },
-                                if pos == ChunkPos::ZERO {
+                                if offset == IVec3::ZERO { 3.0 } else { 2.0 },
+                                if offset == IVec3::ZERO {
                                     LineFlags::ABOVE
                                 } else {
                                     LineFlags::empty()

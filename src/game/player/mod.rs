@@ -118,7 +118,7 @@ impl Player {
     /// Returns the chunk that the player is a part of.
     #[inline]
     pub fn position_chunk(&self) -> ChunkPos {
-        bns_core::utility::chunk_pos_of(self.position)
+        ChunkPos::from_world_pos(self.position)
     }
 
     /// Returns the current render distance of the player.

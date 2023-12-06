@@ -4,6 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use bns_app::{Ctx, KeyCode};
+use bns_core::ChunkPos;
 use bns_render::data::{ChunkUniforms, Color, FrameFlags, FrameUniforms, LineFlags, RenderData};
 use bns_render::Gpu;
 use bns_rng::{DefaultRng, FromRng};
@@ -79,7 +80,7 @@ impl Game {
         self.since_last_cleanup += ctx.since_last_tick();
         if self.since_last_cleanup >= WORLD_CLEAN_UP_INTERVAL {
             self.world.request_cleanup(
-                bns_core::utility::chunk_pos_of(self.player.position()),
+                ChunkPos::from_world_pos(self.player.position()),
                 self.player.render_distance() as u32 + 3,
                 self.player.vertical_render_distance() as u32 + 3,
             );
@@ -192,7 +193,7 @@ impl Game {
             }
 
             let chunk_idx = frame.quads.register_chunk(&ChunkUniforms {
-                position: chunk_pos,
+                position: chunk_pos.as_ivec3(),
             });
             if let Some(buf) = chunk.geometry.opaque_quad_instances() {
                 frame.quads.register_opaque_quads(chunk_idx, buf.slice());

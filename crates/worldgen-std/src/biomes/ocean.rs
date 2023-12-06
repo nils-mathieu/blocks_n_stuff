@@ -1,8 +1,6 @@
-use bns_core::{BlockId, Chunk, LocalPos};
+use bns_core::{BlockId, Chunk, ChunkPos, LocalPos};
 use bns_rng::noises::SuperSimplex2;
 use bns_rng::{FromRng, Noise};
-
-use glam::IVec3;
 
 use crate::biome::{Biome, BiomeId};
 use crate::column_gen::ColumnGen;
@@ -32,7 +30,7 @@ impl Biome for Ocean {
         }
     }
 
-    fn geological_stage(&self, pos: IVec3, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
+    fn geological_stage(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
         let biome_ids = &column.biome_stage(ctx).ids;
 
         for local_pos in LocalPos::iter_all() {
@@ -40,7 +38,7 @@ impl Biome for Ocean {
                 continue;
             }
 
-            let world_pos = pos * Chunk::SIDE + local_pos.to_ivec3();
+            let world_pos = pos.origin() + local_pos.to_ivec3();
             let height = column.height_stage(ctx)[local_pos.into()];
 
             let gravel = bns_rng::utility::floor_i32(

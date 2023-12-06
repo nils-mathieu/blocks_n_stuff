@@ -1,9 +1,10 @@
 use std::fmt::Debug;
+use std::hash::Hash;
 use std::mem::MaybeUninit;
 use std::ops::{Index, IndexMut};
 
 use bytemuck::Zeroable;
-use glam::IVec3;
+use glam::{IVec2, IVec3, Vec3};
 
 use crate::{AppearanceMetadata, BlockId, InstanciatedBlock};
 
@@ -383,7 +384,142 @@ impl Chunk {
 }
 
 /// The 3D position of a chunk in the world.
-pub type ChunkPos = IVec3;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ChunkPos {
+    /// The X coordinate of the chunk.
+    pub x: i32,
+    /// The Y coordinate of the chunk.
+    pub y: i32,
+    /// The Z coordinate of the chunk.
+    pub z: i32,
+}
+
+impl ChunkPos {
+    /// Creates a new [`ChunkPos`] from the provided coordinates.
+    #[inline]
+    pub const fn new(x: i32, y: i32, z: i32) -> Self {
+        Self { x, y, z }
+    }
+
+    /// Converts the provided world-space position into a chunk position.
+    #[inline]
+    pub const fn from_world_pos_i(pos: IVec3) -> Self {
+        Self {
+            x: pos.x.div_euclid(Chunk::SIDE),
+            y: pos.y.div_euclid(Chunk::SIDE),
+            z: pos.z.div_euclid(Chunk::SIDE),
+        }
+    }
+
+    /// Converts the provided world-space position into a chunk position.
+    #[inline]
+    pub fn from_world_pos(pos: Vec3) -> Self {
+        fn coord_to_chunk(coord: f32) -> i32 {
+            if coord >= 0.0 {
+                coord as i32 / Chunk::SIDE
+            } else {
+                coord as i32 / Chunk::SIDE - 1
+            }
+        }
+
+        ChunkPos {
+            x: coord_to_chunk(pos.x),
+            y: coord_to_chunk(pos.y),
+            z: coord_to_chunk(pos.z),
+        }
+    }
+
+    /// Returns the world-space origin of the chunk.
+    #[inline]
+    pub const fn origin(self) -> IVec3 {
+        IVec3::new(
+            self.x * Chunk::SIDE,
+            self.y * Chunk::SIDE,
+            self.z * Chunk::SIDE,
+        )
+    }
+
+    /// Returns a 2D vector that contains the X and Z coordinates of the chunk.
+    #[inline]
+    pub const fn xz(self) -> IVec2 {
+        IVec2::new(self.x, self.z)
+    }
+
+    /// Returns the chunk position as an [`IVec3`].
+    #[inline]
+    pub fn as_ivec3(self) -> IVec3 {
+        IVec3::new(self.x, self.y, self.z)
+    }
+
+    /// Returns the chunk position as a [`Vec3`].
+    #[inline]
+    pub fn as_vec3(self) -> Vec3 {
+        self.as_ivec3().as_vec3()
+    }
+
+    /// Computes the squared distance between two chunk positions.
+    #[inline]
+    pub fn distance_squared(self, other: Self) -> i32 {
+        self.as_ivec3().distance_squared(other.as_ivec3())
+    }
+}
+
+impl Hash for ChunkPos {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        #[cfg(target_pointer_width = "64")]
+        {
+            state.write_usize((self.x as usize) << 32 | self.y as usize);
+            state.write_i32(self.z);
+        }
+
+        #[cfg(target_pointer_width = "32")]
+        {
+            self.x.hash(state);
+            self.y.hash(state);
+            self.z.hash(state);
+        }
+    }
+}
+
+impl std::ops::Add<IVec3> for ChunkPos {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, rhs: IVec3) -> Self::Output {
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
+impl std::ops::AddAssign<IVec3> for ChunkPos {
+    #[inline]
+    fn add_assign(&mut self, rhs: IVec3) {
+        *self = *self + rhs;
+    }
+}
+
+impl std::ops::Sub<IVec3> for ChunkPos {
+    type Output = Self;
+
+    #[inline]
+    fn sub(self, rhs: IVec3) -> Self::Output {
+        Self {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
+    }
+}
+
+impl std::ops::SubAssign<IVec3> for ChunkPos {
+    #[inline]
+    fn sub_assign(&mut self, rhs: IVec3) {
+        *self = *self - rhs;
+    }
+}
 
 /// Creates a new uninitialized [`ChunkStore`] of `T`s.
 fn new_uninit_store<T>() -> Box<ChunkStore<MaybeUninit<T>>> {

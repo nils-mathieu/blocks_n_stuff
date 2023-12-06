@@ -1,9 +1,9 @@
-use bns_core::{AppearanceMetadata, BlockId, Chunk, Face, LocalPos};
+use bns_core::{AppearanceMetadata, BlockId, Chunk, ChunkPos, Face, LocalPos};
 use bns_rng::noises::{Mixer, SuperSimplex2, SuperSimplex3};
 use bns_rng::{FromRng, Noise};
 
 use bns_worldgen_structure::{include_structure, Structure};
-use glam::{IVec2, IVec3};
+use glam::IVec2;
 
 use crate::biome::{Biome, BiomeId};
 use crate::column_gen::ColumnGen;
@@ -43,7 +43,7 @@ impl Biome for Plains {
         ret
     }
 
-    fn geological_stage(&self, pos: IVec3, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
+    fn geological_stage(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
         let biome_ids = &column.biome_stage(ctx).ids;
 
         for local_pos in LocalPos::iter_all() {
@@ -51,7 +51,7 @@ impl Biome for Plains {
                 continue;
             }
 
-            let world_pos = pos * Chunk::SIDE + local_pos.to_ivec3();
+            let world_pos = pos.origin() + local_pos.to_ivec3();
             let height = column.height_stage(ctx)[local_pos.into()];
 
             let dirt_depth = bns_rng::utility::floor_i32(

@@ -26,7 +26,7 @@ impl BasicGeologicalStage<'_> {
                 continue;
             }
 
-            let world_pos = pos * Chunk::SIDE + local_pos.to_ivec3();
+            let world_pos = pos.origin() + local_pos.to_ivec3();
             let height = column.height_stage(ctx)[local_pos.into()];
 
             let dirt_depth = bns_rng::utility::floor_i32(

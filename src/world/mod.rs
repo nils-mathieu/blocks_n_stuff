@@ -3,7 +3,7 @@ use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use bitflags::bitflags;
-use glam::{IVec3, Vec3, Vec3Swizzles};
+use glam::{IVec3, Vec3};
 use hashbrown::HashMap;
 use smallvec::SmallVec;
 
@@ -405,7 +405,7 @@ impl World {
 
         let mut cur = start;
 
-        let mut current_chunk = bns_core::utility::chunk_pos_of(cur);
+        let mut current_chunk = ChunkPos::from_world_pos(cur);
         let mut chunk = match self.chunks.get(&current_chunk) {
             Some(ChunkEntry::Loaded(chunk)) => chunk,
             _ => return Err(QueryError::MissingChunk(current_chunk)),
@@ -413,7 +413,7 @@ impl World {
         let mut world_pos = bns_core::utility::world_pos_of(cur);
 
         while length > 0.0 {
-            let new_current_chunk = bns_core::utility::chunk_pos_of(cur);
+            let new_current_chunk = ChunkPos::from_world_pos(cur);
             if new_current_chunk != current_chunk {
                 current_chunk = new_current_chunk;
                 chunk = match self.chunks.get(&current_chunk) {

@@ -1,8 +1,6 @@
-use bns_core::{BlockId, Chunk};
+use bns_core::{BlockId, Chunk, ChunkPos};
 use bns_rng::noises::SuperSimplex2;
 use bns_rng::FromRng;
-
-use glam::IVec3;
 
 use crate::biome::{Biome, BiomeId};
 use crate::column_gen::ColumnGen;
@@ -18,7 +16,7 @@ impl Biome for PineForest {
         25.0
     }
 
-    fn geological_stage(&self, pos: IVec3, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
+    fn geological_stage(&self, pos: ChunkPos, column: &ColumnGen, ctx: &GenCtx, chunk: &mut Chunk) {
         (super::utility::BasicGeologicalStage {
             biome_filter: BiomeId::PineForest,
             min_dirt_depth: 5,
