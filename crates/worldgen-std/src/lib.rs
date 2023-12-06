@@ -15,6 +15,7 @@ mod biome;
 mod biomemap;
 mod biomes;
 mod column_gen;
+mod structure;
 
 /// Contains the context required to generate new chunks.
 pub struct GenCtx {

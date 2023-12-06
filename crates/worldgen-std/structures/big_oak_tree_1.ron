@@ -1,0 +1,989 @@
+(
+    bounds: (7, 21, 8),
+    edits: [
+        (
+            position: (1, 11, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (1, 12, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (1, 13, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 0, 5),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (2, 4, 5),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (2, 5, 5),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (2, 6, 5),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (2, 6, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 7, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 7, 5),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (2, 7, 6),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (2, 7, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 8, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 8, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 8, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 8, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 9, 2),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 9, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 9, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 9, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 9, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 10, 1),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 10, 2),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 10, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 10, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 11, 2),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 11, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 11, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 11, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 11, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 12, 2),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 12, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 12, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 12, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 12, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 13, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 13, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 13, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 13, 7),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 14, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 14, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 14, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (2, 15, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 0, 4),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 0, 5),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 0, 6),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 1, 4),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 1, 5),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 1, 6),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 2, 4),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 2, 5),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 2, 6),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 3, 5),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 4, 5),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 7, 4),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 8, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 8, 4),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 8, 6),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 8, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 9, 2),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 9, 3),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 9, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 9, 6),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 9, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 10, 1),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 10, 2),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 10, 3),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 10, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 10, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 10, 6),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 10, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 11, 1),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 11, 2),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 11, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 11, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 11, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 11, 6),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 11, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 11, 8),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 12, 2),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 12, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 12, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 12, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 12, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 12, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 13, 2),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 13, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 13, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 13, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 13, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 13, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 14, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 14, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 14, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 14, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 15, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 15, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 15, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 15, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 16, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 16, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 17, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (3, 17, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 0, 5),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (4, 1, 5),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (4, 5, 5),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (4, 6, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 6, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 6, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 7, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 7, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 8, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 8, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 8, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 9, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 9, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 9, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 10, 2),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 10, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 10, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 10, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 10, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 11, 2),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 11, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 11, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 11, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 11, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 11, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 12, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 12, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 12, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 12, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 12, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 13, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 13, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 13, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 13, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 13, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 14, 3),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 14, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (4, 14, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 5, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 5, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 6, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 6, 5),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (5, 6, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 6, 7),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 7, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 7, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 7, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 8, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 10, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 10, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 11, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 11, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 12, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 12, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (5, 13, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (6, 6, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (6, 6, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (6, 6, 6),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (6, 7, 4),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (6, 7, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+        (
+            position: (7, 6, 5),
+            block: (
+                id: PineLeaves,
+            ),
+        ),
+    ],
+)

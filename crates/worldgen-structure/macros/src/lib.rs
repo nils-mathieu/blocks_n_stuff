@@ -128,7 +128,7 @@ fn include_structure_impl(input: TokenStream) -> Result<TokenStream, Error> {
             ::bns_worldgen_structure::Structure {
                 name: #name,
                 bounds: #bounds,
-                edits: &[ #(#edits,)* ],
+                edits: ::std::borrow::Cow::Borrowed(&[ #(#edits,)* ]),
             }
         }
     }

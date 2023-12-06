@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use bns_core::InstanciatedBlock;
 use glam::IVec3;
 
@@ -14,12 +16,12 @@ pub struct StructureEdit {
 
 /// A structure that's made of [`StructureEdit`]s.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Structure<E = Vec<StructureEdit>> {
+pub struct Structure<'a> {
     /// The name of the structure.
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub name: Option<String>,
     /// The maximum bound of the structure.
     pub bounds: IVec3,
     /// The editions that the structure applies.
-    pub edits: E,
+    pub edits: Cow<'a, [StructureEdit]>,
 }

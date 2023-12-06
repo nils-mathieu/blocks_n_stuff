@@ -380,7 +380,7 @@ fn record_structure(world: &World, a: IVec3, b: IVec3) -> Structure {
     }
 
     Structure {
-        edits,
+        edits: edits.into(),
         bounds: max - min,
         name: None,
     }
