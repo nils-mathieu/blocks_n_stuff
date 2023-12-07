@@ -142,58 +142,42 @@ impl ChunkBuildContext {
 
     /// Only build the outer geometry of the chunk.
     #[profiling::function]
-    pub fn build_outer<'a>(
-        &mut self,
-        pos: ChunkPos,
-        me: &Chunk,
-        mut chunk_provider: impl FnMut(ChunkPos) -> Option<&'a Chunk>,
-    ) {
-        if let Some(other) = chunk_provider(pos + IVec3::X) {
-            build_chunk_boundary_x(me, other, self);
-        }
-        if let Some(other) = chunk_provider(pos - IVec3::X) {
-            build_chunk_boundary_neg_x(me, other, self);
-        }
-        if let Some(other) = chunk_provider(pos + IVec3::Y) {
-            build_chunk_boundary_y(me, other, self);
-        }
-        if let Some(other) = chunk_provider(pos - IVec3::Y) {
-            build_chunk_boundary_neg_y(me, other, self);
-        }
-        if let Some(other) = chunk_provider(pos + IVec3::Z) {
-            build_chunk_boundary_z(me, other, self);
-        }
-        if let Some(other) = chunk_provider(pos - IVec3::Z) {
-            build_chunk_boundary_neg_z(me, other, self);
-        }
+    pub fn build_outer<'a>(&mut self, neighborhood: ChunkNeighborhood<'a>) {
+        build_chunk_boundary_x(neighborhood.me, neighborhood.x, self);
+        build_chunk_boundary_neg_x(neighborhood.me, neighborhood.neg_x, self);
+        build_chunk_boundary_y(neighborhood.me, neighborhood.y, self);
+        build_chunk_boundary_neg_y(neighborhood.me, neighborhood.neg_y, self);
+        build_chunk_boundary_z(neighborhood.me, neighborhood.z, self);
+        build_chunk_boundary_neg_z(neighborhood.me, neighborhood.neg_z, self);
     }
+}
 
-    /// Builds the geometry of the provided chunk.
-    ///
-    /// # Remarks
-    ///
-    /// This function must be followed by a call to [`ChunkBuildContext::apply`] to actually
-    /// upload the geometry to the GPU.
-    #[profiling::function]
-    pub fn build<'a>(
-        &mut self,
-        pos: ChunkPos,
-        mut chunk_provider: impl FnMut(ChunkPos) -> Option<&'a Chunk>,
-    ) {
-        // Get information about the requested chunk.
-        let Some(me) = chunk_provider(pos) else {
-            debug_assert!(false, "requested chunk not even present wtf are you doing)");
-            return;
-        };
+/// Contains references to neighboring chunks.
+pub struct ChunkNeighborhood<'a> {
+    pub me: &'a Chunk,
+    pub x: &'a Chunk,
+    pub neg_x: &'a Chunk,
+    pub y: &'a Chunk,
+    pub neg_y: &'a Chunk,
+    pub z: &'a Chunk,
+    pub neg_z: &'a Chunk,
+}
 
-        // Build the inner geometry of the chunk. Avoid lookups to the chunk provider when
-        // possible (which is most of the time because most of the geometry is within the
-        // current chunk).
-        self.build_inner(me);
-
-        // Lookup once each adjacent chunk.
-        // If they are available, we can build the boundary of the chunk.
-        self.build_outer(pos, me, chunk_provider);
+impl<'a> ChunkNeighborhood<'a> {
+    /// Returns a [`ChunkNeighborhood`] instance with the provided chunk at the center.
+    pub fn from_fn(
+        center: ChunkPos,
+        mut f: impl FnMut(ChunkPos) -> Option<&'a Chunk>,
+    ) -> Option<Self> {
+        Some(Self {
+            me: f(center)?,
+            x: f(center + IVec3::X)?,
+            neg_x: f(center + IVec3::NEG_X)?,
+            y: f(center + IVec3::Y)?,
+            neg_y: f(center + IVec3::NEG_Y)?,
+            z: f(center + IVec3::Z)?,
+            neg_z: f(center + IVec3::NEG_Z)?,
+        })
     }
 }
 

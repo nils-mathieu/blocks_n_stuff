@@ -108,7 +108,10 @@ impl<T: Task> YesThreads<T> {
 
         for _ in 0..to_spawn {
             let shared = shared.clone();
-            std::thread::spawn(move || worker_thread(shared));
+            std::thread::spawn(move || {
+                profiling::register_thread!("task_pool_worker");
+                worker_thread(shared)
+            });
         }
 
         Self {

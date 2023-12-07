@@ -126,6 +126,8 @@ fn num_threads() -> usize {
             let num = num.get();
 
             if num <= 2 {
+                bns_log::warning!("very few parallelism available, assuming 0");
+
                 // If the has no or few parallelism available, don't use threads
                 // at all.
                 0
@@ -133,11 +135,19 @@ fn num_threads() -> usize {
                 // Avoid using ALL available threads because that would probably
                 // just eat up all the CPU resources and make the game laggy.
                 // If the user cannot
-                (num / 2).max(2)
+                let used = (num / 2).max(2);
+
+                bns_log::info!("found {num} available threads, using {used} of them");
+
+                used
             }
         }
         // We don't know how much parallelism is available, let's be conservative
         // and assume there isn't any.
-        Err(_) => 0,
+        Err(_) => {
+            bns_log::warning!("failed to get the number of available threads, assuming 0");
+
+            0
+        }
     }
 }

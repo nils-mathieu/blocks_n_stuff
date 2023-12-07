@@ -10,6 +10,7 @@ use bns_worldgen_core::WorldGenerator;
 
 mod chunk_geometry;
 pub use chunk_geometry::*;
+use smallvec::SmallVec;
 
 use self::task_pool::TaskPool;
 
@@ -21,6 +22,9 @@ pub struct LoadedChunk {
     pub data: Chunk,
     /// The geometry of the chunk.
     pub geometry: ChunkGeometry,
+    /// Some inner geometry that has been pre-computed (usually by a background thread). It's
+    /// waiting to be uploaded to the GPU once the outer geometry has been appended to it.
+    pub pending_inner_geometry: Option<ChunkBuildContext>,
     /// Whether the chunk's geometry is dirty and must be rebuilt.
     pub is_dirty: bool,
 }
@@ -31,6 +35,7 @@ impl LoadedChunk {
         Self {
             data: inner,
             geometry: ChunkGeometry::new(),
+            pending_inner_geometry: None,
             is_dirty: true,
         }
     }
@@ -41,6 +46,8 @@ enum ChunkEntry {
     /// The chunk is already properly loaded.
     Loaded(LoadedChunk),
     /// The chunk is currently generating.
+    ///
+    /// If the inner chunk has been generated
     Generating,
 }
 
@@ -229,15 +236,78 @@ impl World {
                             });
                         }
 
-                        let mut ctx = self.chunk_build_context_pool.pop().unwrap_or_default();
-                        ctx.clear();
+                        // Reborrow the chunk in a shared manner to allow accessing
+                        // neighboring chunks as well.
+                        let (mut ctx, missing_inner) = match chunk.pending_inner_geometry.take() {
+                            // If the chunk already has its inner geometry built, we can use it
+                            // to avoid having to rebuild it.
+                            Some(ctx) => (ctx, false),
+                            // Otherwise, we need to allocate a new build context (or take
+                            // one from the pool) and build the inner geometry of the chunk.
+                            None => {
+                                let mut ctx =
+                                    self.chunk_build_context_pool.pop().unwrap_or_default();
+                                ctx.clear();
+                                (ctx, true)
+                            }
+                        };
 
-                        ctx.build(pos, |pos| {
-                            self.chunks
-                                .get(&pos)
-                                .and_then(ChunkEntry::loaded)
-                                .map(|chunk| &chunk.data)
-                        });
+                        // We need all neighboring chunks to be loaded before we can build
+                        // the chunk.
+                        let mut to_request = SmallVec::<[ChunkPos; 6]>::new();
+                        let neighborhood = match ChunkNeighborhood::from_fn(pos, |pos: ChunkPos| {
+                            match self.chunks.get(&pos) {
+                                Some(ChunkEntry::Loaded(chunk)) => Some(&chunk.data),
+                                Some(ChunkEntry::Generating) => None,
+                                None => {
+                                    to_request.push(pos);
+                                    None
+                                }
+                            }
+                        }) {
+                            Some(n) => n,
+                            None => {
+                                // Request the chunks that were missing so that the next
+                                // time the chunk is requested, those chunks can be
+                                // loaded.
+                                self.tasks_to_submit.extend(to_request.iter().map(|pos| {
+                                    // We know those positions are unique because
+                                    // otherwise they wouldn't have been added to the list.
+                                    self.chunks
+                                        .insert_unique_unchecked(*pos, ChunkEntry::Generating);
+
+                                    Task {
+                                        build_context: self
+                                            .chunk_build_context_pool
+                                            .pop()
+                                            .unwrap_or_default(),
+                                        generator: self.generator.clone(),
+                                        position: *pos,
+                                    }
+                                }));
+
+                                // Put the inner geometry of the chunk back into
+                                // the slot to avoid losing it.
+
+                                if missing_inner {
+                                    self.chunk_build_context_pool.push(ctx);
+                                } else {
+                                    let Some(ChunkEntry::Loaded(chunk)) = self.chunks.get_mut(&pos)
+                                    else {
+                                        unsafe { std::hint::unreachable_unchecked() }
+                                    };
+                                    chunk.pending_inner_geometry = Some(ctx);
+                                }
+
+                                return None;
+                            }
+                        };
+
+                        // Build the chunk's geometry.
+                        if missing_inner {
+                            ctx.build_inner(neighborhood.me);
+                        }
+                        ctx.build_outer(neighborhood);
 
                         // Re-borrow the chunk mutably and return it.
                         // We can use unsafe to hint the compiler that the lookup cannot fail.
@@ -279,6 +349,7 @@ impl World {
     /// This function can be used to prioritize the chunks that are the closest to the player.
     ///
     /// The *last* chunks in the array will be the first to be submitted to the task pool.
+    #[profiling::function]
     pub fn sort_pending_chunks<F, O>(&mut self, mut key: F)
     where
         F: FnMut(ChunkPos) -> O,
@@ -293,60 +364,30 @@ impl World {
     #[profiling::function]
     pub fn flush_pending_chunks(&mut self) {
         // Check if the task pool has sent us some results.
-        for mut result in self.task_pool.fetch_outputs() {
+        for result in self.task_pool.fetch_outputs() {
             use hashbrown::hash_map::Entry;
 
             match self.chunks.entry(result.position) {
-                Entry::Occupied(e) => {
+                Entry::Occupied(mut e) => {
                     match e.get() {
                         ChunkEntry::Loaded(_) => {
                             // We received a chunk that we already have.
                             // This can happen if one of two worker threads generated the same chunk
                             // because we requested it twice (when cleaning occurs while some chunks
                             // are still loading). This should be rare enough.
-                            bns_log::warning!("received a chunk that we already have");
+                            // Just take the chunk build context back into the pool to avoid losing
+                            // it.
+                            self.chunk_build_context_pool.push(result.geometry);
                         }
                         ChunkEntry::Generating => {
-                            // Finish building the chunk.
-                            result
-                                .geometry
-                                .build_outer(result.position, &result.chunk, |pos| {
-                                    self.chunks
-                                        .get(&pos)
-                                        .and_then(ChunkEntry::loaded)
-                                        .map(|chunk| &chunk.data)
-                                });
-
-                            // Mark nearby chunks as dirty so that they get rebuilt.
-                            const OFFSETS: [IVec3; 6] = [
-                                IVec3::X,
-                                IVec3::NEG_X,
-                                IVec3::Y,
-                                IVec3::NEG_Y,
-                                IVec3::Z,
-                                IVec3::NEG_Z,
-                            ];
-
-                            for offset in OFFSETS {
-                                if let Some(ChunkEntry::Loaded(chunk)) =
-                                    self.chunks.get_mut(&(result.position + offset))
-                                {
-                                    chunk.is_dirty = true;
-                                }
-                            }
-
                             // Upload the chunk's geometry to the GPU.
                             let mut loaded = LoadedChunk::new(result.chunk);
-
-                            self.chunk_upload_context
-                                .upload(&result.geometry, &mut loaded.geometry);
-                            self.chunk_build_context_pool.push(result.geometry);
+                            loaded.pending_inner_geometry = Some(result.geometry);
 
                             // Insert the chunk into the world.
                             // We can't reuse the entry because we accessed the world
                             // earlier.
-                            self.chunks
-                                .insert(result.position, ChunkEntry::Loaded(loaded));
+                            e.insert(ChunkEntry::Loaded(loaded));
                         }
                     }
                 }
@@ -355,6 +396,9 @@ impl World {
                     // Usually occurs when we clean up the world while some chunks are
                     // still loading.
                     // It's not a big deal, just discard the chunk.
+                    // Just take the chunk build context back into the pool to avoid losing
+                    // it.
+                    self.chunk_build_context_pool.push(result.geometry);
                 }
             }
         }
