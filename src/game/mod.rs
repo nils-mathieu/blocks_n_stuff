@@ -26,7 +26,7 @@ mod utility;
 ///
 /// This is done to avoid cleaning up the data too often, which would be a waste of resources
 /// and of time (as freeing memory may be relatively expensive in some cases).
-const WORLD_CLEAN_UP_INTERVAL: Duration = Duration::from_secs(5);
+const WORLD_CLEAN_UP_INTERVAL: Duration = Duration::from_secs(4);
 
 /// The current state of the game.
 pub struct Game {

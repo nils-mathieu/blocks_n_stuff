@@ -11,7 +11,7 @@ pub fn load(reader: impl io::Read) -> Result<crate::Image, crate::Error> {
     let mut reader = decoder.read_info().map_err(map_error)?;
 
     if reader.info().is_animated() {
-        return Err(crate::Error::Format);
+        return Err(crate::Error::UnsupportedAnimation);
     }
 
     let (format, bit_depth) = reader.output_color_type();

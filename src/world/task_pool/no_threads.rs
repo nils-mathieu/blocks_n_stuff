@@ -33,8 +33,8 @@ impl<T> NoThreads<T> {
     where
         T: Task,
     {
-        /// At most 5 tasks can be executed per request.
-        const BUDGET: usize = 1;
+        /// The maximum number of tasks that can be executed per tick.
+        const BUDGET: usize = 10;
 
         let mut result = SmallVec::<[T::Output; BUDGET]>::new();
 

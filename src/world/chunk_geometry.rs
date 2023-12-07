@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
-use bitflags::bitflags;
 use bns_core::{
     BlockAppearance, BlockFlags, BlockId, BlockVisibility, Chunk, ChunkPos, Face, LocalPos,
     TextureId,
 };
 use bns_render::data::{QuadFlags, QuadInstance};
 use bns_render::{DynamicVertexBuffer, Gpu};
-use bytemuck::NoUninit;
+
+use bitflags::bitflags;
 use glam::IVec3;
 
 /// The built geometry of a chunk. This is a wrapper around a vertex buffer that
@@ -65,6 +65,9 @@ impl ChunkGeometry {
 ///
 /// This mostly includes temporary buffers.
 pub struct ChunkBuildContext {
+    /// A pool of dynamic vertex buffers used to build the geometry of the chunk.
+    buffer_pool: Vec<DynamicVertexBuffer<QuadInstance>>,
+
     gpu: Arc<Gpu>,
     opaque_quads: Vec<QuadInstance>,
     transparent_quads: Vec<QuadInstance>,
@@ -74,6 +77,7 @@ impl ChunkBuildContext {
     /// Creates a new [`ChunkBuildContext`].
     pub fn new(gpu: Arc<Gpu>) -> Self {
         Self {
+            buffer_pool: Vec::new(),
             gpu,
             opaque_quads: Vec::new(),
             transparent_quads: Vec::new(),
@@ -128,34 +132,38 @@ impl ChunkBuildContext {
         }
     }
 
+    /// Acquires a buffer from the pool.
+    fn acquire_buffer(&mut self) -> DynamicVertexBuffer<QuadInstance> {
+        self.buffer_pool
+            .pop()
+            .unwrap_or_else(|| DynamicVertexBuffer::new(self.gpu.clone(), 1024))
+    }
+
+    /// Releases a buffer to the pool.
+    fn release_buffer(&mut self, buf: DynamicVertexBuffer<QuadInstance>) {
+        self.buffer_pool.push(buf);
+    }
+
     /// Overwrites the provided [`ChunkGeometry`] instance with this [`ChunkBuildContext`].
     pub fn apply(&mut self, geometry: &mut ChunkGeometry) {
-        fn apply_inner<T>(gpu: &Arc<Gpu>, buf: &mut Option<DynamicVertexBuffer<T>>, data: &[T])
-        where
-            T: NoUninit,
-        {
-            match buf {
-                Some(buf) => {
-                    buf.clear();
-                    buf.extend(data);
-                }
-                None => *buf = Some(DynamicVertexBuffer::new_with_data(gpu.clone(), data)),
-            }
+        if !self.opaque_quads.is_empty() {
+            let quads = geometry
+                .opaque_quads
+                .get_or_insert_with(|| self.acquire_buffer());
+            quads.clear();
+            quads.extend(&self.opaque_quads);
+        } else if let Some(buf) = geometry.opaque_quads.take() {
+            self.release_buffer(buf);
         }
 
-        if !self.opaque_quads.is_empty() {
-            apply_inner(&self.gpu, &mut geometry.opaque_quads, &self.opaque_quads);
-        } else {
-            geometry.opaque_quads = None;
-        }
         if !self.transparent_quads.is_empty() {
-            apply_inner(
-                &self.gpu,
-                &mut geometry.transparent_quads,
-                &self.transparent_quads,
-            );
-        } else {
-            geometry.transparent_quads = None;
+            let quads = geometry
+                .transparent_quads
+                .get_or_insert_with(|| self.acquire_buffer());
+            quads.clear();
+            quads.extend(&self.transparent_quads);
+        } else if let Some(buf) = geometry.transparent_quads.take() {
+            self.release_buffer(buf);
         }
     }
 }

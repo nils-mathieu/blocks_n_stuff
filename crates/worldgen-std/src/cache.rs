@@ -73,7 +73,7 @@ impl Cache {
         {
             let mut guard = self.columns.write();
             guard.retain(|pos, _| pos.distance_squared(center.xz()) as u32 <= h_radius * h_radius);
-            guard.shrink_to_fit();
+            guard.shrink_to(h_radius as usize * v_radius as usize);
         }
 
         {
@@ -82,7 +82,7 @@ impl Cache {
                 pos.xz().distance_squared(center.xz()) as u32 <= h_radius * h_radius
                     || (pos.y - center.y).unsigned_abs() <= v_radius
             });
-            guard.shrink_to_fit();
+            guard.shrink_to(h_radius as usize * h_radius as usize * v_radius as usize);
         }
     }
 }

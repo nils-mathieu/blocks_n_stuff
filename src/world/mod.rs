@@ -143,7 +143,8 @@ impl World {
         };
 
         self.chunks.retain(|&pos, _| retain_chunk(pos));
-        self.chunks.shrink_to_fit();
+        self.chunks
+            .shrink_to(h_radius as usize * h_radius as usize * v_radius as usize);
 
         self.task_pool.retain_tasks(|task| retain_chunk(task.pos));
     }
