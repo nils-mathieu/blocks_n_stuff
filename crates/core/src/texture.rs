@@ -50,6 +50,7 @@ pub enum TextureId {
     StructureOriginBlock,
     OakPlanks,
     PinePlanks,
+    Glass,
 }
 
 impl TextureId {
@@ -110,6 +111,7 @@ impl TextureId {
             Self::StructureOriginBlock => "structure_origin_block",
             Self::OakPlanks => "oak_planks",
             Self::PinePlanks => "pine_planks",
+            Self::Glass => "glass",
         }
     }
 
@@ -159,6 +161,7 @@ impl TextureId {
             Self::StructureOriginBlock => include_asset!("structure_origin_block"),
             Self::OakPlanks => include_asset!("oak_planks"),
             Self::PinePlanks => include_asset!("pine_planks"),
+            Self::Glass => include_asset!("glass"),
         }
     }
 

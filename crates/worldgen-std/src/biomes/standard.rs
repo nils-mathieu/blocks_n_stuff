@@ -42,7 +42,7 @@ make_standard_biome! {
         biome.add_prop(BlockId::Daffodil.into(), 600);
         biome.add_structure(structures::OAK_TREES, 3000);
         biome.add_structure(structures::BOULDERS, 6000);
-        biome.add_structure(structures::LIL_HOUSES, 50000)
+        biome.add_structure(structures::LIL_HOUSES, 100000)
     });
 }
 
