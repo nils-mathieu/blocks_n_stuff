@@ -20,6 +20,7 @@ pub enum BiomeId {
     Desert,
     PineForest,
     Ocean,
+    Mountain,
 }
 
 // SAFETY:
@@ -136,18 +137,18 @@ impl FromRng for BiomeRegistry {
             // Desert
             BiomeInfo {
                 continentality_range: (0.0, 1.0),
-                temperature_range: (-1.0, 1.0),
-                humidity_range: (-1.0, 1.0),
+                temperature_range: (0.0, 1.0),
+                humidity_range: (0.0, 1.0),
                 weight: 100,
                 max_structure_size: 0,
                 implementation: Box::new(crate::biomes::Desert::from_rng(rng)),
             },
             // PineForest
             BiomeInfo {
-                continentality_range: (0.0, 1.0),
+                continentality_range: (0.0, 0.2),
                 temperature_range: (-1.0, 1.0),
-                humidity_range: (-1.0, 1.0),
-                weight: 50,
+                humidity_range: (-1.0, 0.5),
+                weight: 100,
                 max_structure_size: 0,
                 implementation: Box::new(crate::biomes::PineForest::from_rng(rng)),
             },
@@ -159,6 +160,15 @@ impl FromRng for BiomeRegistry {
                 weight: 200,
                 max_structure_size: 0,
                 implementation: Box::new(crate::biomes::Ocean::from_rng(rng)),
+            },
+            // Mountain
+            BiomeInfo {
+                continentality_range: (0.0, 1.0),
+                temperature_range: (-1.0, 1.0),
+                humidity_range: (-1.0, 1.0),
+                weight: 10,
+                max_structure_size: 0,
+                implementation: Box::new(crate::biomes::Mountain::from_rng(rng)),
             },
         ];
 

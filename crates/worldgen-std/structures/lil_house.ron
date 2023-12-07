@@ -1,0 +1,1698 @@
+(
+    min: (-4, 0, -4),
+    max: (5, 10, 5),
+    edits: [
+        (
+            position: (-4, 0, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-4, 0, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-4, 1, 2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-4, 1, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-4, 1, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-4, 2, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-3, 0, -4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 0, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 0, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 0, 0),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 0, 1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 0, 2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 0, 3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 0, 5),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 1, -3),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-3, 1, 1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-3, 1, 2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-3, 1, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-3, 1, 4),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-3, 2, -3),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-3, 2, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-3, 2, 4),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-3, 3, -3),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-3, 3, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-3, 3, 4),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-3, 4, -3),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-3, 4, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-3, 4, 4),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-3, 5, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 5, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 5, 3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 5, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 6, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 6, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 6, 2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 6, 3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 7, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 7, 2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 8, 0),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 8, 1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-2, 0, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-2, 0, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-2, 1, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 1, -1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 1, 0),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 1, 1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 1, 2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 1, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 2, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 2, -1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 2, 2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 2, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 3, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 3, -1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 3, 2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 3, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 4, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 4, -1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 4, 0),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 4, 1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 4, 2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 4, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 5, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-2, 5, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-2, 5, -1),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-2, 5, 0),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-2, 5, 1),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-2, 5, 2),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-2, 5, 3),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-2, 5, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-2, 6, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-2, 6, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-2, 6, 0),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-2, 6, 1),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-2, 6, 2),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-2, 6, 3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-2, 7, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-2, 7, 0),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-2, 7, 1),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-2, 7, 2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-2, 8, 0),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-2, 8, 1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-1, 0, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-1, 0, -1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 0, 0),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 0, 1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 0, 2),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 0, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-1, 1, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-1, 1, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-1, 2, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-1, 2, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-1, 3, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-1, 3, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-1, 4, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-1, 4, -1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-1, 4, 0),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-1, 4, 1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-1, 4, 2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-1, 4, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-1, 5, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-1, 5, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-1, 5, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-1, 6, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-1, 6, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-1, 6, 3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-1, 7, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-1, 7, 2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-1, 8, 0),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-1, 8, 1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (0, 0, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (0, 0, -1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (0, 0, 0),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (0, 0, 1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (0, 0, 2),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (0, 0, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (0, 1, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (0, 1, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (0, 4, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (0, 4, -1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (0, 4, 0),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (0, 4, 1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (0, 4, 2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (0, 4, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (0, 5, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (0, 5, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (0, 5, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (0, 6, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (0, 6, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (0, 6, 3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (0, 7, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (0, 7, 2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (0, 8, 0),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (0, 8, 1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (1, 0, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (1, 0, -1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (1, 0, 0),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (1, 0, 1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (1, 0, 2),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (1, 0, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (1, 1, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (1, 1, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (1, 2, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (1, 2, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (1, 3, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (1, 3, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (1, 4, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (1, 4, -1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (1, 4, 0),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (1, 4, 1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (1, 4, 2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (1, 4, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (1, 5, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (1, 5, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (1, 5, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (1, 6, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (1, 6, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (1, 6, 3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (1, 7, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (1, 7, 2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (1, 8, 0),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (1, 8, 1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (2, 0, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (2, 0, -1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (2, 0, 0),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (2, 0, 1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (2, 0, 2),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (2, 0, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (2, 1, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (2, 1, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (2, 1, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 2, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (2, 2, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (2, 3, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (2, 3, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (2, 4, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (2, 4, -1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (2, 4, 0),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (2, 4, 1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (2, 4, 2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (2, 4, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (2, 5, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (2, 5, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (2, 5, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (2, 6, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (2, 6, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (2, 6, 3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (2, 7, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (2, 7, 2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (2, 8, 0),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (2, 8, 1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (3, 0, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (3, 0, 1),
+            block: (
+                id: PineLog,
+            ),
+        ),
+        (
+            position: (3, 0, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (3, 1, -3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 1, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 1, -1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 1, 0),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 1, 2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 1, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 1, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 1, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 2, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 2, 0),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 2, 2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 2, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 2, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 3, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 3, -1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 3, 0),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 3, 1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 3, 2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 3, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 4, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 4, -1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 4, 0),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 4, 1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 4, 2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 4, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (3, 5, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (3, 5, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (3, 5, -1),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (3, 5, 0),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (3, 5, 1),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (3, 5, 2),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (3, 5, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (3, 6, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (3, 6, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (3, 6, 0),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (3, 6, 1),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (3, 6, 2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (3, 6, 3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (3, 7, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (3, 7, 2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (3, 8, 0),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (3, 8, 1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 0, -4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 0, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 0, -2),
+            block: (
+                id: Diorite,
+            ),
+        ),
+        (
+            position: (4, 0, -1),
+            block: (
+                id: Diorite,
+            ),
+        ),
+        (
+            position: (4, 0, 0),
+            block: (
+                id: Diorite,
+            ),
+        ),
+        (
+            position: (4, 0, 1),
+            block: (
+                id: Diorite,
+            ),
+        ),
+        (
+            position: (4, 0, 2),
+            block: (
+                id: Diorite,
+            ),
+        ),
+        (
+            position: (4, 0, 3),
+            block: (
+                id: Diorite,
+            ),
+        ),
+        (
+            position: (4, 0, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 0, 5),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 1, -3),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 1, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 1, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 1, 2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 1, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 1, 4),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 2, -3),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 2, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 2, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 2, 4),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 3, -3),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 3, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 3, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 3, 4),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 4, -3),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 4, 4),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (4, 5, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 5, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 5, 3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 5, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 6, -2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 6, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 6, 2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 6, 3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 7, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 7, 0),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 7, 1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 7, 2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 8, 0),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 8, 1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (5, 0, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (5, 0, 4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (5, 1, -3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 1, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 1, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 1, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+    ],
+)

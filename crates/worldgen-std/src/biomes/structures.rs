@@ -16,3 +16,7 @@ pub const BOULDER_2: S = include_structure!("structures/boulder_2.ron");
 pub const BOULDER_3: S = include_structure!("structures/boulder_3.ron");
 
 pub const BOULDERS: &[&S] = &[&BOULDER_1, &BOULDER_2, &BOULDER_3];
+
+pub const LIL_HOUSE: S = include_structure!("structures/lil_house.ron");
+
+pub const LIL_HOUSES: &[&S] = &[&LIL_HOUSE];

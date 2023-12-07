@@ -42,11 +42,12 @@ make_standard_biome! {
         biome.add_prop(BlockId::Daffodil.into(), 600);
         biome.add_structure(structures::OAK_TREES, 3000);
         biome.add_structure(structures::BOULDERS, 6000);
+        biome.add_structure(structures::LIL_HOUSES, 50000)
     });
 }
 
 make_standard_biome! {
-    /// Creates a pine forest biome.
+    /// The pine forest biome.
     pub struct PineForest(|biome| {
         biome.set_surface_block(BlockId::Podzol.into());
         biome.set_dirt(BlockId::Dirt.into(), 6, 8);
@@ -56,5 +57,18 @@ make_standard_biome! {
         biome.add_prop(BlockId::Pebbles.into(), 400);
         biome.add_structure(structures::PINE_TREES, 200);
         biome.add_structure(structures::BOULDERS, 500);
+    });
+}
+
+make_standard_biome! {
+    /// The moutain biome.
+    pub struct Mountain(|biome| {
+        biome.set_surface_block(BlockId::Stone.into());
+        biome.set_dirt(BlockId::Stone.into(), 3, 2);
+        biome.set_underground(BlockId::Stone.into());
+        biome.set_base_height(40.0);
+        biome.add_height_noise(20.0, 0.01);
+        biome.add_height_noise(5.0, 0.03);
+        biome.add_height_noise(2.0, 0.1);
     });
 }

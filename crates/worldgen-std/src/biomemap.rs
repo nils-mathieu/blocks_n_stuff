@@ -50,10 +50,10 @@ impl ClimateMap {
     pub const CONTINENTALITY_SCALE: f32 = 1.0;
 
     /// The individual scale of the temperature map.
-    pub const TEMPERATURE_SCALE: f32 = 8.0;
+    pub const TEMPERATURE_SCALE: f32 = 1.0 / 8.0;
 
     /// The individual scale of the humidity map.
-    pub const HUMIDITY_SCALE: f32 = 5.0;
+    pub const HUMIDITY_SCALE: f32 = 1.0 / 5.0;
 }
 
 impl Noise<BiomeCell> for ClimateMap {
