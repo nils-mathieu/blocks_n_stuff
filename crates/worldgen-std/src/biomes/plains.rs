@@ -20,6 +20,8 @@ pub struct Plains {
     diamond_noise: SuperSimplex3,
     tree_noise: Mixer<2>,
     tree_value: Mixer<2>,
+    boulder_noise: Mixer<2>,
+    boulder_value: Mixer<2>,
 }
 
 impl Plains {
@@ -28,6 +30,7 @@ impl Plains {
     pub const PEBBLE_PROBABILITY: u64 = 600;
     pub const DAFFODIL_PROBABILITY: u64 = 600;
     pub const TREE_PROBABILITY: u64 = 3000;
+    pub const BOULDER_PROBABILITY: u64 = 5000;
 }
 
 impl Biome for Plains {
@@ -129,6 +132,10 @@ impl Biome for Plains {
                 continue;
             }
 
+            if height < 4 {
+                continue;
+            }
+
             let world_pos = origin + IVec3::new(local_pos.x(), height, local_pos.z());
 
             if self
@@ -145,6 +152,24 @@ impl Biome for Plains {
                 out.push(PendingStructure {
                     position: world_pos,
                     contents: structures::OAK_TREES[value % structures::OAK_TREES.len()].clone(),
+                    transformations: StructureTransformations::IDENTITY,
+                });
+            }
+
+            if self
+                .boulder_noise
+                .sample([world_pos.x as u64, world_pos.z as u64])
+                % Self::BOULDER_PROBABILITY
+                == 0
+            {
+                let value = self
+                    .boulder_value
+                    .sample([world_pos.x as u64, world_pos.z as u64])
+                    as usize;
+
+                out.push(PendingStructure {
+                    position: world_pos,
+                    contents: structures::BOULDERS[value % structures::BOULDERS.len()].clone(),
                     transformations: StructureTransformations::IDENTITY,
                 });
             }

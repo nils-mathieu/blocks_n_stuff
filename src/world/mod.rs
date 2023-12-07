@@ -60,18 +60,38 @@ type Chunks = HashMap<ChunkPos, ChunkEntry, BuildHasherDefault<rustc_hash::FxHas
 
 /// A task that's submitted to the task pool.
 struct Task {
+    /// The build context that should be used to build the chunk.
+    build_context: ChunkBuildContext,
     /// The generator that must be used to generate the chunk.
     generator: Arc<dyn WorldGenerator>,
     /// The position of the chunk that must be generated.
-    pos: ChunkPos,
+    position: ChunkPos,
+}
+
+/// The result of a task.
+struct TaskResult {
+    /// The position of the generated chunk.
+    position: ChunkPos,
+    /// The geometry of the generated chunk.
+    ///
+    /// This only includes the inner geometry of the chunk.
+    geometry: ChunkBuildContext,
+    /// The chunk data.
+    chunk: Chunk,
 }
 
 impl task_pool::Task for Task {
-    type Output = (ChunkPos, Chunk);
+    type Output = TaskResult;
 
-    fn execute(self) -> Self::Output {
-        let chunk = self.generator.generate(self.pos);
-        (self.pos, chunk)
+    fn execute(mut self) -> Self::Output {
+        let chunk = self.generator.generate(self.position);
+        self.build_context.clear();
+        self.build_context.build_inner(&chunk);
+        TaskResult {
+            position: self.position,
+            geometry: self.build_context,
+            chunk,
+        }
     }
 }
 
@@ -84,11 +104,14 @@ pub struct World {
     /// on the current compilation target).
     task_pool: TaskPool<Task>,
 
+    /// Contains the state required to upload GPU buffers that contain
+    /// the chunk geometry.
+    chunk_upload_context: ChunkUploadContext,
     /// The context used to build chunks.
     ///
     /// This is just a bunch of buffers that are re-used when a new chunk needs its geometry
     /// to be rebuilt.
-    chunk_build_context: ChunkBuildContext,
+    chunk_build_context_pool: Vec<ChunkBuildContext>,
 
     /// The current world generator. Used to generate new chunks when some are missing.
     generator: Arc<dyn WorldGenerator>,
@@ -105,7 +128,8 @@ impl World {
     pub fn new(gpu: Arc<Gpu>, generator: Arc<dyn WorldGenerator>) -> Self {
         Self {
             chunks: Chunks::default(),
-            chunk_build_context: ChunkBuildContext::new(gpu),
+            chunk_upload_context: ChunkUploadContext::new(gpu),
+            chunk_build_context_pool: Vec::new(),
             task_pool: TaskPool::new(),
             generator,
             tasks_to_submit: Vec::new(),
@@ -146,7 +170,8 @@ impl World {
         self.chunks
             .shrink_to(h_radius as usize * h_radius as usize * v_radius as usize);
 
-        self.task_pool.retain_tasks(|task| retain_chunk(task.pos));
+        self.task_pool
+            .retain_tasks(|task| retain_chunk(task.position));
     }
 
     /// Gets the block at the provided position, or [`None`] if the chunk is not loaded yet.
@@ -204,7 +229,10 @@ impl World {
                             });
                         }
 
-                        self.chunk_build_context.build(pos, |pos| {
+                        let mut ctx = self.chunk_build_context_pool.pop().unwrap_or_default();
+                        ctx.clear();
+
+                        ctx.build(pos, |pos| {
                             self.chunks
                                 .get(&pos)
                                 .and_then(ChunkEntry::loaded)
@@ -218,7 +246,8 @@ impl World {
                         };
 
                         chunk.is_dirty = false;
-                        self.chunk_build_context.apply(&mut chunk.geometry);
+                        self.chunk_upload_context.upload(&ctx, &mut chunk.geometry);
+                        self.chunk_build_context_pool.push(ctx);
 
                         Some(chunk)
                     }
@@ -233,10 +262,13 @@ impl World {
                 // The chunk is not loaded yet.
                 // We need to request it from the task pool.
                 e.insert(ChunkEntry::Generating);
+
                 self.tasks_to_submit.push(Task {
                     generator: self.generator.clone(),
-                    pos,
+                    position: pos,
+                    build_context: self.chunk_build_context_pool.pop().unwrap_or_default(),
                 });
+
                 None
             }
         }
@@ -253,7 +285,7 @@ impl World {
         O: Ord,
     {
         self.tasks_to_submit
-            .sort_unstable_by_key(|task| key(task.pos))
+            .sort_unstable_by_key(|task| key(task.position))
     }
 
     /// Removes any currently pending chunks from the task pool and submits the last chunk that
@@ -261,11 +293,11 @@ impl World {
     #[profiling::function]
     pub fn flush_pending_chunks(&mut self) {
         // Check if the task pool has sent us some results.
-        for (pos, chunk) in self.task_pool.fetch_outputs() {
+        for mut result in self.task_pool.fetch_outputs() {
             use hashbrown::hash_map::Entry;
 
-            match self.chunks.entry(pos) {
-                Entry::Occupied(mut e) => {
+            match self.chunks.entry(result.position) {
+                Entry::Occupied(e) => {
                     match e.get() {
                         ChunkEntry::Loaded(_) => {
                             // We received a chunk that we already have.
@@ -275,7 +307,15 @@ impl World {
                             bns_log::warning!("received a chunk that we already have");
                         }
                         ChunkEntry::Generating => {
-                            e.insert(ChunkEntry::Loaded(LoadedChunk::new(chunk)));
+                            // Finish building the chunk.
+                            result
+                                .geometry
+                                .build_outer(result.position, &result.chunk, |pos| {
+                                    self.chunks
+                                        .get(&pos)
+                                        .and_then(ChunkEntry::loaded)
+                                        .map(|chunk| &chunk.data)
+                                });
 
                             // Mark nearby chunks as dirty so that they get rebuilt.
                             const OFFSETS: [IVec3; 6] = [
@@ -289,11 +329,24 @@ impl World {
 
                             for offset in OFFSETS {
                                 if let Some(ChunkEntry::Loaded(chunk)) =
-                                    self.chunks.get_mut(&(pos + offset))
+                                    self.chunks.get_mut(&(result.position + offset))
                                 {
                                     chunk.is_dirty = true;
                                 }
                             }
+
+                            // Upload the chunk's geometry to the GPU.
+                            let mut loaded = LoadedChunk::new(result.chunk);
+
+                            self.chunk_upload_context
+                                .upload(&result.geometry, &mut loaded.geometry);
+                            self.chunk_build_context_pool.push(result.geometry);
+
+                            // Insert the chunk into the world.
+                            // We can't reuse the entry because we accessed the world
+                            // earlier.
+                            self.chunks
+                                .insert(result.position, ChunkEntry::Loaded(loaded));
                         }
                     }
                 }

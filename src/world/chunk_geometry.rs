@@ -61,57 +61,93 @@ impl ChunkGeometry {
     }
 }
 
+/// Contains the state required to upload the geometry of a chunk to the GPU.
+pub struct ChunkUploadContext {
+    /// The GPU itself.
+    gpu: Arc<Gpu>,
+    /// A pool of dynamic vertex buffers used to build the geometry of the chunk.
+    buffer_pool: Vec<DynamicVertexBuffer<QuadInstance>>,
+}
+
+impl ChunkUploadContext {
+    /// Creates a new [`ChunkUploadContext`].
+    pub fn new(gpu: Arc<Gpu>) -> Self {
+        Self {
+            gpu,
+            buffer_pool: Vec::new(),
+        }
+    }
+
+    /// Acquires a buffer from the pool.
+    fn acquire_buffer(&mut self) -> DynamicVertexBuffer<QuadInstance> {
+        self.buffer_pool
+            .pop()
+            .unwrap_or_else(|| DynamicVertexBuffer::new(self.gpu.clone(), 1024))
+    }
+
+    /// Releases a buffer to the pool.
+    fn release_buffer(&mut self, buf: DynamicVertexBuffer<QuadInstance>) {
+        self.buffer_pool.push(buf);
+    }
+
+    /// Overwrites the provided [`ChunkGeometry`] instance with the content of the provided
+    /// [`ChunkBuildContext`].
+    pub fn upload(&mut self, ctx: &ChunkBuildContext, geometry: &mut ChunkGeometry) {
+        if !ctx.opaque_quads.is_empty() {
+            let quads = geometry
+                .opaque_quads
+                .get_or_insert_with(|| self.acquire_buffer());
+            quads.clear();
+            quads.extend(&ctx.opaque_quads);
+        } else if let Some(buf) = geometry.opaque_quads.take() {
+            self.release_buffer(buf);
+        }
+
+        if !ctx.transparent_quads.is_empty() {
+            let quads = geometry
+                .transparent_quads
+                .get_or_insert_with(|| self.acquire_buffer());
+            quads.clear();
+            quads.extend(&ctx.transparent_quads);
+        } else if let Some(buf) = geometry.transparent_quads.take() {
+            self.release_buffer(buf);
+        }
+    }
+}
+
 /// Contains some resources useful for building a chunk.
 ///
 /// This mostly includes temporary buffers.
+#[derive(Default)]
 pub struct ChunkBuildContext {
-    /// A pool of dynamic vertex buffers used to build the geometry of the chunk.
-    buffer_pool: Vec<DynamicVertexBuffer<QuadInstance>>,
-
-    gpu: Arc<Gpu>,
     opaque_quads: Vec<QuadInstance>,
     transparent_quads: Vec<QuadInstance>,
 }
 
 impl ChunkBuildContext {
-    /// Creates a new [`ChunkBuildContext`].
-    pub fn new(gpu: Arc<Gpu>) -> Self {
-        Self {
-            buffer_pool: Vec::new(),
-            gpu,
-            opaque_quads: Vec::new(),
-            transparent_quads: Vec::new(),
-        }
-    }
-
-    /// Builds the geometry of the provided chunk.
-    ///
-    /// # Remarks
-    ///
-    /// This function must be followed by a call to [`ChunkBuildContext::apply`] to actually
-    /// upload the geometry to the GPU.
-    #[profiling::function]
-    pub fn build<'a>(
-        &mut self,
-        pos: ChunkPos,
-        mut chunk_provider: impl FnMut(ChunkPos) -> Option<&'a Chunk>,
-    ) {
+    /// Clears the current state of the builder, ensuring that the geometry
+    /// of the previous chunk is not reused.
+    pub fn clear(&mut self) {
         self.opaque_quads.clear();
         self.transparent_quads.clear();
+    }
 
-        // Get information about the requested chunk.
-        let Some(me) = chunk_provider(pos) else {
-            debug_assert!(false, "requested chunk not even present wtf are you doing)");
-            return;
-        };
+    /// Only build the inner of the chunk.
+    ///
+    /// This operation does not require lookups to the chunk provider.
+    #[profiling::function]
+    pub fn build_inner(&mut self, chunk: &Chunk) {
+        LocalPos::iter_all().for_each(|pos| build_block(chunk, pos, self));
+    }
 
-        // Build the inner geometry of the chunk. Avoid lookups to the chunk provider when
-        // possible (which is most of the time because most of the geometry is within the
-        // current chunk).
-        LocalPos::iter_all().for_each(|pos| build_block(me, pos, self));
-
-        // Lookup once each adjacent chunk.
-        // If they are available, we can build the boundary of the chunk.
+    /// Only build the outer geometry of the chunk.
+    #[profiling::function]
+    pub fn build_outer<'a>(
+        &mut self,
+        pos: ChunkPos,
+        me: &Chunk,
+        mut chunk_provider: impl FnMut(ChunkPos) -> Option<&'a Chunk>,
+    ) {
         if let Some(other) = chunk_provider(pos + IVec3::X) {
             build_chunk_boundary_x(me, other, self);
         }
@@ -132,39 +168,32 @@ impl ChunkBuildContext {
         }
     }
 
-    /// Acquires a buffer from the pool.
-    fn acquire_buffer(&mut self) -> DynamicVertexBuffer<QuadInstance> {
-        self.buffer_pool
-            .pop()
-            .unwrap_or_else(|| DynamicVertexBuffer::new(self.gpu.clone(), 1024))
-    }
+    /// Builds the geometry of the provided chunk.
+    ///
+    /// # Remarks
+    ///
+    /// This function must be followed by a call to [`ChunkBuildContext::apply`] to actually
+    /// upload the geometry to the GPU.
+    #[profiling::function]
+    pub fn build<'a>(
+        &mut self,
+        pos: ChunkPos,
+        mut chunk_provider: impl FnMut(ChunkPos) -> Option<&'a Chunk>,
+    ) {
+        // Get information about the requested chunk.
+        let Some(me) = chunk_provider(pos) else {
+            debug_assert!(false, "requested chunk not even present wtf are you doing)");
+            return;
+        };
 
-    /// Releases a buffer to the pool.
-    fn release_buffer(&mut self, buf: DynamicVertexBuffer<QuadInstance>) {
-        self.buffer_pool.push(buf);
-    }
+        // Build the inner geometry of the chunk. Avoid lookups to the chunk provider when
+        // possible (which is most of the time because most of the geometry is within the
+        // current chunk).
+        self.build_inner(me);
 
-    /// Overwrites the provided [`ChunkGeometry`] instance with this [`ChunkBuildContext`].
-    pub fn apply(&mut self, geometry: &mut ChunkGeometry) {
-        if !self.opaque_quads.is_empty() {
-            let quads = geometry
-                .opaque_quads
-                .get_or_insert_with(|| self.acquire_buffer());
-            quads.clear();
-            quads.extend(&self.opaque_quads);
-        } else if let Some(buf) = geometry.opaque_quads.take() {
-            self.release_buffer(buf);
-        }
-
-        if !self.transparent_quads.is_empty() {
-            let quads = geometry
-                .transparent_quads
-                .get_or_insert_with(|| self.acquire_buffer());
-            quads.clear();
-            quads.extend(&self.transparent_quads);
-        } else if let Some(buf) = geometry.transparent_quads.take() {
-            self.release_buffer(buf);
-        }
+        // Lookup once each adjacent chunk.
+        // If they are available, we can build the boundary of the chunk.
+        self.build_outer(pos, me, chunk_provider);
     }
 }
 
