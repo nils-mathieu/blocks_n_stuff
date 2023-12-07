@@ -40,6 +40,9 @@ pub struct Player {
 
     /// The current position of the player.
     position: Vec3,
+    /// The current velocity of the player.
+    velocity: Vec3,
+
     /// The camera that the player uses to view the world.
     camera: Camera,
 
@@ -75,11 +78,12 @@ impl Player {
             mouse_sensitivity: 0.002,
             render_distance,
             vertical_render_distance: 6,
-            speed: 10.0,
-            fly_speed: 20.0,
-            sprint_factor: 16.0,
+            speed: 200.0,
+            fly_speed: 300.0,
+            sprint_factor: 10.0,
             sprinting: false,
             position,
+            velocity: Vec3::ZERO,
             camera: Camera::new(far_plane, 60f32.to_radians()),
 
             chunks_in_view: Vec::new(),
@@ -243,7 +247,9 @@ impl Player {
             * sprint_factor
             * ctx.delta_seconds();
         let vdelta = vertical_movement_input * self.fly_speed * ctx.delta_seconds();
-        self.position += Vec3::new(hdelta.x, vdelta, hdelta.y);
+        self.velocity += Vec3::new(hdelta.x, vdelta, hdelta.y);
+        self.velocity *= 0.9;
+        self.position += self.velocity * ctx.delta_seconds();
 
         self.is_underwater = world
             .get_block(bns_core::utility::world_pos_of(self.position))
