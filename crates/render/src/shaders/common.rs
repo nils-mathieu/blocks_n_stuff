@@ -77,7 +77,9 @@ pub struct FrameUniforms {
     pub fog_color: Color,
     /// Some flags associated with this frame.
     pub flags: FrameFlags,
-    pub _padding: [u32; 2],
+    /// The number of milliseconds elapsed since the beginning of the game.
+    pub milliseconds: u32,
+    pub _padding: u32,
 }
 
 /// Some resources commonly used through the renderer.

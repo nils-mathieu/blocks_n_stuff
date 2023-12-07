@@ -9,6 +9,7 @@ struct FrameUniforms {
     fog_distance: f32,
     fog_color: u32,
     flags: u32,
+    milliseconds: u32,
 }
 
 @group(0) @binding(0)

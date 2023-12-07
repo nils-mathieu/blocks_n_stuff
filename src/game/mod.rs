@@ -176,7 +176,8 @@ impl Game {
             resolution: Vec2::new(ctx.width() as f32, ctx.height() as f32),
             fog_color,
             flags: FrameFlags::UNDERWATER,
-            _padding: [0; 2],
+            milliseconds: ctx.since_startup().as_millis() as u32,
+            _padding: 0,
         };
         frame.fog_enabled = self.fog_enabled;
 

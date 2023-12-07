@@ -269,11 +269,11 @@ fn build_block(chunk: &Chunk, pos: LocalPos, ctx: &mut ChunkBuildContext) {
         BlockAppearance::Liquid(surface) => {
             if !culled.contains(CulledFaces::Y) {
                 buffer.push(QuadInstance {
-                    flags: base_flags | QuadFlags::Y | QuadFlags::OFFSET_1,
+                    flags: base_flags | QuadFlags::Y | QuadFlags::OFFSET_1 | QuadFlags::LIQUID,
                     texture: surface as u32,
                 });
                 buffer.push(QuadInstance {
-                    flags: base_flags | QuadFlags::NEG_Y | QuadFlags::OFFSET_7,
+                    flags: base_flags | QuadFlags::NEG_Y | QuadFlags::OFFSET_7 | QuadFlags::LIQUID,
                     texture: surface as u32,
                 });
             }
@@ -539,13 +539,15 @@ fn build_single_face_y(pos: LocalPos, chunk: &Chunk, ctx: &mut ChunkBuildContext
             buffer.push(QuadInstance {
                 flags: QuadFlags::from_chunk_index(pos.index())
                     | QuadFlags::OFFSET_1
-                    | QuadFlags::Y,
+                    | QuadFlags::Y
+                    | QuadFlags::LIQUID,
                 texture: surface as u32,
             });
             buffer.push(QuadInstance {
                 flags: QuadFlags::from_chunk_index(pos.index())
                     | QuadFlags::NEG_Y
-                    | QuadFlags::OFFSET_7,
+                    | QuadFlags::OFFSET_7
+                    | QuadFlags::LIQUID,
                 texture: surface as u32,
             });
         }

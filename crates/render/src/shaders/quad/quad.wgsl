@@ -9,6 +9,7 @@ struct FrameUniforms {
     fog_distance: f32,
     fog_color: u32,
     flags: u32,
+    milliseconds: u32,
 }
 
 @group(0) @binding(0)
@@ -42,6 +43,13 @@ struct Interpolator {
     @location(2) @interpolate(flat) flags: u32,
     // The normal of the vertex.
     @location(3) @interpolate(flat) normal: vec3<f32>,
+}
+
+const TAU: f32 = 6.28318530718;
+
+// Returns a number between 0.0 and TAU (PI*2) that wraps around every `millis` milliseconds.
+fn periodic_mod(millis: u32) -> f32 {
+    return TAU * f32(frame.milliseconds % millis) / f32(millis);
 }
 
 @vertex
@@ -114,6 +122,7 @@ fn vs_main(
     let occluded_left: u32 = (instance.flags >> 27u) & 1u;
     let occluded_right: u32 = (instance.flags >> 28u) & 1u;
     let overlay: u32 = (instance.flags >> 29u) & 1u;
+    let liquid: u32 = (instance.flags >> 30u) & 1u;
 
     let normal = NORMALS[face];
 
@@ -122,7 +131,7 @@ fn vs_main(
     // The position of the voxel within its chunk.
     let chunk_local = vec3<i32>(i32(local_x), i32(local_y), i32(local_z));
     // The position of the vertex in world-space coordinates.
-    let world_pos = vec3<f32>(32 * chunk.position + chunk_local) + vertex_pos;
+    var world_pos = vec3<f32>(32 * chunk.position + chunk_local) + vertex_pos;
 
     // OPTIMIZE:
     //  Create an array of matrices that represent the different
@@ -140,6 +149,10 @@ fn vs_main(
     }
     if mirror_y != 0u {
         tex_coords = vec2(tex_coords.x, 1.0 - tex_coords.y);
+    }
+
+    if liquid != 0u {
+        world_pos.y += cos(periodic_mod(4000u) + world_pos.x * 0.2) * 0.1;
     }
 
     var output: Interpolator;

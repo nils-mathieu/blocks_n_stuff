@@ -32,6 +32,7 @@ bitflags! {
     /// | 22-24 | `offset`   | The offset of the block.          |
     /// | 25-28 | `occluded` | Whether the quad is occluded.     |
     /// | 29    | `overlay`  | Whether the quad is an overlay.   |
+    /// | 30    | `liquid`   | Whether it's a liquid quad.       |
     ///
     /// - `facing` can be one of the following values:
     ///
@@ -68,6 +69,9 @@ bitflags! {
     ///
     /// - `overlay`: whether the quad is an overlay. If this bit is set, the quad will be rendered
     ///   with a slight offset in the direction of its normal.
+    ///
+    /// - `liquid`: whether the quad is a liquid quad. If this bit is set, the quad will be used
+    ///   when rendering underwater fog and reflections. It will also be subject to animation.
     #[derive(Debug, Clone, Copy)]
     #[repr(transparent)]
     pub struct QuadFlags: u32 {
@@ -154,6 +158,12 @@ bitflags! {
         ///
         /// When set, the quad will be rendered with a slight offset in the direction of its normal.
         const OVERLAY = 1 << 29;
+
+        /// Whether the quad is a liquid quad.
+        ///
+        /// When set, the quad will be used when rendering underwater fog and reflections. It will
+        /// also be subject to animation.
+        const LIQUID = 1 << 30;
     }
 }
 

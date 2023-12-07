@@ -8,7 +8,7 @@
   - [x] Optimized voxel renderer.
   - [x] Skybox.
   - [x] Reloadable texture atlas.
-  - [ ] Ambient occlusion.
+  - [x] Ambient occlusion.
   - [x] Distance fog.
   - [ ] Underwater fog.
   - [x] Text rendering.
