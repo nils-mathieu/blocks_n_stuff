@@ -117,6 +117,10 @@ impl Renderer {
                 Ui::Sprite { instances, texture } => {
                     self.ui_sprite_pipeline.render(&mut rp, *instances, texture);
                 }
+                Ui::AtlasSprite(instances) => {
+                    self.ui_atlas_sprite_pipeline
+                        .render(&res, &mut rp, *instances);
+                }
             }
         }
 

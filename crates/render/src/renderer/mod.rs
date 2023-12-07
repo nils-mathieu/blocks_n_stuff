@@ -10,6 +10,7 @@ use crate::shaders::text::TextPipeline;
 use crate::Gpu;
 
 pub use crate::shaders::common::TextureAtlasConfig;
+use crate::shaders::ui_atlas_sprite::UiAtlasSpritePipeline;
 use crate::shaders::ui_sprite::UiSpritePipeline;
 
 mod render;
@@ -57,6 +58,8 @@ pub struct Renderer {
     text_pipeline: TextPipeline,
     /// The pipeline responsible for rendering sprites in the UI.
     ui_sprite_pipeline: UiSpritePipeline,
+    /// The pipeline responsible for rendering sprites in the UI using the global texture atlas.
+    ui_atlas_sprite_pipeline: UiAtlasSpritePipeline,
 }
 
 impl Renderer {
@@ -68,6 +71,7 @@ impl Renderer {
         let fog_pipeline = FogPipeline::new(&gpu, config.output_format);
         let text_pipeline = TextPipeline::new(&gpu, config.output_format);
         let ui_sprite_pipeline = UiSpritePipeline::new(&gpu, config.output_format);
+        let ui_atlas_sprite_pipeline = UiAtlasSpritePipeline::new(&gpu, config.output_format);
 
         Self {
             gpu,
@@ -77,6 +81,7 @@ impl Renderer {
             fog_pipeline,
             text_pipeline,
             ui_sprite_pipeline,
+            ui_atlas_sprite_pipeline,
         }
     }
 

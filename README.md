@@ -40,6 +40,8 @@ This project uses the following thrid-party Rust libraries:
 | <kbd>Arrow up</kbd>   | Increase render distance |
 | <kbd>Arrow down</kbd> | Decrease render distance |
 | <kbd>F10</kbd>        | Toggle fog               |
+| <kbd>C</kbd>          | Previous block           |
+| <kbd>V</kbd>          | Next block               |
 
 ### Debug
 

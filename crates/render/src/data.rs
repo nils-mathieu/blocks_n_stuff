@@ -6,6 +6,7 @@ pub use crate::shaders::common::{FrameFlags, FrameUniforms};
 pub use crate::shaders::line::{LineFlags, LineInstance};
 pub use crate::shaders::quad::{ChunkUniforms, QuadFlags, QuadInstance};
 pub use crate::shaders::text::{CharacterFlags, CharacterInstance, CharacterInstanceCursor};
+pub use crate::shaders::ui_atlas_sprite::AtlasSprite;
 pub use crate::shaders::ui_sprite::Sprite;
 
 /// An UI element to draw.
@@ -21,6 +22,8 @@ pub enum Ui<'a> {
         /// The texture to use for the sprites.
         texture: &'a Texture,
     },
+    /// A sprite that's sampled from the global texture atlas (the one used for quads).
+    AtlasSprite(VertexBufferSlice<'a, AtlasSprite>),
 }
 
 /// The data required to render a frame.
