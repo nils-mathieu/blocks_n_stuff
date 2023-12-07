@@ -1,19 +1,18 @@
 # Features
 
-- [ ] Infinite terrain generation.
+- [x] Infinite terrain generation.
   - [x] Modular biomes.
   - [x] Base terrain.
   - [x] Structures (trees, big rocks, etc).
-- [ ] Basic graphics.
+- [x] Basic graphics.
   - [x] Optimized voxel renderer.
   - [x] Skybox.
   - [x] Reloadable texture atlas.
   - [x] Ambient occlusion.
   - [x] Distance fog.
-  - [ ] Underwater fog.
+  - [x] Underwater fog.
   - [x] Text rendering.
   - [x] Debug UI.
-  - [ ] Mipmaps.
 - [ ] Basic gameplay.
   - [ ] Physics system.
   - [ ] Mincraft survival-like player movement.
