@@ -13,9 +13,9 @@
   - [x] Underwater fog.
   - [x] Text rendering.
   - [x] Debug UI.
-- [ ] Basic gameplay.
-  - [ ] Physics system.
-  - [ ] Mincraft survival-like player movement.
+- [x] Basic gameplay.
+  - [x] Physics system.
+  - [x] Mincraft survival-like player movement.
   - [x] Mining, placing blocks.
 - [ ] Advanced graphics.
   - [ ] Dynamic lighting.

@@ -1,4 +1,5 @@
 mod camera;
+use std::f32::consts::E;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -426,8 +427,6 @@ impl Player {
             }
         }
 
-        self.is_on_ground = false;
-
         // Resolve collisions.
         let hit = self.collision_context.sweep(
             self.collider,
@@ -440,6 +439,8 @@ impl Player {
         if hit.contains(Hit::NEG_Y) {
             self.is_on_ground = true;
             self.is_flying = false;
+        } else {
+            self.is_on_ground = false;
         }
 
         if hit.contains(Hit::HORIZONAL) {
