@@ -116,6 +116,12 @@ impl Hud {
         self.materials[self.hotbar_slot]
     }
 
+    /// Returns a mutable reference to the material currently selected in the hotbar.
+    #[inline]
+    pub fn current_material_mut(&mut self) -> &mut Option<BlockId> {
+        &mut self.materials[self.hotbar_slot]
+    }
+
     /// Rebuilds the UI.
     pub fn rebuild_ui(&mut self, width: u32, height: u32) {
         let hotbar_anchor = Vec2::new(width as f32 / 2.0, height as f32);

@@ -189,6 +189,13 @@ impl Player {
 
         self.hud.tick(ctx);
 
+        if ctx.just_pressed(MouseButton::Middle) {
+            if let Some(looking_at) = self.looking_at {
+                *self.hud.current_material_mut() = Some(looking_at.block);
+                self.hud.rebuild_ui(ctx.width(), ctx.height());
+            }
+        }
+
         self.looking_at = world
             .query_line(self.position, self.camera.view.look_at(), self.max_reach)
             .ok()
