@@ -49,18 +49,16 @@ impl Biome for Ocean {
                     + 3.0,
             );
 
-            unsafe {
-                if world_pos.y <= height {
-                    if world_pos.y >= -1 {
-                        *chunk.get_block_mut(local_pos) = BlockId::Sand;
-                    } else if world_pos.y < height - gravel {
-                        *chunk.get_block_mut(local_pos) = BlockId::Stone;
-                    } else {
-                        *chunk.get_block_mut(local_pos) = BlockId::Gravel;
-                    }
-                } else if world_pos.y <= 0 {
-                    *chunk.get_block_mut(local_pos) = BlockId::Water;
+            if world_pos.y <= height {
+                if world_pos.y >= -1 {
+                    chunk.set_block(local_pos, BlockId::Sand.into());
+                } else if world_pos.y < height - gravel {
+                    chunk.set_block(local_pos, BlockId::Stone.into());
+                } else {
+                    chunk.set_block(local_pos, BlockId::Gravel.into());
                 }
+            } else if world_pos.y <= 0 {
+                chunk.set_block(local_pos, BlockId::Water.into());
             }
         }
     }

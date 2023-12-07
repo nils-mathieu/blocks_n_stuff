@@ -44,16 +44,16 @@ impl ClimateMap {
     ///
     /// This scale is applied multiplicatively to the scale of the [`BiomeCellMap`], meaning that
     /// the overall scale of the biome map is `ClimateMap::SCALE * BiomeCellMap::SCALE`.
-    pub const SCALE: f32 = 1.0 / 14.0;
+    pub const SCALE: f32 = 1.0 / 32.0;
 
     /// The individual scale of the continentality map.
     pub const CONTINENTALITY_SCALE: f32 = 1.0;
 
     /// The individual scale of the temperature map.
-    pub const TEMPERATURE_SCALE: f32 = 3.0;
+    pub const TEMPERATURE_SCALE: f32 = 8.0;
 
     /// The individual scale of the humidity map.
-    pub const HUMIDITY_SCALE: f32 = 4.0;
+    pub const HUMIDITY_SCALE: f32 = 5.0;
 }
 
 impl Noise<BiomeCell> for ClimateMap {

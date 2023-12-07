@@ -76,7 +76,7 @@ impl Game {
         if ctx.just_pressed(KeyCode::KeyR) {
             let seed = bns_rng::entropy();
             bns_log::info!("re-creating world with seed: {seed}");
-            let generator = Arc::new(StandardWorldGenerator::from_seed::<DefaultRng>(self.seed));
+            let generator = Arc::new(StandardWorldGenerator::from_seed::<DefaultRng>(seed));
             self.world = World::new(self.gpu.clone(), generator);
             self.seed = seed;
         }

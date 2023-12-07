@@ -11,7 +11,7 @@ use crate::GenCtx;
 bitflags! {
     /// A bunch of transformations that can be applied to a structure while writing it to the
     /// world.
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Default, Debug, Clone, Copy)]
     pub struct StructureTransformations: u32 {
         /// No transformation.
         const IDENTITY = 0;
