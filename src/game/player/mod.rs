@@ -411,7 +411,7 @@ impl Player {
         }
 
         if ctx.just_pressed(KeyCode::Space) {
-            if self.last_jump_instant + Duration::from_millis(200) > ctx.since_startup() {
+            if self.last_jump_instant + Duration::from_millis(300) > ctx.since_startup() {
                 self.is_flying = !self.is_flying;
             } else {
                 self.last_jump_instant = ctx.since_startup();
@@ -419,7 +419,7 @@ impl Player {
         }
 
         if ctx.just_pressed(KeyCode::KeyW) {
-            if self.last_forward_input + Duration::from_millis(200) > ctx.since_startup() {
+            if self.last_forward_input + Duration::from_millis(300) > ctx.since_startup() {
                 self.sprinting = true;
             } else {
                 self.last_forward_input = ctx.since_startup();
