@@ -20,8 +20,10 @@
 - [ ] Advanced graphics.
   - [ ] Dynamic lighting.
   - [ ] Shadows.
-  - [ ] Animated water.
+  - [x] Animated water.
   - [ ] Ambient particles.
+  - [ ] Differred rendering would make a lot of things easier.
 - [ ] Misc
   - [ ] Screenshots.
   - [ ] Command line.
+  - [ ] Music?

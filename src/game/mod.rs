@@ -112,7 +112,7 @@ impl Game {
             self.debug.overlay_buffer(),
             "Position: {:.2} {:.2} {:.2}\n\
             Chunk: {} {} {}\n\
-            Pitch: {:.2}, Yaw: {:.2}\n\
+            Pitch: {:.2}, Yaw: {:.2} (toward {})\n\
             \n\
             Loading chunks: {}\n\
             Loaded chunks: {}\n\
@@ -129,6 +129,7 @@ impl Game {
             self.player.position_chunk().z,
             self.player.camera().view.pitch().to_degrees(),
             self.player.camera().view.yaw().to_degrees(),
+            DisplayTowards(self.player.camera().view.yaw()),
             self.world.loading_chunk_count(),
             self.world.loaded_chunk_count(),
             self.player.chunks_in_view().len(),
@@ -167,7 +168,11 @@ impl Game {
 
         // Initialize the frame.
         let projection = self.player.camera().projection.matrix();
-        let view = self.player.camera().view.matrix(self.player.position());
+        let view = self
+            .player
+            .camera()
+            .view
+            .matrix(self.player.head_position());
         frame.uniforms = FrameUniforms {
             inverse_projection: projection.inverse(),
             inverse_view: view.inverse(),
@@ -259,6 +264,26 @@ impl std::fmt::Display for DisplayLookingAt {
             )
         } else {
             write!(f, "nothing")
+        }
+    }
+}
+
+/// A simple wrapper that implement [`std::fmt::Display`] to display the direction
+/// that the player is currently looking at (given its YAW value).
+struct DisplayTowards(f32);
+
+impl std::fmt::Display for DisplayTowards {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let yaw = self.0;
+
+        if yaw < 45f32.to_radians() {
+            write!(f, "+Z")
+        } else if yaw < 135f32.to_radians() {
+            write!(f, "+X")
+        } else if yaw < 225f32.to_radians() {
+            write!(f, "-Z")
+        } else {
+            write!(f, "-X")
         }
     }
 }

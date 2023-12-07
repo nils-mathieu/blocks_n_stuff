@@ -78,6 +78,12 @@ impl Perspective {
         self.far = far;
     }
 
+    /// Sets the vertical field of view of the projection.
+    pub fn set_fov_y(&mut self, fov_y: f32) {
+        self.fov_y = fov_y;
+        self.near = compute_near_plane(self.nearest_distance, self.aspect_ratio, fov_y);
+    }
+
     /// Sets the aspect ratio of the projection.
     pub fn set_aspect_ratio(&mut self, aspect_ratio: f32) {
         self.aspect_ratio = aspect_ratio;

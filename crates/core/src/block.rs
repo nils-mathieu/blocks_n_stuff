@@ -166,12 +166,12 @@ impl BlockId {
             Self::Daffodil => BlockInfo {
                 appearance: BlockAppearance::Flat(TextureId::Daffodil),
                 visibility: BlockVisibility::SemiOpaque,
-                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
+                flags: BlockFlags::TANGIBLE,
             },
             Self::Pebbles => BlockInfo {
                 appearance: BlockAppearance::Flat(TextureId::Pebbles),
                 visibility: BlockVisibility::SemiOpaque,
-                flags: BlockFlags::SOLID.union(BlockFlags::TANGIBLE),
+                flags: BlockFlags::TANGIBLE,
             },
             Self::Cobblestone => BlockInfo {
                 appearance: BlockAppearance::uniform(TextureId::Cobblestone),

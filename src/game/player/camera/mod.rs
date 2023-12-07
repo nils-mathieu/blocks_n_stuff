@@ -18,9 +18,9 @@ impl Camera {
     /// Creates a new [`Camera`] instance.
     ///
     /// The `fov_y` is in radians.
-    pub fn new(far_plane: f32, fov_y: f32) -> Self {
+    pub fn new(nearest_distance: f32, far_plane: f32, fov_y: f32) -> Self {
         Self {
-            projection: Perspective::new(0.4, 1.0, fov_y, far_plane),
+            projection: Perspective::new(nearest_distance, 1.0, fov_y, far_plane),
             view: View::new(),
         }
     }

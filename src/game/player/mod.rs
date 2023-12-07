@@ -1,5 +1,6 @@
 mod camera;
 use std::sync::Arc;
+use std::time::Duration;
 
 use bns_render::data::RenderData;
 use bns_render::Gpu;
@@ -9,6 +10,8 @@ pub use camera::*;
 mod hud;
 pub use hud::*;
 
+mod physics;
+
 use bns_app::{Ctx, KeyCode, MouseButton};
 use bns_core::{BlockId, Chunk, ChunkPos, Face};
 
@@ -16,6 +19,8 @@ use glam::{IVec3, Vec2, Vec3};
 
 use crate::assets::Assets;
 use crate::world::{QueryResult, World};
+
+use self::physics::{Collider, CollisionContext, Hit};
 
 /// Contains the state of the player, including camera orientation and computed intent.
 pub struct Player {
@@ -42,6 +47,14 @@ pub struct Player {
     position: Vec3,
     /// The current velocity of the player.
     velocity: Vec3,
+    /// The amount of air drag applied to the player.
+    air_drag: f32,
+    /// The amount of ground drag applied to the player when sprinting.
+    ground_drag: f32,
+    /// The amount of drag applied to the player when in water.
+    water_drag: f32,
+    /// The amount of drag applied to the player when flying.
+    air_drag_flying: f32,
 
     /// The camera that the player uses to view the world.
     camera: Camera,
@@ -65,26 +78,65 @@ pub struct Player {
     structure_block: Option<IVec3>,
 
     /// Whether the head of the player is currently underwater.
-    is_underwater: bool,
+    is_face_underwater: bool,
+    /// Whether the feet of the player are currently underwater.
+    are_feet_underwater: bool,
+
+    /// Whether the player is currently flying.
+    is_flying: bool,
+
+    /// The gravity applied to the player every frame.
+    gravity: Vec3,
+
+    /// The collider of the player.
+    collider: Collider,
+
+    /// The velocity that the player will have when jumping.
+    jump_velocity: f32,
+
+    /// Whether the player is currently on ground.
+    is_on_ground: bool,
+
+    /// The amount of air control of the player (portion of the player's acceleration
+    /// that's allowed in air).
+    air_control: f32,
+
+    /// The speed at which the player swims.
+    swim_speed: f32,
+
+    /// The base FOV (vertical) of the player.
+    base_fov: f32,
+
+    /// Some state that's used to make collision detection more efficient.
+    collision_context: CollisionContext,
+
+    /// The instant of the last jump.
+    last_jump_instant: Duration,
+    /// The instant of the last forward input.
+    last_forward_input: Duration,
 }
 
 impl Player {
     /// Creates a new [`Player`] instance.
     pub fn new(gpu: Arc<Gpu>, position: Vec3) -> Self {
+        let collider_radius = 0.4;
+
         let render_distance = 8;
         let far_plane = render_distance_to_far_plane(render_distance);
+        let base_fov = 60f32.to_radians();
 
         Self {
             mouse_sensitivity: 0.002,
             render_distance,
             vertical_render_distance: 6,
-            speed: 200.0,
-            fly_speed: 300.0,
-            sprint_factor: 10.0,
+            speed: 50.0,
+            fly_speed: 200.0,
+            swim_speed: 100.0,
+            sprint_factor: 3.0,
             sprinting: false,
             position,
             velocity: Vec3::ZERO,
-            camera: Camera::new(far_plane, 60f32.to_radians()),
+            camera: Camera::new(0.01, far_plane, base_fov),
 
             chunks_in_view: Vec::new(),
 
@@ -95,7 +147,32 @@ impl Player {
 
             structure_block: None,
 
-            is_underwater: false,
+            is_face_underwater: false,
+            are_feet_underwater: false,
+            is_flying: false,
+            gravity: Vec3::new(0.0, -50.0, 0.0),
+
+            collider: Collider {
+                height: 1.8,
+                radius: collider_radius,
+            },
+
+            jump_velocity: 13.0,
+
+            is_on_ground: false,
+
+            air_drag: 0.99,
+            ground_drag: 0.93,
+            water_drag: 0.95,
+            air_drag_flying: 0.9,
+
+            air_control: 0.3,
+
+            base_fov,
+
+            collision_context: CollisionContext::new(),
+            last_jump_instant: Duration::ZERO,
+            last_forward_input: Duration::ZERO,
         }
     }
 
@@ -117,6 +194,12 @@ impl Player {
     #[inline]
     pub fn camera(&self) -> &Camera {
         &self.camera
+    }
+
+    /// Returns the position of the player's head.
+    #[inline]
+    pub fn head_position(&self) -> Vec3 {
+        self.position + Vec3::new(0.0, self.collider.height - 0.1, 0.0)
     }
 
     /// Returns the chunk that the player is a part of.
@@ -197,7 +280,11 @@ impl Player {
         }
 
         self.looking_at = world
-            .query_line(self.position, self.camera.view.look_at(), self.max_reach)
+            .query_line(
+                self.head_position(),
+                self.camera.view.look_at(),
+                self.max_reach,
+            )
             .ok()
             .map(|q| LookingAt::from_query(&q, self.position));
 
@@ -240,6 +327,18 @@ impl Player {
             self.position = Vec3::new(u16::MAX as f32, 0.0, 0.0);
         }
 
+        let current_fov = self.camera.projection.fov_y();
+        let target_fov = if self.sprinting {
+            self.base_fov * 1.2
+        } else {
+            self.base_fov
+        };
+        if (current_fov - target_fov).abs() > 0.001 {
+            self.camera
+                .projection
+                .set_fov_y(current_fov + (target_fov - current_fov) * 0.075);
+        }
+
         // ======================================
         // Movement
         // ======================================
@@ -249,24 +348,109 @@ impl Player {
         } else {
             1.0
         };
-        let hdelta = Vec2::from_angle(-self.camera.view.yaw()).rotate(horizontal_movement_input)
-            * self.speed
-            * sprint_factor
-            * ctx.delta_seconds();
-        let vdelta = vertical_movement_input * self.fly_speed * ctx.delta_seconds();
-        self.velocity += Vec3::new(hdelta.x, vdelta, hdelta.y);
-        self.velocity *= 0.9;
-        self.position += self.velocity * ctx.delta_seconds();
+        let drag = if self.is_flying {
+            self.air_drag_flying
+        } else if self.are_feet_underwater {
+            self.water_drag
+        } else if self.is_on_ground {
+            self.ground_drag
+        } else {
+            self.air_drag
+        };
+        let speed = if self.is_flying {
+            self.fly_speed
+        } else if self.is_on_ground {
+            self.speed
+        } else {
+            self.speed * self.air_control
+        };
 
-        self.is_underwater = world
-            .get_block(bns_core::utility::world_pos_of(self.position))
+        if self.is_flying {
+            let hdelta = Vec2::from_angle(-self.camera.view.yaw())
+                .rotate(horizontal_movement_input)
+                * speed
+                * sprint_factor
+                * ctx.delta_seconds();
+            let vdelta = vertical_movement_input * self.fly_speed * ctx.delta_seconds();
+            self.velocity += Vec3::new(hdelta.x, vdelta, hdelta.y);
+        } else {
+            // Apply gravity
+            self.velocity += self.gravity * ctx.delta_seconds();
+
+            // Apply horizontal movement.
+            let hdelta = Vec2::from_angle(-self.camera.view.yaw())
+                .rotate(horizontal_movement_input)
+                * speed
+                * sprint_factor
+                * ctx.delta_seconds();
+
+            self.velocity += Vec3::new(hdelta.x, 0.0, hdelta.y);
+        }
+        self.velocity *= drag;
+
+        self.is_face_underwater = world
+            .get_block(bns_core::utility::world_pos_of(self.head_position()))
             .is_some_and(|b| b == BlockId::Water);
+        self.are_feet_underwater = world
+            .get_block(bns_core::utility::world_pos_of(
+                self.position + Vec3::new(0.0, 0.01, 0.0),
+            ))
+            .is_some_and(|b| b == BlockId::Water);
+
+        if !self.is_flying {
+            #[allow(clippy::collapsible_if)]
+            if self.are_feet_underwater {
+                if ctx.pressing(KeyCode::Space) {
+                    self.velocity.y += self.swim_speed * ctx.delta_seconds();
+                }
+            } else if self.is_on_ground {
+                if ctx.just_pressed(KeyCode::Space) {
+                    self.velocity.y = self.jump_velocity;
+                }
+            }
+        }
+
+        if ctx.just_pressed(KeyCode::Space) {
+            if self.last_jump_instant + Duration::from_millis(200) > ctx.since_startup() {
+                self.is_flying = !self.is_flying;
+            } else {
+                self.last_jump_instant = ctx.since_startup();
+            }
+        }
+
+        if ctx.just_pressed(KeyCode::KeyW) {
+            if self.last_forward_input + Duration::from_millis(200) > ctx.since_startup() {
+                self.sprinting = true;
+            } else {
+                self.last_forward_input = ctx.since_startup();
+            }
+        }
+
+        self.is_on_ground = false;
+
+        // Resolve collisions.
+        let hit = self.collision_context.sweep(
+            self.collider,
+            &mut self.position,
+            &mut self.velocity,
+            ctx.delta_seconds(),
+            world,
+        );
+
+        if hit.contains(Hit::NEG_Y) {
+            self.is_on_ground = true;
+            self.is_flying = false;
+        }
+
+        if hit.contains(Hit::HORIZONAL) {
+            self.sprinting = false;
+        }
     }
 
     /// Returns whether the player's head is underwater.
     #[inline]
     pub fn is_underwater(&self) -> bool {
-        self.is_underwater
+        self.is_face_underwater
     }
 
     /// Renders the player's HUD.
@@ -382,8 +566,8 @@ fn record_structure(world: &World, a: IVec3, b: IVec3) -> Structure {
         for y in min.y..=max.y {
             for z in min.z..=max.z {
                 let pos = IVec3::new(x, y, z);
-                if let Some(block) = world.get_block(pos) {
-                    if block.id() == BlockId::StructureOriginBlock {
+                if let Some(block) = world.get_block_instance(pos) {
+                    if block == BlockId::StructureOriginBlock {
                         if origin.is_some() {
                             bns_log::warning!("multiple origin blocks found in structure");
                         }

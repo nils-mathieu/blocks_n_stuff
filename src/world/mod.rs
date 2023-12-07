@@ -4,7 +4,7 @@ use std::sync::Arc;
 use glam::{IVec3, Vec3};
 use hashbrown::HashMap;
 
-use bns_core::{BlockFlags, BlockInstance, Chunk, ChunkPos, Face, LocalPos};
+use bns_core::{BlockFlags, BlockId, BlockInstance, Chunk, ChunkPos, Face, LocalPos};
 use bns_render::Gpu;
 use bns_worldgen_core::WorldGenerator;
 
@@ -182,13 +182,23 @@ impl World {
     }
 
     /// Gets the block at the provided position, or [`None`] if the chunk is not loaded yet.
-    pub fn get_block(&self, pos: IVec3) -> Option<BlockInstance> {
+    pub fn get_block_instance(&self, pos: IVec3) -> Option<BlockInstance> {
         let (chunk_pos, local_pos) = bns_core::utility::chunk_and_local_pos(pos);
 
         self.chunks
             .get(&chunk_pos)
             .and_then(ChunkEntry::loaded)
             .map(|chunk| chunk.data.get_block_instance(local_pos))
+    }
+
+    /// Gets the block at the provided position, or [`None`] if the chunk is not loaded yet.
+    pub fn get_block(&self, pos: IVec3) -> Option<BlockId> {
+        let (chunk_pos, local_pos) = bns_core::utility::chunk_and_local_pos(pos);
+
+        self.chunks
+            .get(&chunk_pos)
+            .and_then(ChunkEntry::loaded)
+            .map(|chunk| chunk.data.get_block(local_pos))
     }
 
     /// Returns the chunk at the provided position, or [`None`] if the chunk is not loaded yet.
