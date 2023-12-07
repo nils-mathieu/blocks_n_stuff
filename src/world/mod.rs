@@ -136,12 +136,16 @@ impl World {
     pub fn request_cleanup(&mut self, center: ChunkPos, h_radius: u32, v_radius: u32) {
         self.generator.request_cleanup(center, h_radius, v_radius);
 
-        self.chunks.retain(|&pos, _| {
+        let retain_chunk = |pos: ChunkPos| {
             let hd = pos.xz().distance_squared(center.xz()) as u32;
             let vd = (pos.y - center.y).unsigned_abs();
             hd < h_radius * h_radius && vd < v_radius
-        });
+        };
+
+        self.chunks.retain(|&pos, _| retain_chunk(pos));
         self.chunks.shrink_to_fit();
+
+        self.task_pool.retain_tasks(|task| retain_chunk(task.pos));
     }
 
     /// Gets the block at the provided position, or [`None`] if the chunk is not loaded yet.
@@ -293,7 +297,10 @@ impl World {
                     }
                 }
                 Entry::Vacant(_) => {
-                    bns_log::warning!("received a chunk that we did not ask for");
+                    // We just received a chunk we did not ask for.
+                    // Usually occurs when we clean up the world while some chunks are
+                    // still loading.
+                    // It's not a big deal, just discard the chunk.
                 }
             }
         }

@@ -15,7 +15,7 @@ enum Flavor<T: Task> {
     /// No threads are used.
     ///
     /// Instead, a budget of work is done every tick.
-    NoThreads,
+    NoThreads(no_threads::NoThreads<T>),
     /// Threads are used to execute tasks in the background.
     Threads(yes_threads::YesThreads<T>),
 }
@@ -31,7 +31,7 @@ impl<T: Task> TaskPool<T> {
         T::Output: Send,
     {
         let flavor = match num_threads() {
-            0 => Flavor::NoThreads,
+            0 => Flavor::NoThreads(no_threads::NoThreads::new()),
             num => Flavor::Threads(yes_threads::YesThreads::new(num)),
         };
 
@@ -41,7 +41,7 @@ impl<T: Task> TaskPool<T> {
     /// Returns the number of tasks that are waiting to be executed.
     pub fn pending_tasks(&self) -> usize {
         match &self.0 {
-            Flavor::NoThreads => unimplemented!(),
+            Flavor::NoThreads(f) => f.pending_tasks(),
             Flavor::Threads(f) => f.pending_tasks(),
         }
     }
@@ -49,8 +49,8 @@ impl<T: Task> TaskPool<T> {
     /// Submits the provided tasks to the task pool.
     pub fn submit_batch(&mut self, tasks: &mut Vec<T>) {
         match &mut self.0 {
-            Flavor::NoThreads => unimplemented!(),
-            Flavor::Threads(f) => f.submit_tasks(tasks),
+            Flavor::NoThreads(f) => f.submit_batch(tasks),
+            Flavor::Threads(f) => f.submit_batch(tasks),
         }
     }
 
@@ -62,9 +62,47 @@ impl<T: Task> TaskPool<T> {
     /// generally a good idea to quickly consume and drop the iterator to avoid
     /// blocking the task pool.
     pub fn fetch_outputs(&mut self) -> impl Iterator<Item = T::Output> + '_ {
+        /// An iterator that can iterator over either an A or a B.
+        enum Either<L, R> {
+            Left(L),
+            Right(R),
+        }
+
+        impl<L, R> Iterator for Either<L, R>
+        where
+            L: Iterator,
+            R: Iterator<Item = L::Item>,
+        {
+            type Item = L::Item;
+
+            #[inline]
+            fn next(&mut self) -> Option<Self::Item> {
+                match self {
+                    Either::Left(l) => l.next(),
+                    Either::Right(r) => r.next(),
+                }
+            }
+
+            #[inline]
+            fn size_hint(&self) -> (usize, Option<usize>) {
+                match self {
+                    Either::Left(l) => l.size_hint(),
+                    Either::Right(r) => r.size_hint(),
+                }
+            }
+        }
+
         match &mut self.0 {
-            Flavor::NoThreads => unimplemented!(),
-            Flavor::Threads(f) => f.fetch_outputs(),
+            Flavor::NoThreads(f) => Either::Left(f.fetch_outputs()),
+            Flavor::Threads(f) => Either::Right(f.fetch_outputs()),
+        }
+    }
+
+    /// Retains only the tasks that satisfy the provided predicate.
+    pub fn retain_tasks(&mut self, predicate: impl FnMut(&T) -> bool) {
+        match &mut self.0 {
+            Flavor::NoThreads(f) => f.retain_tasks(predicate),
+            Flavor::Threads(f) => f.retain_tasks(predicate),
         }
     }
 }
@@ -72,7 +110,7 @@ impl<T: Task> TaskPool<T> {
 impl<T: Task> Drop for TaskPool<T> {
     fn drop(&mut self) {
         match &self.0 {
-            Flavor::NoThreads => (),
+            Flavor::NoThreads(_) => (),
             Flavor::Threads(shared) => shared.stop(),
         }
     }

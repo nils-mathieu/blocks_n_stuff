@@ -129,7 +129,7 @@ impl<T: Task> YesThreads<T> {
     }
 
     /// Submits the provided tasks to the task pool.
-    pub fn submit_tasks(&mut self, tasks: &mut Vec<T>) {
+    pub fn submit_batch(&mut self, tasks: &mut Vec<T>) {
         let count = tasks.len();
 
         self.shared.tasks.lock().append(tasks);
@@ -144,7 +144,7 @@ impl<T: Task> YesThreads<T> {
     }
 
     /// Returns an iterator over the outputs of the task pool.
-    pub fn fetch_outputs(&self) -> impl '_ + Iterator<Item = T::Output> {
+    pub fn fetch_outputs(&mut self) -> impl '_ + Iterator<Item = T::Output> {
         struct Iter<'a, T>(parking_lot::MutexGuard<'a, Vec<T>>);
 
         impl<T> Iterator for Iter<'_, T> {
@@ -168,6 +168,12 @@ impl<T: Task> YesThreads<T> {
         }
 
         Iter(self.shared.outputs.lock())
+    }
+
+    /// Retains only the tasks for which the provided function returns `true`.
+    #[inline]
+    pub fn retain_tasks(&mut self, mut f: impl FnMut(&T) -> bool) {
+        self.shared.tasks.lock().retain(f);
     }
 }
 
