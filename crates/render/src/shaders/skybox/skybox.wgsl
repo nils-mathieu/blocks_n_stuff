@@ -5,9 +5,10 @@ struct FrameUniforms {
     view: mat4x4<f32>,
     inverse_view: mat4x4<f32>,
     resolution: vec2<f32>,
-    fog_factor: f32,
+    fog_density: f32,
     fog_distance: f32,
     fog_color: u32,
+    sky_color: u32,
     flags: u32,
     milliseconds: u32,
 }
@@ -46,20 +47,15 @@ fn vs_main(
     return out;
 }
 
-// The color of the sky.
-//
-// This color is specifically used at very high altitudes, where the sky is
-// the most visible.
-const HIGH_SKY_COLOR: vec3<f32> = vec3<f32>(0.2, 0.6, 0.9);
-
-// The color the sky in low altitudes.
-const LOW_SKY_COLOR: vec3<f32> = vec3<f32>(0.6, 0.6, 1.0);
-
-/// The color of the ground.
-const GROUND_COLOR: vec3<f32> = vec3<f32>(0.2, 0.3, 0.4);
-
-// "how fast" the ground color appears. The transition goes from LOW_SKY_COLOR to ground.
-const GROUND_BLUR: f32 = 0.2;
+// Unpacks the provided color.
+fn unpack_color(color: u32) -> vec4<f32> {
+    return vec4<f32>(
+        f32((color >> 24u) & 0xFFu) / 255.0,
+        f32((color >> 16u) & 0xFFu) / 255.0,
+        f32((color >> 8u) & 0xFFu) / 255.0,
+        f32(color & 0xFFu) / 255.0,
+    );
+}
 
 @fragment
 fn fs_main(
@@ -68,10 +64,8 @@ fn fs_main(
     let height = in.eye_direction.y;
 
     if (height > 0.0) {
-        return vec4<f32>(mix(LOW_SKY_COLOR, HIGH_SKY_COLOR, height), 1.0);
-    } else if (height > -GROUND_BLUR) {
-        return vec4<f32>(mix(LOW_SKY_COLOR, GROUND_COLOR, -height / GROUND_BLUR), 1.0);
+        return mix(unpack_color(frame.fog_color), unpack_color(frame.sky_color), height);
     } else {
-        return vec4<f32>(GROUND_COLOR, 1.0);
+        return unpack_color(frame.fog_color);
     }
 }

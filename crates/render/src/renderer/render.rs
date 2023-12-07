@@ -51,7 +51,10 @@ impl Renderer {
         rp.set_bind_group(0, &res.frame_uniforms_bind_group, &[]);
         rp.set_bind_group(2, &res.texture_atlas_bind_group, &[]);
 
-        self.skybox_pipeline.render(&self.gpu, &mut rp);
+        if !data.fog_enabled {
+            self.skybox_pipeline.render(&self.gpu, &mut rp);
+        }
+
         self.quad_pipeline.render(&self.gpu, &mut rp, &data.quads);
         self.line_pipeline.render(&self.gpu, &mut rp, &data.lines);
 

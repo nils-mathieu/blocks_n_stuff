@@ -154,13 +154,15 @@ impl Game {
         assets: &'res Assets,
         frame: &mut RenderData<'res>,
     ) {
-        let mut fog_distance = self.player.render_distance() as f32 * 0.5;
-        let mut fog_factor = 1.0 / (self.player.render_distance() as f32 * 6.0);
+        let mut fog_distance = self.player.render_distance() as f32 * 3.0;
+        let mut fog_density = 0.1 / self.player.render_distance() as f32;
         let mut fog_color = Color::rgb(100, 200, 255);
+        let mut sky_color = Color::rgb(150, 100, 255);
         if self.player.is_underwater() {
-            fog_distance = 0.0;
-            fog_factor *= 6.0;
+            fog_distance = 4.0;
+            fog_density *= 24.0;
             fog_color = Color::rgb(2, 5, 30);
+            sky_color = fog_color;
         }
 
         // Initialize the frame.
@@ -172,12 +174,12 @@ impl Game {
             view,
             projection,
             fog_distance,
-            fog_factor,
+            fog_density,
             resolution: Vec2::new(ctx.width() as f32, ctx.height() as f32),
             fog_color,
+            sky_color,
             flags: FrameFlags::UNDERWATER,
             milliseconds: ctx.since_startup().as_millis() as u32,
-            _padding: 0,
         };
         frame.fog_enabled = self.fog_enabled;
 

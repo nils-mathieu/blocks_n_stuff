@@ -66,20 +66,20 @@ pub struct FrameUniforms {
     pub inverse_view: Mat4,
     /// The resolution of the render target.
     pub resolution: Vec2,
-    /// The fog factor.
+    /// The density of the fog.
     ///
-    /// The lower the value (close to zero), the less fog is applied. The higher the value (close
-    /// to one), the more fog is applied.
-    pub fog_factor: f32,
+    /// The higher the value, the faster the fog will fade in.
+    pub fog_density: f32,
     /// The distance at which the fog start taking effect.
     pub fog_distance: f32,
     /// The color of the fog.
     pub fog_color: Color,
+    /// The color of the sky.
+    pub sky_color: Color,
     /// Some flags associated with this frame.
     pub flags: FrameFlags,
     /// The number of milliseconds elapsed since the beginning of the game.
     pub milliseconds: u32,
-    pub _padding: u32,
 }
 
 /// Some resources commonly used through the renderer.

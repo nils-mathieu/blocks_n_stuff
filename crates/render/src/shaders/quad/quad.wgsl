@@ -5,9 +5,10 @@ struct FrameUniforms {
     view: mat4x4<f32>,
     inverse_view: mat4x4<f32>,
     resolution: vec2<f32>,
-    fog_factor: f32,
+    fog_density: f32,
     fog_distance: f32,
     fog_color: u32,
+    sky_color: u32,
     flags: u32,
     milliseconds: u32,
 }

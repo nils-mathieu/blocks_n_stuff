@@ -5,9 +5,10 @@ struct FrameUniforms {
     view: mat4x4<f32>,
     inverse_view: mat4x4<f32>,
     resolution: vec2<f32>,
-    fog_factor: f32,
+    fog_density: f32,
     fog_distance: f32,
     fog_color: u32,
+    sky_color: u32,
     flags: u32,
     milliseconds: u32,
 }
@@ -60,6 +61,16 @@ fn unpack_color(color: u32) -> vec4<f32> {
     );
 }
 
+const HIGH_SKY_COLOR: vec3<f32> = vec3<f32>(0.2, 0.6, 0.9);
+
+fn skybox(height: f32) -> vec4<f32> {
+    if (height > 0.0) {
+        return mix(unpack_color(frame.fog_color), unpack_color(frame.sky_color), height);
+    } else {
+        return unpack_color(frame.fog_color);
+    }
+}
+
 @group(1) @binding(0)
 var depth_texture: texture_depth_2d;
 @group(1) @binding(1)
@@ -77,8 +88,8 @@ fn fs_main(
     in: Interpolator,
 ) -> @location(0) vec4<f32> {
     let depth = max(0.0, depth_value(in.uv) - frame.fog_distance);
-    let fog_amount = 1.0 - pow(2.0, -depth * frame.fog_factor);
-    var fog_color = unpack_color(frame.fog_color);
+    let fog_amount = 1.0 - pow(2.0, -depth * frame.fog_density);
+    var fog_color = skybox(in.eye_direction.y);
     fog_color.a *= fog_amount;
     return fog_color;
 }
