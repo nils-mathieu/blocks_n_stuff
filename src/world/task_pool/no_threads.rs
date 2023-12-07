@@ -49,7 +49,7 @@ impl<T> NoThreads<T> {
 
     /// Retains only the tasks that satisfy the provided predicate.
     #[inline]
-    pub fn retain_tasks(&mut self, mut f: impl FnMut(&T) -> bool) {
+    pub fn retain_tasks(&mut self, f: impl FnMut(&T) -> bool) {
         self.pending.retain(f)
     }
 }

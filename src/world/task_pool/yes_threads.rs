@@ -172,7 +172,7 @@ impl<T: Task> YesThreads<T> {
 
     /// Retains only the tasks for which the provided function returns `true`.
     #[inline]
-    pub fn retain_tasks(&mut self, mut f: impl FnMut(&T) -> bool) {
+    pub fn retain_tasks(&mut self, f: impl FnMut(&T) -> bool) {
         self.shared.tasks.lock().retain(f);
     }
 }
