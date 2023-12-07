@@ -25,7 +25,7 @@ make_standard_biome! {
         biome.add_height_noise( 2.0, 0.06);
         biome.add_prop(BlockId::Pebbles.into(), 100);
         biome.add_prop(BlockId::Daffodil.into(), 300);
-        biome.add_structure(structures::OAK_TREES, 200);
+        biome.add_structure(structures::OAK_TREES, 300);
     });
 }
 

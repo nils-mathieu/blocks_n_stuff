@@ -21,6 +21,31 @@ bitflags! {
         const ROTATE_180 = 1 << 1;
         /// Rotate the structure by 270 degrees around the Y axis.
         const ROTATE_270 = Self::ROTATE_90.bits() | Self::ROTATE_180.bits();
+        /// Flip the structure horizontally.
+        const FLIP_HORIZONTAL = 1 << 2;
+    }
+}
+
+impl StructureTransformations {
+    /// Transforms the provided position according to the transformations.
+    ///
+    /// Transformations are around the origin (0, 0, 0).
+    pub fn transform_position(self, position: IVec3) -> IVec3 {
+        let mut result = position;
+
+        if self.contains(Self::FLIP_HORIZONTAL) {
+            result = IVec3::new(-result.x, result.y, result.z);
+        }
+
+        if self.contains(Self::ROTATE_90) {
+            result = IVec3::new(-result.z, result.y, result.x);
+        }
+
+        if self.contains(Self::ROTATE_180) {
+            result = IVec3::new(-result.x, result.y, -result.z);
+        }
+
+        result
     }
 }
 
@@ -43,7 +68,9 @@ impl PendingStructure {
         // structure is not even in the chunk.
 
         for edit in self.contents.edits.iter() {
-            if let Some(pos) = pos.checked_local_pos(self.position + edit.position) {
+            let edit_pos = self.transformations.transform_position(edit.position);
+
+            if let Some(pos) = pos.checked_local_pos(self.position + edit_pos) {
                 chunk.set_block(pos, edit.block.clone());
             }
         }

@@ -24,6 +24,7 @@ struct StructureSet {
     probability: u64,
     noise: Mixer<2>,
     value_noise: Mixer<2>,
+    transform_noise: Mixer<2>,
 }
 
 /// A noise
@@ -110,6 +111,7 @@ impl<'a, R: Rng> StandardBiomeBuilder<'a, R> {
             probability,
             noise: Mixer::from_rng(self.rng),
             value_noise: Mixer::from_rng(self.rng),
+            transform_noise: Mixer::from_rng(self.rng),
         });
     }
 
@@ -227,10 +229,24 @@ impl StandardBiome {
                     .value_noise
                     .sample([world_pos.x as u64, world_pos.z as u64]);
 
+                let transform_noise = set
+                    .transform_noise
+                    .sample([world_pos.x as u64, world_pos.y as u64]);
+                let mut transformations = match transform_noise % 4 % 4 {
+                    0 => StructureTransformations::IDENTITY,
+                    1 => StructureTransformations::ROTATE_90,
+                    2 => StructureTransformations::ROTATE_180,
+                    3 => StructureTransformations::ROTATE_270,
+                    _ => unreachable!(),
+                };
+                if (transform_noise >> 5) & 1 != 0 {
+                    transformations.insert(StructureTransformations::FLIP_HORIZONTAL);
+                }
+
                 out.push(PendingStructure {
                     position: world_pos,
                     contents: set.set[value as usize % set.set.len()].clone(),
-                    transformations: StructureTransformations::IDENTITY,
+                    transformations,
                 });
             }
         }

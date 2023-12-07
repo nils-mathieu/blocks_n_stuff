@@ -57,7 +57,7 @@ impl Biome for Ocean {
                 } else {
                     chunk.set_block(local_pos, BlockId::Gravel.into());
                 }
-            } else if world_pos.y <= 0 {
+            } else if world_pos.y < 0 {
                 chunk.set_block(local_pos, BlockId::Water.into());
             }
         }
