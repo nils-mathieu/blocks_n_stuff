@@ -48,6 +48,8 @@ pub enum TextureId {
     PineLeaves,
     StructureBlock,
     StructureOriginBlock,
+    OakPlanks,
+    PinePlanks,
 }
 
 impl TextureId {
@@ -106,6 +108,8 @@ impl TextureId {
             Self::PineLeaves => "pine_leaves",
             Self::StructureBlock => "structure_block",
             Self::StructureOriginBlock => "structure_origin_block",
+            Self::OakPlanks => "oak_planks",
+            Self::PinePlanks => "pine_planks",
         }
     }
 
@@ -153,6 +157,8 @@ impl TextureId {
             Self::PineLeaves => include_asset!("pine_leaves"),
             Self::StructureBlock => include_asset!("structure_block"),
             Self::StructureOriginBlock => include_asset!("structure_origin_block"),
+            Self::OakPlanks => include_asset!("oak_planks"),
+            Self::PinePlanks => include_asset!("pine_planks"),
         }
     }
 
