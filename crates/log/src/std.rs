@@ -12,10 +12,10 @@ pub fn log(
     }: Message,
 ) {
     let prefix = match verbosity {
-        Verbosity::Error => "\x1B[1;31mERROR\x1B[0m  ",
-        Verbosity::Warning => "\x1B[1;33mWARNING\x1B[0m",
-        Verbosity::Info => "\x1B[1;34mINFO\x1B[0m   ",
-        Verbosity::Trace => "\x1B[1;30mTRACE\x1B[0m  ",
+        Verbosity::Error => " \x1B[1;31mERROR\x1B[0m  ",
+        Verbosity::Warning => "  \x1B[1;33mWARN\x1B[0m  ",
+        Verbosity::Info => "  \x1B[1;34mINFO\x1B[0m  ",
+        Verbosity::Trace => " \x1B[1;30mTRACE\x1B[0m  ",
     };
 
     let _ = writeln!(

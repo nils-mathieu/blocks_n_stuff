@@ -52,7 +52,6 @@ members = [
     "crates/worldgen-structure",
     "crates/worldgen-structure/macros",
     "crates/worldgen-structure/types",
-    "crates/workers",
     "crates/log",
     "crates/app",
 ]
@@ -65,7 +64,6 @@ bns-rng = { path = "crates/rng" }
 bns-worldgen-core = { path = "crates/worldgen-core" }
 bns-worldgen-std = { path = "crates/worldgen-std" }
 bns-worldgen-structure = { path = "crates/worldgen-structure" }
-bns-workers = { path = "crates/workers" }
 bns-log = { path = "crates/log" }
 bns-app = { path = "crates/app" }
 

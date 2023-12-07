@@ -1,5 +1,4 @@
 use std::hash::BuildHasherDefault;
-use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use glam::{IVec3, Vec3};
@@ -7,11 +6,14 @@ use hashbrown::HashMap;
 
 use bns_core::{BlockFlags, BlockInstance, Chunk, ChunkPos, Face, LocalPos};
 use bns_render::Gpu;
-use bns_workers::{Priority, TaskPool, Worker};
 use bns_worldgen_core::WorldGenerator;
 
 mod chunk_geometry;
 pub use chunk_geometry::*;
+
+use self::task_pool::TaskPool;
+
+mod task_pool;
 
 /// Stores the state of a chunk loaded in memory.
 pub struct LoadedChunk {
@@ -34,34 +36,42 @@ impl LoadedChunk {
     }
 }
 
-/// A chunk entry into the [`World`].
-pub enum ChunkEntry {
-    /// The chunk is currently being generated.
-    Generating,
-    /// The chunk is loaded in memory.
+/// An entry into the [`Chunks`] map.
+enum ChunkEntry {
+    /// The chunk is already properly loaded.
     Loaded(LoadedChunk),
+    /// The chunk is currently generating.
+    Generating,
+}
+
+impl ChunkEntry {
+    /// Returns the loaded chunk, if any.
+    #[inline]
+    pub fn loaded(&self) -> Option<&LoadedChunk> {
+        match self {
+            Self::Loaded(chunk) => Some(chunk),
+            Self::Generating => None,
+        }
+    }
 }
 
 /// A collection of chunks.
 type Chunks = HashMap<ChunkPos, ChunkEntry, BuildHasherDefault<rustc_hash::FxHasher>>;
 
-struct WorldWorker {
+/// A task that's submitted to the task pool.
+struct Task {
+    /// The generator that must be used to generate the chunk.
     generator: Arc<dyn WorldGenerator>,
+    /// The position of the chunk that must be generated.
+    pos: ChunkPos,
 }
 
-impl WorldWorker {
-    /// Creates a new [`WorldWorker`] that uses the provided [`WorldGenerator`] to generate chunks.
-    pub fn new(generator: Arc<dyn WorldGenerator>) -> Self {
-        Self { generator }
-    }
-}
-
-impl Worker for WorldWorker {
-    type Input = ChunkPos;
+impl task_pool::Task for Task {
     type Output = (ChunkPos, Chunk);
 
-    fn run(&mut self, input: Self::Input) -> Self::Output {
-        (input, self.generator.generate(input))
+    fn execute(self) -> Self::Output {
+        let chunk = self.generator.generate(self.pos);
+        (self.pos, chunk)
     }
 }
 
@@ -69,34 +79,36 @@ impl Worker for WorldWorker {
 pub struct World {
     /// The list of chunks that are currently loaded in memory.
     chunks: Chunks,
-    /// The task pool used to generate new chunks.
-    task_pool: TaskPool<WorldWorker>,
+
+    /// The task pool used to generate new chunks in the background (probably, that depends
+    /// on the current compilation target).
+    task_pool: TaskPool<Task>,
+
     /// The context used to build chunks.
+    ///
+    /// This is just a bunch of buffers that are re-used when a new chunk needs its geometry
+    /// to be rebuilt.
     chunk_build_context: ChunkBuildContext,
 
-    /// The current world generator.
+    /// The current world generator. Used to generate new chunks when some are missing.
     generator: Arc<dyn WorldGenerator>,
+
+    /// A list of chunks that must be submitted to the task pool for generation.
+    ///
+    /// This is used to avoid re-allocating a new vector every time we need to perform
+    /// a submission.
+    tasks_to_submit: Vec<Task>,
 }
 
 impl World {
     /// Creates a new [`World`] that uses the provided [`WorldGenerator`] to generate chunks.
     pub fn new(gpu: Arc<Gpu>, generator: Arc<dyn WorldGenerator>) -> Self {
-        let worker_count = std::thread::available_parallelism()
-            .map_or(4 + 5, NonZeroUsize::get)
-            .saturating_sub(5)
-            .max(1);
-
-        let task_pool = TaskPool::default();
-
-        for _ in 0..worker_count {
-            task_pool.spawn(WorldWorker::new(Arc::clone(&generator)));
-        }
-
         Self {
-            task_pool,
             chunks: Chunks::default(),
             chunk_build_context: ChunkBuildContext::new(gpu),
+            task_pool: TaskPool::new(),
             generator,
+            tasks_to_submit: Vec::new(),
         }
     }
 
@@ -109,7 +121,7 @@ impl World {
     /// Returns the number of chunks that are currently being generated.
     #[inline]
     pub fn loading_chunk_count(&self) -> usize {
-        self.task_pool.task_count()
+        self.task_pool.pending_tasks()
     }
 
     /// Returns the number of chunks that are currently loaded in memory.
@@ -132,54 +144,30 @@ impl World {
         self.chunks.shrink_to_fit();
     }
 
-    /// Returns an existing chunk at the provided position.
-    ///
-    /// The chunk is not built if it was not already built.
-    ///
-    /// # Remarks
-    ///
-    /// This function does not check whether the chunk is missing some geometry.
-    #[inline]
-    pub fn get_existing_chunk(&self, pos: ChunkPos) -> Option<&LoadedChunk> {
-        match self.chunks.get(&pos) {
-            Some(ChunkEntry::Loaded(chunk)) => Some(chunk),
-            _ => None,
-        }
-    }
-
     /// Gets the block at the provided position, or [`None`] if the chunk is not loaded yet.
     pub fn get_block(&self, pos: IVec3) -> Option<BlockInstance> {
         let (chunk_pos, local_pos) = bns_core::utility::chunk_and_local_pos(pos);
 
-        let chunk = match self.chunks.get(&chunk_pos) {
-            Some(ChunkEntry::Loaded(chunk)) => chunk,
-            _ => return None,
-        };
-
-        Some(chunk.data.get_block_instance(local_pos))
+        self.chunks
+            .get(&chunk_pos)
+            .and_then(ChunkEntry::loaded)
+            .map(|chunk| chunk.data.get_block_instance(local_pos))
     }
 
-    /// Makes sure that the chunks that have been generated in the background are loaded and
-    /// available to the current thread.
-    #[profiling::function]
-    pub fn fetch_available_chunks(&mut self) {
-        for (pos, chunk) in self.task_pool.fetch_results() {
-            self.chunks
-                .insert(pos, ChunkEntry::Loaded(LoadedChunk::new(chunk)));
-
-            // Mark nearby chunks as dirty.
-            for x in -1..=1 {
-                for y in -1..=1 {
-                    for z in -1..=1 {
-                        if let Some(ChunkEntry::Loaded(chunk)) =
-                            self.chunks.get_mut(&(pos + IVec3::new(x, y, z)))
-                        {
-                            chunk.is_dirty = true;
-                        }
-                    }
-                }
-            }
-        }
+    /// Returns the chunk at the provided position, or [`None`] if the chunk is not loaded yet.
+    ///
+    /// # Remarks
+    ///
+    /// This function does not:
+    ///
+    /// 1. Request the chunk for loading if it's not already loaded.
+    ///
+    /// 2. Rebuild the chunk's geometry if it's dirty.
+    ///
+    /// However, it's possible to check both of those things using the returned value.
+    #[inline]
+    pub fn get_chunk(&self, pos: ChunkPos) -> Option<&LoadedChunk> {
+        self.chunks.get(&pos).and_then(ChunkEntry::loaded)
     }
 
     /// Requests a chunk.
@@ -187,69 +175,130 @@ impl World {
     /// If the chunk is not currently available, [`None`] is returned and the chunk is queued
     /// for loading.
     ///
-    /// # Request Priority
-    ///
-    /// `priority` is the priority of the request. This is a number representing how fast compared
-    /// to the other requests the chunk should be made available if it's not already loaded.
-    ///
-    /// If the requested chunk is not avaialble, the chunk with the highest priority value will
-    /// be loaded first.
-    ///
-    /// # Remarks
-    ///
-    /// If the chunk was already previously requested, the priority of the request is overwritten
-    /// regardless of whether the new priority is higher or lower.
-    ///
     /// # Returns
     ///
     /// The built chunk, if it was already available.
     #[profiling::function]
-    pub fn request_chunk(&mut self, pos: ChunkPos, priority: Priority) -> &mut ChunkEntry {
+    pub fn request_chunk(&mut self, pos: ChunkPos) -> Option<&mut LoadedChunk> {
         use hashbrown::hash_map::Entry;
 
-        let entry = match self.chunks.entry(pos) {
-            Entry::Occupied(e) => e.into_mut(),
-            Entry::Vacant(e) => {
-                self.task_pool.submit(pos, priority);
-                e.insert(ChunkEntry::Generating)
+        match self.chunks.entry(pos) {
+            Entry::Occupied(e) => {
+                match e.into_mut() {
+                    ChunkEntry::Loaded(chunk) => {
+                        if !chunk.is_dirty {
+                            // The chunk is already built and up-to-date. We can return it right now.
+                            // Unfortunately, the borrow checker does not seem to be able to figure
+                            // out what's going on here. This is a known problem that's supposed to be
+                            // fixed by Polonius.
+                            // This bit of unsafe code simply unties the return value of the function from
+                            // the borrow of `self`, allowing us to return the chunk mutably while maintaining
+                            // our right to use the world later.
+                            return Some(unsafe {
+                                std::mem::transmute::<&mut LoadedChunk, &mut LoadedChunk>(chunk)
+                            });
+                        }
+
+                        self.chunk_build_context.build(pos, |pos| {
+                            self.chunks
+                                .get(&pos)
+                                .and_then(ChunkEntry::loaded)
+                                .map(|chunk| &chunk.data)
+                        });
+
+                        // Re-borrow the chunk mutably and return it.
+                        // We can use unsafe to hint the compiler that the lookup cannot fail.
+                        let Some(ChunkEntry::Loaded(chunk)) = self.chunks.get_mut(&pos) else {
+                            unsafe { std::hint::unreachable_unchecked() }
+                        };
+
+                        chunk.is_dirty = false;
+                        self.chunk_build_context.apply(&mut chunk.geometry);
+
+                        Some(chunk)
+                    }
+                    ChunkEntry::Generating => {
+                        // The chunk has already been requested.
+                        // No need to do anything.
+                        None
+                    }
+                }
             }
-        };
+            Entry::Vacant(e) => {
+                // The chunk is not loaded yet.
+                // We need to request it from the task pool.
+                e.insert(ChunkEntry::Generating);
+                self.tasks_to_submit.push(Task {
+                    generator: self.generator.clone(),
+                    pos,
+                });
+                None
+            }
+        }
+    }
 
-        let ChunkEntry::Loaded(loaded) = entry else {
-            // SAFETY:
-            //  The borrow checker is not smart enough to realize that returning the entry
-            //  makes it valid to borrow the map mutably later.
-            //  Actually it's more complicated than this, but this issue is solved
-            //  by polonius.
-            return unsafe { std::mem::transmute::<&mut ChunkEntry, &mut ChunkEntry>(entry) };
-        };
+    /// Sorts the chunks that are currently pending for generation.
+    ///
+    /// This function can be used to prioritize the chunks that are the closest to the player.
+    ///
+    /// The *last* chunks in the array will be the first to be submitted to the task pool.
+    pub fn sort_pending_chunks<F, O>(&mut self, mut key: F)
+    where
+        F: FnMut(ChunkPos) -> O,
+        O: Ord,
+    {
+        self.tasks_to_submit
+            .sort_unstable_by_key(|task| key(task.pos))
+    }
 
-        // If the chunk is already built, we can return it immediately.
-        if !loaded.is_dirty {
-            // SAFETY: same as above.
-            return unsafe { std::mem::transmute::<&mut ChunkEntry, &mut ChunkEntry>(entry) };
+    /// Removes any currently pending chunks from the task pool and submits the last chunk that
+    /// were requested instead.
+    #[profiling::function]
+    pub fn flush_pending_chunks(&mut self) {
+        // Check if the task pool has sent us some results.
+        for (pos, chunk) in self.task_pool.fetch_outputs() {
+            use hashbrown::hash_map::Entry;
+
+            match self.chunks.entry(pos) {
+                Entry::Occupied(mut e) => {
+                    match e.get() {
+                        ChunkEntry::Loaded(_) => {
+                            // We received a chunk that we already have.
+                            // This can happen if one of two worker threads generated the same chunk
+                            // because we requested it twice (when cleaning occurs while some chunks
+                            // are still loading). This should be rare enough.
+                            bns_log::warning!("received a chunk that we already have");
+                        }
+                        ChunkEntry::Generating => {
+                            e.insert(ChunkEntry::Loaded(LoadedChunk::new(chunk)));
+
+                            // Mark nearby chunks as dirty so that they get rebuilt.
+                            const OFFSETS: [IVec3; 6] = [
+                                IVec3::X,
+                                IVec3::NEG_X,
+                                IVec3::Y,
+                                IVec3::NEG_Y,
+                                IVec3::Z,
+                                IVec3::NEG_Z,
+                            ];
+
+                            for offset in OFFSETS {
+                                if let Some(ChunkEntry::Loaded(chunk)) =
+                                    self.chunks.get_mut(&(pos + offset))
+                                {
+                                    chunk.is_dirty = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                Entry::Vacant(_) => {
+                    bns_log::warning!("received a chunk that we did not ask for");
+                }
+            }
         }
 
-        // Build the chunk.
-        self.chunk_build_context
-            .build(pos, |pos| match self.chunks.get(&pos) {
-                Some(ChunkEntry::Loaded(chunk)) => Some(&chunk.data),
-                _ => None,
-            });
-
-        // Applied to built data to the chunk.
-        let Some(entry) = self.chunks.get_mut(&pos) else {
-            unsafe { std::hint::unreachable_unchecked() };
-        };
-
-        let ChunkEntry::Loaded(chunk) = entry else {
-            unsafe { std::hint::unreachable_unchecked() };
-        };
-
-        self.chunk_build_context.apply(&mut chunk.geometry);
-        chunk.is_dirty = false;
-
-        entry
+        self.task_pool.submit_batch(&mut self.tasks_to_submit);
     }
 
     /// Queries the world for the first block that intersects the line defined by `start`,
@@ -287,20 +336,22 @@ impl World {
         let mut cur = start;
 
         let mut current_chunk = ChunkPos::from_world_pos(cur);
-        let mut chunk = match self.chunks.get(&current_chunk) {
-            Some(ChunkEntry::Loaded(chunk)) => chunk,
-            _ => return Err(QueryError::MissingChunk(current_chunk)),
-        };
+        let mut chunk = self
+            .chunks
+            .get(&current_chunk)
+            .and_then(ChunkEntry::loaded)
+            .ok_or(QueryError::MissingChunk(current_chunk))?;
         let mut world_pos = bns_core::utility::world_pos_of(cur);
 
         while length > 0.0 {
             let new_current_chunk = ChunkPos::from_world_pos(cur);
             if new_current_chunk != current_chunk {
                 current_chunk = new_current_chunk;
-                chunk = match self.chunks.get(&current_chunk) {
-                    Some(ChunkEntry::Loaded(chunk)) => chunk,
-                    _ => return Err(QueryError::MissingChunk(current_chunk)),
-                };
+                chunk = self
+                    .chunks
+                    .get(&current_chunk)
+                    .and_then(ChunkEntry::loaded)
+                    .ok_or(QueryError::MissingChunk(current_chunk))?;
             }
 
             let new_world_pos = bns_core::utility::world_pos_of(cur);

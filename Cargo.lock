@@ -214,7 +214,6 @@ dependencies = [
  "bns-log",
  "bns-render",
  "bns-rng",
- "bns-workers",
  "bns-worldgen-core",
  "bns-worldgen-std",
  "bns-worldgen-structure",
@@ -303,14 +302,6 @@ version = "0.1.0"
 dependencies = [
  "quote",
  "syn 2.0.39",
-]
-
-[[package]]
-name = "bns-workers"
-version = "0.1.0"
-dependencies = [
- "parking_lot",
- "profiling",
 ]
 
 [[package]]

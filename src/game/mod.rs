@@ -97,26 +97,16 @@ impl Game {
 
         self.player.tick(&mut self.world, ctx);
         self.player.compute_chunks_in_view();
-        for &chunk in self.player.chunks_in_view() {
-            self.world
-                .request_chunk(chunk, -chunk.distance_squared(self.player.position_chunk()));
+
+        for &chunk_pos in self.player.chunks_in_view() {
+            self.world.request_chunk(chunk_pos);
         }
 
-        // On wasm, no worker threads can be spawned because GPU resources can only be accessed
-        // from the main thread apparently (not Send).
-        // In that platform, we call `fetch_available_chunks` a bunch of times to make sure that at
-        // least that many chunks are loaded per frame.
-        // I wanted to use worker threads, but the GPU API is not available there (or at least
-        // that's what I understood. It's really not that clear in the documentation).
-        #[cfg(target_arch = "wasm32")]
-        {
-            for _ in 0..5 {
-                self.world.fetch_available_chunks();
-            }
-        }
-
-        #[cfg(not(target_arch = "wasm32"))]
-        self.world.fetch_available_chunks();
+        // Make sure that the chunks that are closest to the player are loaded first.
+        let player_chunk = self.player.position_chunk();
+        self.world
+            .sort_pending_chunks(|p| -player_chunk.distance_squared(p));
+        self.world.flush_pending_chunks();
 
         let _ = writeln!(
             self.debug.overlay_buffer(),
@@ -193,7 +183,7 @@ impl Game {
         // Register the world geometry.
         let mut total_quad_count = 0;
         for &chunk_pos in self.player.chunks_in_view() {
-            let Some(chunk) = self.world.get_existing_chunk(chunk_pos) else {
+            let Some(chunk) = self.world.get_chunk(chunk_pos) else {
                 continue;
             };
 

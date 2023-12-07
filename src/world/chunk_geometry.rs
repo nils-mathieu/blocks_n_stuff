@@ -86,6 +86,7 @@ impl ChunkBuildContext {
     ///
     /// This function must be followed by a call to [`ChunkBuildContext::apply`] to actually
     /// upload the geometry to the GPU.
+    #[profiling::function]
     pub fn build<'a>(
         &mut self,
         pos: ChunkPos,
