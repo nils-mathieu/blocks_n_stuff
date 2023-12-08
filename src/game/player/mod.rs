@@ -1,5 +1,3 @@
-mod camera;
-use std::f32::consts::E;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -11,6 +9,7 @@ pub use camera::*;
 mod hud;
 pub use hud::*;
 
+mod camera;
 mod physics;
 
 use bns_app::{Ctx, KeyCode, MouseButton};
@@ -412,7 +411,7 @@ impl Player {
         }
 
         if ctx.just_pressed(KeyCode::Space) {
-            if self.last_jump_instant + Duration::from_millis(300) > ctx.since_startup() {
+            if self.last_jump_instant + Duration::from_millis(200) > ctx.since_startup() {
                 self.is_flying = !self.is_flying;
             } else {
                 self.last_jump_instant = ctx.since_startup();
@@ -420,7 +419,7 @@ impl Player {
         }
 
         if ctx.just_pressed(KeyCode::KeyW) {
-            if self.last_forward_input + Duration::from_millis(300) > ctx.since_startup() {
+            if self.last_forward_input + Duration::from_millis(200) > ctx.since_startup() {
                 self.sprinting = true;
             } else {
                 self.last_forward_input = ctx.since_startup();
@@ -443,7 +442,7 @@ impl Player {
             self.is_on_ground = false;
         }
 
-        if hit.contains(Hit::HORIZONAL) {
+        if hit.intersects(Hit::HORIZONAL) {
             self.sprinting = false;
         }
     }

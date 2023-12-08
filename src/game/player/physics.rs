@@ -139,7 +139,7 @@ impl Aabb {
 
 bitflags! {
     /// A bunch of flags that can be used to determine where a hit occurred.
-    #[derive(Debug, Default, Clone, Copy)]
+    #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
     pub struct Hit: u8 {
         const X = 1 << 0;
         const NEG_X = 1 << 1;
@@ -182,7 +182,12 @@ impl CollisionContext {
         dt: f32,
         world: &World,
     ) -> Hit {
-        self.sweep_buffer.clear();
+        // Fast path, if the velocity is zero, then we don't need to do anything.
+        if in_vel.abs_diff_eq(Vec3::ZERO, 0.001) {
+            return Hit::empty();
+        }
+
+        let mut result = Hit::empty();
 
         let mut pos = Vec3A::from(*in_pos);
         let mut vel = Vec3A::from(*in_vel) * dt;
@@ -198,40 +203,61 @@ impl CollisionContext {
         let min = bns_core::utility::world_pos_of(broadphase.min.into());
         let max = bns_core::utility::world_pos_of(broadphase.max.into());
 
-        // Perform sweep tests against the colliders of the blocks that we might collide with.
-        for block_pos in iter_within_bounds(min, max) {
-            // Check if the block is actually solid.
-            match world.get_block(block_pos) {
-                Some(block) if !block.info().flags.contains(BlockFlags::SOLID) => continue,
-                // If the block is solid, or if it's not loaded yet, then we perform collision
-                // detection against it.
-                _ => (),
+        loop {
+            self.sweep_buffer.clear();
+
+            // Perform sweep tests against the colliders of the blocks that we might collide with.
+            for block_pos in iter_within_bounds(min, max) {
+                // Check if the block is actually solid.
+                match world.get_block(block_pos) {
+                    Some(block) if !block.info().flags.contains(BlockFlags::SOLID) => continue,
+                    // If the block is solid, or if it's not loaded yet, then we perform collision
+                    // detection against it.
+                    _ => (),
+                }
+
+                let other_collider = Aabb {
+                    min: block_pos.as_vec3a(),
+                    max: (block_pos + IVec3::ONE).as_vec3a(),
+                };
+
+                if let Some(hit) = my_collider.sweep(vel, &other_collider) {
+                    // We did hit something!
+                    self.sweep_buffer.push(hit);
+                }
             }
 
-            let other_collider = Aabb {
-                min: block_pos.as_vec3a(),
-                max: (block_pos + IVec3::ONE).as_vec3a(),
+            // Resolve the gathered hits.
+            let Some(hit) = self
+                .sweep_buffer
+                .iter()
+                .min_by(|a, b| a.entry_time.total_cmp(&b.entry_time))
+            else {
+                break;
             };
 
-            if let Some(hit) = my_collider.sweep(vel, &other_collider) {
-                // We did hit something!
-                self.sweep_buffer.push(hit);
-            }
-        }
-
-        // Sort the collisions by time of entry, so that we can resolve them in order.
-        self.sweep_buffer
-            .sort_unstable_by(|a, b| a.entry_time.total_cmp(&b.entry_time));
-
-        let mut result = Hit::empty();
-
-        // Resolve the gathered hits.
-        for hit in &self.sweep_buffer {
             // Move as close as possible to the collider.
-            let delta = vel * hit.entry_time;
+            let mut delta = vel * hit.entry_time;
+
+            // Move the position back a bit in the direction of the normal
+            // to give the resolver some room to work with.
+            const ROOM: f32 = 0.000001;
+            if hit.direction == Hit::X {
+                delta.x -= ROOM;
+            } else if hit.direction == Hit::NEG_X {
+                delta.x += ROOM;
+            } else if hit.direction == Hit::Y {
+                delta.y -= ROOM;
+            } else if hit.direction == Hit::NEG_Y {
+                delta.y += ROOM;
+            } else if hit.direction == Hit::Z {
+                delta.z -= ROOM;
+            } else if hit.direction == Hit::NEG_Z {
+                delta.z += ROOM;
+            }
+
             pos += delta;
             vel *= 1.0 - hit.entry_time;
-            *in_vel *= 1.0 - hit.entry_time;
 
             // Remove the velocity of the axis that we collided with.
             if hit.direction.intersects(Hit::X | Hit::NEG_X) {
@@ -248,7 +274,7 @@ impl CollisionContext {
             result |= hit.direction;
 
             // If we have no more velocity left, then we're done.
-            if vel == Vec3A::ZERO {
+            if vel.abs_diff_eq(Vec3A::ZERO, 0.001) {
                 break;
             }
 
