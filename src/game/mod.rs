@@ -220,8 +220,18 @@ impl Game {
             resolution: Vec2::new(ctx.width() as f32, ctx.height() as f32),
             fog_color,
             sky_color,
-            flags: FrameFlags::UNDERWATER,
+            flags: if self.player.is_underwater() {
+                FrameFlags::UNDERWATER
+            } else {
+                FrameFlags::empty()
+            },
             milliseconds: ctx.since_startup().as_millis() as u32,
+            sun_direction: Vec3::new(0.0, 1.0, 1.0).normalize(),
+            fog_height: if self.player.is_underwater() {
+                0.2
+            } else {
+                2.0
+            },
         };
         frame.fog_enabled = self.fog_enabled;
 

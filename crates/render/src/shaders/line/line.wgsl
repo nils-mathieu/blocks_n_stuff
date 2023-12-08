@@ -11,6 +11,8 @@ struct FrameUniforms {
     sky_color: u32,
     flags: u32,
     milliseconds: u32,
+    sun_direction: vec3<f32>,
+    fog_height: f32,
 }
 
 @group(0) @binding(0)

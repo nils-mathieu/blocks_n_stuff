@@ -3,7 +3,7 @@ use std::mem::size_of;
 
 use bitflags::bitflags;
 use bytemuck::{Pod, Zeroable};
-use glam::{Mat4, Vec2};
+use glam::{Mat4, Vec2, Vec3};
 use wgpu::util::DeviceExt;
 use wgpu::TextureFormat;
 
@@ -80,6 +80,13 @@ pub struct FrameUniforms {
     pub flags: FrameFlags,
     /// The number of milliseconds elapsed since the beginning of the game.
     pub milliseconds: u32,
+    /// The direction of the sun.
+    pub sun_direction: Vec3,
+    /// The height of the fog.
+    ///
+    /// 0 means that the fog takes the whole sky. The larger the value, the lower (compared to
+    /// the horizon) the fog will be.
+    pub fog_height: f32,
 }
 
 /// Some resources commonly used through the renderer.

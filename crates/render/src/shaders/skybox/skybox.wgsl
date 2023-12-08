@@ -11,6 +11,8 @@ struct FrameUniforms {
     sky_color: u32,
     flags: u32,
     milliseconds: u32,
+    sun_direction: vec3<f32>,
+    fog_height: f32,
 }
 
 @group(0) @binding(0)
@@ -41,9 +43,12 @@ fn vs_main(
 ) -> Interpolator {
     let uv = vec2<f32>(f32(vertex_index & 1u), f32(vertex_index >> 1u)) * 2.0 - 1.0;
 
+    var eye_pos = frame.inverse_view * frame.inverse_projection * vec4<f32>(uv, 1.0, 1.0);
+    eye_pos /= eye_pos.w;
+
     var out: Interpolator;
     out.position = vec4<f32>(uv, 0.0, 1.0);
-    out.eye_direction = transpose(extract_rotation_scale(frame.view)) * (frame.inverse_projection * vec4<f32>(uv, 0.0, 1.0)).xyz;
+    out.eye_direction = eye_pos.xyz;
     return out;
 }
 
@@ -57,15 +62,26 @@ fn unpack_color(color: u32) -> vec4<f32> {
     );
 }
 
+// Compute the intensity of the sun for the given pixel.
+fn sun(eye_dir: vec3<f32>) -> f32 {
+    var value = max(0.0, dot(eye_dir, frame.sun_direction));
+    return pow(value, 300.0);
+}
+
+fn sky(eye_dir: vec3<f32>) -> vec4<f32> {
+    if (eye_dir.y > 0.0) {
+        return mix(unpack_color(frame.fog_color), unpack_color(frame.sky_color), eye_dir.y);
+    } else {
+        return unpack_color(frame.fog_color);
+    }
+}
+
 @fragment
 fn fs_main(
     in: Interpolator,
 ) -> @location(0) vec4<f32> {
-    let height = in.eye_direction.y;
-
-    if (height > 0.0) {
-        return mix(unpack_color(frame.fog_color), unpack_color(frame.sky_color), height);
-    } else {
-        return unpack_color(frame.fog_color);
-    }
+    let eye_dir = normalize(in.eye_direction);
+    let sky_color = sky(eye_dir);
+    let sun_intencity = sun(eye_dir);
+    return sky_color + vec4<f32>(1.0, 1.0, 1.0, 1.0) * sun_intencity;
 }

@@ -11,6 +11,8 @@ struct FrameUniforms {
     sky_color: u32,
     flags: u32,
     milliseconds: u32,
+    sun_direction: vec3<f32>,
+    fog_height: f32,
 }
 
 @group(0) @binding(0)
@@ -43,9 +45,12 @@ fn vs_main(
 ) -> Interpolator {
     let uv = vec2<f32>(f32(vertex_index & 1u), 1.0 - f32(vertex_index >> 1u));
 
+    var eye_pos = frame.inverse_view * frame.inverse_projection * vec4<f32>(uv * 2.0 - 1.0, 1.0, 1.0);
+    eye_pos /= eye_pos.w;
+
     var out: Interpolator;
     out.position = vec4<f32>(uv * 2.0 - 1.0, 0.0, 1.0);
-    out.eye_direction = transpose(extract_rotation_scale(frame.view)) * (frame.inverse_projection * vec4<f32>(uv, 0.0, 1.0)).xyz;
+    out.eye_direction = eye_pos.xyz;
     out.uv = uv;
     return out;
 }
@@ -87,9 +92,11 @@ fn depth_value(uv: vec2<f32>) -> f32 {
 fn fs_main(
     in: Interpolator,
 ) -> @location(0) vec4<f32> {
+    let eye_dir = normalize(in.eye_direction);
     let depth = max(0.0, depth_value(in.uv) - frame.fog_distance);
-    let fog_amount = 1.0 - pow(2.0, -depth * frame.fog_density);
-    var fog_color = skybox(in.eye_direction.y);
+    var fog_amount = 1.0 - pow(2.0, -depth * frame.fog_density);
+    fog_amount *= pow(2.0, -max(0.0, eye_dir.y) * frame.fog_height);
+    var fog_color = skybox(eye_dir.y);
     fog_color.a *= fog_amount;
     return fog_color;
 }
