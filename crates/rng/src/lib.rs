@@ -22,6 +22,14 @@ pub trait Rng {
     where
         Self: Sized;
 
+    /// Creates a new [`Rng`] instance from the system's entropy.
+    fn from_entropy() -> Self
+    where
+        Self: Sized,
+    {
+        Self::from_seed(entropy())
+    }
+
     /// Generates a pseudo-random `u64` value.
     fn next_u64(&mut self) -> u64;
 

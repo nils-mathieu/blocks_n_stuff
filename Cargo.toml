@@ -78,6 +78,7 @@ profiling = "1"
 parking_lot = "0.12"
 serde = { version = "1", features = ["derive"] }
 ron = "0.8"
+rodio = { version = "0.17", default-features = false, features = ["vorbis"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 pollster = "0.3"

@@ -7,14 +7,15 @@ use bns_app::{Ctx, KeyCode};
 use bns_core::ChunkPos;
 use bns_render::data::{ChunkUniforms, Color, FrameFlags, FrameUniforms, LineFlags, RenderData};
 use bns_render::Gpu;
-use bns_rng::{DefaultRng, FromRng};
+use bns_rng::{DefaultRng, FromRng, Rng};
 use bns_worldgen_std::StandardWorldGenerator;
 
 use glam::{Vec2, Vec3};
+use rodio::Source;
 
 use self::debug::DebugThings;
 use self::player::{LookingAt, Player};
-use crate::assets::Assets;
+use crate::assets::{Assets, Sounds};
 use crate::world::World;
 
 pub mod player;
@@ -46,16 +47,41 @@ pub struct Game {
 
     /// Whether or not the fog is enabled.
     fog_enabled: bool,
+
+    /// The handle to the output stream that's used to play the music.
+    stream_handle: rodio::OutputStreamHandle,
+    /// The stream that's used to play the music.
+    ///
+    /// This must not be dropped until we don't need to play music anymore.
+    _stream: rodio::OutputStream,
+
+    /// The random number generator for the game.
+    rng: DefaultRng,
 }
 
 impl Game {
     /// Creates a new [`Game`] with the provided seed.
-    pub fn new(gpu: Arc<Gpu>, seed: u64) -> Self {
+    pub fn new(gpu: Arc<Gpu>, sounds: &Sounds) -> Self {
+        let seed = bns_rng::entropy();
+
         bns_log::info!("creating a new world with seed: {seed}");
         let generator = Arc::new(StandardWorldGenerator::from_seed::<DefaultRng>(seed));
         let world = World::new(gpu.clone(), generator);
         let player = Player::new(gpu.clone(), Vec3::new(0.0, 16.0, 0.0));
         let debug = DebugThings::new(gpu.clone());
+
+        let (_stream, stream_handle) =
+            rodio::OutputStream::try_default().expect("failed to find an audio device");
+
+        // Play the background music in a loop.
+        stream_handle
+            .play_raw(
+                rodio::Decoder::new_vorbis(std::io::Cursor::new(sounds.background_music.clone()))
+                    .unwrap()
+                    .repeat_infinite()
+                    .convert_samples(),
+            )
+            .unwrap();
 
         Self {
             gpu,
@@ -65,12 +91,17 @@ impl Game {
             seed,
             debug,
             fog_enabled: true,
+
+            stream_handle,
+            _stream,
+
+            rng: DefaultRng::from_entropy(),
         }
     }
 
     /// Advances the [`Game`] state by one tick.
     #[profiling::function]
-    pub fn tick(&mut self, ctx: &mut Ctx) {
+    pub fn tick(&mut self, ctx: &mut Ctx, sounds: &Sounds) {
         self.debug.reset_overlay();
 
         if ctx.just_pressed(KeyCode::KeyR) {
@@ -95,7 +126,13 @@ impl Game {
             self.since_last_cleanup = Duration::ZERO;
         }
 
-        self.player.tick(&mut self.world, ctx);
+        self.player.tick(
+            &mut self.world,
+            &self.stream_handle,
+            sounds,
+            &mut self.rng,
+            ctx,
+        );
         self.player.compute_chunks_in_view();
 
         for &chunk_pos in self.player.chunks_in_view() {

@@ -3,6 +3,7 @@ use std::time::Duration;
 
 use bns_render::data::RenderData;
 use bns_render::Gpu;
+use bns_rng::DefaultRng;
 use bns_worldgen_structure::{Structure, StructureEdit};
 pub use camera::*;
 
@@ -16,8 +17,9 @@ use bns_app::{Ctx, KeyCode, MouseButton};
 use bns_core::{BlockId, Chunk, ChunkPos, Face};
 
 use glam::{IVec3, Vec2, Vec3};
+use rodio::Source;
 
-use crate::assets::Assets;
+use crate::assets::{Assets, Sounds};
 use crate::world::{QueryResult, World};
 
 use self::physics::{Collider, CollisionContext, Hit};
@@ -95,7 +97,7 @@ pub struct Player {
     jump_velocity: f32,
 
     /// Whether the player is currently on ground.
-    is_on_ground: bool,
+    is_on_ground: Option<BlockId>,
 
     /// The amount of air control of the player (portion of the player's acceleration
     /// that's allowed in air).
@@ -114,6 +116,9 @@ pub struct Player {
     last_jump_instant: Duration,
     /// The instant of the last forward input.
     last_forward_input: Duration,
+
+    /// The instant of the last step sound that was played.
+    next_step_sound: f32,
 }
 
 impl Player {
@@ -159,7 +164,7 @@ impl Player {
 
             jump_velocity: 13.0,
 
-            is_on_ground: false,
+            is_on_ground: None,
 
             air_drag: 0.99,
             ground_drag: 0.93,
@@ -173,6 +178,8 @@ impl Player {
             collision_context: CollisionContext::new(),
             last_jump_instant: Duration::ZERO,
             last_forward_input: Duration::ZERO,
+
+            next_step_sound: 0.0,
         }
     }
 
@@ -234,7 +241,14 @@ impl Player {
 
     /// Tick the player state.
     #[profiling::function]
-    pub fn tick(&mut self, world: &mut World, ctx: &mut Ctx) {
+    pub fn tick(
+        &mut self,
+        world: &mut World,
+        stream_handle: &rodio::OutputStreamHandle,
+        sounds: &Sounds,
+        rng: &mut DefaultRng,
+        ctx: &mut Ctx,
+    ) {
         // ======================================
         // Controls & Events
         // ======================================
@@ -291,6 +305,15 @@ impl Player {
         if ctx.just_pressed(MouseButton::Left) {
             if let Some(looking_at) = self.looking_at {
                 world.set_block(looking_at.world_pos, BlockId::Air.into());
+
+                let sound = sounds.get_sound_for_block_break(looking_at.block, rng);
+                stream_handle
+                    .play_raw(
+                        rodio::Decoder::new_vorbis(std::io::Cursor::new(sound))
+                            .unwrap()
+                            .convert_samples(),
+                    )
+                    .unwrap();
             }
         }
 
@@ -352,14 +375,14 @@ impl Player {
             self.air_drag_flying
         } else if self.are_feet_underwater {
             self.water_drag
-        } else if self.is_on_ground {
+        } else if self.is_on_ground.is_some() {
             self.ground_drag
         } else {
             self.air_drag
         };
         let speed = if self.is_flying {
             self.fly_speed
-        } else if self.is_on_ground {
+        } else if self.is_on_ground.is_some() {
             self.speed
         } else {
             self.speed * self.air_control
@@ -403,7 +426,7 @@ impl Player {
                 if ctx.pressing(KeyCode::Space) {
                     self.velocity.y += self.swim_speed * ctx.delta_seconds();
                 }
-            } else if self.is_on_ground {
+            } else if self.is_on_ground.is_some() {
                 if ctx.just_pressed(KeyCode::Space) {
                     self.velocity.y = self.jump_velocity;
                 }
@@ -436,14 +459,36 @@ impl Player {
         );
 
         if hit.contains(Hit::NEG_Y) {
-            self.is_on_ground = true;
+            self.is_on_ground = world.get_block(bns_core::utility::world_pos_of(
+                self.position + Vec3::NEG_Y * 0.25,
+            ));
             self.is_flying = false;
         } else {
-            self.is_on_ground = false;
+            self.is_on_ground = None;
         }
 
         if hit.intersects(Hit::HORIZONAL) {
             self.sprinting = false;
+        }
+
+        const STEP_FREQUENCY: f32 = 2.0;
+
+        if let Some(block) = self.is_on_ground {
+            self.next_step_sound -= ctx.delta_seconds() * self.velocity.length();
+
+            if self.next_step_sound < 0.0 {
+                let sound = sounds.get_sound_for_block_step(block, rng);
+                self.next_step_sound += STEP_FREQUENCY;
+                stream_handle
+                    .play_raw(
+                        rodio::Decoder::new_vorbis(std::io::Cursor::new(sound))
+                            .unwrap()
+                            .convert_samples(),
+                    )
+                    .unwrap();
+            }
+        } else {
+            self.next_step_sound = 0.0;
         }
     }
 

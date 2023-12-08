@@ -40,6 +40,7 @@ async fn run_async() {
 
     let mut surface = Surface::new(app.opaque_window()).await;
     let assets = crate::assets::Assets::load(surface.gpu()).await;
+    let sounds = crate::assets::Sounds::load().await;
     let mut renderer = Renderer::new(
         surface.gpu().clone(),
         RendererConfig {
@@ -51,7 +52,7 @@ async fn run_async() {
         .set_texture_atlas(&crate::assets::load_texture_atlas().await);
     let mut render_data = Some(RenderData::new(surface.gpu()));
 
-    let mut game = Game::new(surface.gpu().clone(), bns_rng::entropy());
+    let mut game = Game::new(surface.gpu().clone(), &sounds);
 
     app.run(|ctx| {
         // ==============================================
@@ -84,7 +85,7 @@ async fn run_async() {
             ctx.release_cursor();
         }
 
-        game.tick(ctx);
+        game.tick(ctx, &sounds);
 
         // ==============================================
         // Rendering
