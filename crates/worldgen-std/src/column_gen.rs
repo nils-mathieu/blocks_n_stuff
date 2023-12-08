@@ -28,7 +28,7 @@ const HEIGHT_MAP_SAMPLE_COUNT: i32 = 8;
 /// # Note
 ///
 /// The total displacement will be in the range `[-HEIGHT_MAP_SAMPLE_DISPERSE / 2, HEIGHT_MAP_SAMPLE_DISPERSE / 2]`.
-const HEIGHT_MAP_SAMPLE_DISPERSE: i32 = 48;
+const HEIGHT_MAP_SAMPLE_DISPERSE: i32 = 16;
 
 /// The interpolation granularity of the height map.
 const HEIGHT_MAP_GRANULARITY: i32 = 8;
