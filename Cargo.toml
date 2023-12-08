@@ -95,6 +95,9 @@ web-sys = { version = "0.3", features = [
     "HtmlElement",
 ] }
 wasm-bindgen-futures = "0.4"
+rodio = { version = "0.17", default-features = false, features = [
+    "wasm-bindgen",
+] }
 
 [target.'cfg(target_os = "windows")'.dependencies.windows-sys]
 version = "0.52"
