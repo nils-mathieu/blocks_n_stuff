@@ -174,7 +174,7 @@ impl StandardBiome {
             if world_pos.y <= height {
                 if world_pos.y < height - dirt_depth {
                     chunk.set_block(local_pos, self.underground.clone());
-                } else if world_pos.y <= 2 {
+                } else if height <= 2 {
                     chunk.set_block(local_pos, BlockId::Sand.into());
                 } else if world_pos.y < height {
                     chunk.set_block(local_pos, self.dirt.clone());
