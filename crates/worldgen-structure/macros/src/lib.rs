@@ -93,7 +93,7 @@ fn quote_block_appearance(b: &BlockInstance) -> TokenStream {
     match b.id().info().appearance {
         BlockAppearance::Flat(_) => {
             let face = quote_face(unsafe { b.appearance().flat });
-            quote! { #core ::AppearanceMetadata { flat: #core ::Face:: #face } }
+            quote! { #core ::AppearanceMetadata { flat: #face } }
         }
         _ => quote! { #core ::AppearanceMetadata { no_metadata: () } },
     }

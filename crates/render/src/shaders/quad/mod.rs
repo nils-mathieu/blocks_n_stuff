@@ -39,6 +39,9 @@ pub struct QuadPipeline {
     opaque_pipeline: wgpu::RenderPipeline,
     /// The render pipeline responsible for rendering transparent geometry.
     transparent_pipeline: wgpu::RenderPipeline,
+
+    /// The pipeline responsible for rendering the depth map from the perspective of the sun.
+    shadow_pipeline: wgpu::RenderPipeline,
 }
 
 impl QuadPipeline {
@@ -68,6 +71,7 @@ impl QuadPipeline {
             output_format,
             PipelineFlavor::Transparent,
         );
+        let shadow_pipeline = create_shadow_pipeline(gpu, &chunk_uniforms_layout);
 
         Self {
             chunk_uniforms_layout,
@@ -76,26 +80,12 @@ impl QuadPipeline {
             chunk_align,
             opaque_pipeline,
             transparent_pipeline,
+            shadow_pipeline,
         }
     }
 
-    /// Renders the provided quad instances to the provided [`RenderTarget`].
-    ///
-    /// # Remarks
-    ///
-    /// The provided render pass must have the following bind groups upon entering this function:
-    ///
-    /// 1. `frame_uniforms` (bind group 0)
-    /// 2. `texture_atlas` (bind group 2)
-    ///
-    /// This function will clobber bind group 1.
-    #[profiling::function]
-    pub fn render<'res>(
-        &'res mut self,
-        gpu: &Gpu,
-        rp: &mut wgpu::RenderPass<'res>,
-        quads: &Quads<'res>,
-    ) {
+    /// Prepares the pipeline for rendering the provided [`Quads`].
+    pub fn prepare(&mut self, gpu: &Gpu, quads: &Quads) {
         // Copy the chunk data into the GPU buffer, eventually resizing it if needed.
         if self.chunk_uniforms_buffer.size() < quads.chunks.len() as u64 {
             self.chunk_uniforms_buffer =
@@ -116,7 +106,37 @@ impl QuadPipeline {
             gpu.queue
                 .write_buffer(&self.chunk_uniforms_buffer, 0, &quads.chunks);
         }
+    }
 
+    /// Renders to the shadowmap.
+    pub fn render_shadows<'res>(&'res self, rp: &mut wgpu::RenderPass<'res>, quads: &Quads<'res>) {
+        // Draw each instance buffer registered, binding it to the correct chunk uniforms
+        // using dynamic offsets.
+        rp.set_pipeline(&self.shadow_pipeline);
+        for buf in &quads.opaque_buffers {
+            rp.set_bind_group(
+                1,
+                &self.chunk_uniforms_bind_group,
+                &[buf.chunk_idx * self.chunk_align as u32],
+            );
+            rp.set_vertex_buffer(0, buf.slice.buffer);
+            rp.draw(0..4, 0..buf.slice.len);
+        }
+    }
+
+    /// Renders the provided quad instances to the provided [`RenderTarget`].
+    ///
+    /// # Remarks
+    ///
+    /// The provided render pass must have the following bind groups upon entering this function:
+    ///
+    /// 1. `frame_uniforms` (bind group 0)
+    /// 2. `texture_atlas` (bind group 2)
+    /// 3. `shadow_map` (bind group 3)
+    ///
+    /// This function will clobber bind group 1.
+    #[profiling::function]
+    pub fn render<'res>(&'res self, rp: &mut wgpu::RenderPass<'res>, quads: &Quads<'res>) {
         // Draw each instance buffer registered, binding it to the correct chunk uniforms
         // using dynamic offsets.
         rp.set_pipeline(&self.opaque_pipeline);
@@ -228,6 +248,7 @@ fn create_pipeline_layout(
                 &res.frame_uniforms_layout,
                 chunk_uniforms_layout,
                 &res.texture_atlas_layout,
+                &res.shadow_map_layout,
             ],
             push_constant_ranges: &[],
         })
@@ -312,5 +333,78 @@ fn create_pipeline(
                 mask: !0,
             },
             multiview: None,
+        })
+}
+
+fn create_shadow_pipeline(
+    gpu: &Gpu,
+    chunk_uniforms_layout: &wgpu::BindGroupLayout,
+) -> wgpu::RenderPipeline {
+    let shader_module = gpu
+        .device
+        .create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Quad Shadow Pipeline Shader Module"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("quad_shadow.wgsl").into()),
+        });
+
+    let res = gpu.resources.read();
+
+    let shadow_pipeline_layout =
+        gpu.device
+            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Quad Shadow Pipeline Layout"),
+                bind_group_layouts: &[&res.frame_uniforms_layout, &chunk_uniforms_layout],
+                push_constant_ranges: &[],
+            });
+
+    gpu.device
+        .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            depth_stencil: Some(wgpu::DepthStencilState {
+                bias: wgpu::DepthBiasState::default(),
+                depth_compare: wgpu::CompareFunction::LessEqual,
+                depth_write_enabled: true,
+                format: crate::DEPTH_FORMAT,
+                stencil: wgpu::StencilState::default(),
+            }),
+            fragment: None,
+            label: Some("Quad Shadow Pipeline"),
+            layout: Some(&shadow_pipeline_layout),
+            multisample: wgpu::MultisampleState {
+                alpha_to_coverage_enabled: false,
+                count: 1,
+                mask: !0,
+            },
+            multiview: None,
+            primitive: wgpu::PrimitiveState {
+                conservative: false,
+                cull_mode: Some(wgpu::Face::Back),
+                polygon_mode: wgpu::PolygonMode::Fill,
+                front_face: wgpu::FrontFace::Cw,
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
+                strip_index_format: None,
+                unclipped_depth: false,
+            },
+            vertex: wgpu::VertexState {
+                buffers: &[wgpu::VertexBufferLayout {
+                    array_stride: size_of::<QuadInstance>() as wgpu::BufferAddress,
+                    attributes: &[
+                        // flags
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Uint32,
+                            offset: 0,
+                            shader_location: 0,
+                        },
+                        // texture
+                        wgpu::VertexAttribute {
+                            format: wgpu::VertexFormat::Uint32,
+                            offset: 4,
+                            shader_location: 1,
+                        },
+                    ],
+                    step_mode: wgpu::VertexStepMode::Instance,
+                }],
+                entry_point: "vs_main",
+                module: &shader_module,
+            },
         })
 }

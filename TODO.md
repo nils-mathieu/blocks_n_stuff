@@ -18,9 +18,8 @@
   - [x] Mincraft survival-like player movement.
   - [x] Mining, placing blocks.
 - [ ] Advanced graphics.
-  - [ ] Shadows.
+  - [x] Shadows.
   - [x] Animated water.
   - [ ] Ambient particles.
-  - [ ] Differred rendering would make a lot of things easier.
 - [x] Misc
   - [x] Music?

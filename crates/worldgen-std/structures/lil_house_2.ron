@@ -1,0 +1,3523 @@
+(
+    min: (-6, 0, -10),
+    max: (7, 21, 10),
+    edits: [
+        (
+            position: (-6, 0, -10),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-6, 0, -9),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-6, 0, -8),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-6, 0, -7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-6, 0, -6),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-6, 0, -5),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-6, 0, -4),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-6, 0, -3),
+            block: (
+                id: Clay,
+            ),
+        ),
+        (
+            position: (-6, 0, -2),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-6, 0, -1),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-6, 0, 0),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-6, 0, 1),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-6, 0, 2),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-6, 0, 3),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-6, 0, 4),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-6, 0, 5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-6, 0, 6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-6, 0, 7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-6, 0, 8),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-6, 0, 9),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-6, 1, -10),
+            block: (
+                id: Daffodil,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (-5, 0, -10),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-5, 0, -9),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-5, 0, -8),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-5, 0, -7),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-5, 0, -6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-5, 0, -5),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-5, 0, -4),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-5, 0, -3),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-5, 0, -2),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-5, 0, -1),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-5, 0, 0),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-5, 0, 1),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-5, 0, 2),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-5, 0, 3),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-5, 0, 4),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-5, 0, 5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-5, 0, 6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-5, 0, 7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-5, 0, 8),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-4, 0, -10),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-4, 0, -9),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-4, 0, -8),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-4, 0, -7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-4, 0, -6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-4, 0, -5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-4, 0, -4),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-4, 0, -3),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-4, 0, -2),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-4, 0, -1),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-4, 0, 0),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-4, 0, 1),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-4, 0, 2),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-4, 0, 3),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-4, 0, 4),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-4, 0, 5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-4, 0, 6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-4, 0, 7),
+            block: (
+                id: Clay,
+            ),
+        ),
+        (
+            position: (-4, 1, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-4, 1, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 1, -5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-4, 1, -4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 1, -3),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 1, -2),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 1, -1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 1, 1),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-4, 1, 2),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 2, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-4, 2, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 2, -5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 2, -4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 2, -3),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-4, 2, -2),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-4, 2, -1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 2, 1),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-4, 2, 2),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-4, 3, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 3, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 3, -5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 3, -4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 3, -3),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 3, -2),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-4, 3, 1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 3, 2),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-4, 4, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-4, 4, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 4, -5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 5, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-4, 5, -5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-4, 6, -6),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-4, 6, -5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-3, 0, -10),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-3, 0, -9),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-3, 0, -8),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-3, 0, -7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-3, 0, -6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-3, 0, -5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-3, 0, -4),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-3, 0, -3),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-3, 0, -2),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-3, 0, -1),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-3, 0, 0),
+            block: (
+                id: Dirt,
+            ),
+        ),
+        (
+            position: (-3, 0, 1),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-3, 0, 2),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-3, 0, 3),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-3, 0, 4),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-3, 0, 5),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-3, 0, 6),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-3, 0, 7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-3, 1, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-3, 1, -4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 1, -3),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 1, -2),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 1, -1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 1, 0),
+            block: (
+                id: Pebbles,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (-3, 1, 1),
+            block: (
+                id: Daffodil,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (-3, 1, 3),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-3, 1, 4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 2, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 2, -4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 2, -3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-3, 2, -1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 2, 3),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 2, 4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 3, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 3, -4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-3, 3, 3),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 3, 4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 4, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 4, -4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-3, 4, 3),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-3, 4, 4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 5, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 5, -5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-3, 5, -4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-3, 6, -6),
+            block: (
+                id: PinePlanks,
+            ),
+        ),
+        (
+            position: (-3, 6, -5),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-3, 6, -4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-3, 7, -4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-3, 8, -4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-2, 0, -10),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-2, 0, -9),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-2, 0, -8),
+            block: (
+                id: Clay,
+            ),
+        ),
+        (
+            position: (-2, 0, -7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-2, 0, -6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-2, 0, -5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-2, 0, -4),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-2, 0, -3),
+            block: (
+                id: Diorite,
+            ),
+        ),
+        (
+            position: (-2, 0, -2),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-2, 0, -1),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-2, 0, 0),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-2, 0, 1),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-2, 0, 2),
+            block: (
+                id: Diorite,
+            ),
+        ),
+        (
+            position: (-2, 0, 3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-2, 0, 4),
+            block: (
+                id: Stone,
+            ),
+        ),
+        (
+            position: (-2, 0, 5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-2, 0, 6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-2, 0, 7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-2, 1, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 1, -4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 1, -3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-2, 1, -2),
+            block: (
+                id: Pebbles,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (-2, 1, -1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 1, 5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 1, 6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 2, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 2, -4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-2, 2, -1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 2, 5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-2, 2, 6),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-2, 3, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-2, 3, -4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 3, 5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 3, 6),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-2, 4, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-2, 4, -4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 4, 2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 4, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 4, 4),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 4, 5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 4, 6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 5, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 5, -4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-2, 5, 6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 6, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 6, -6),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-2, 6, -5),
+            block: (
+                id: PinePlanks,
+            ),
+        ),
+        (
+            position: (-2, 6, -4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 7, -4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 8, -4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 9, -4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 10, -4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-2, 11, -4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-2, 12, -6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-2, 13, -5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-2, 15, -6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 0, -10),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-1, 0, -9),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-1, 0, -8),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-1, 0, -7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-1, 0, -6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-1, 0, -5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-1, 0, -4),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-1, 0, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (-1, 0, -2),
+            block: (
+                id: Andesite,
+            ),
+        ),
+        (
+            position: (-1, 0, -1),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-1, 0, 0),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-1, 0, 1),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-1, 0, 2),
+            block: (
+                id: Andesite,
+            ),
+        ),
+        (
+            position: (-1, 0, 3),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-1, 0, 4),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-1, 0, 5),
+            block: (
+                id: Dirt,
+            ),
+        ),
+        (
+            position: (-1, 0, 6),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-1, 0, 7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (-1, 1, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 1, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 1, -5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-1, 1, -4),
+            block: (
+                id: Pebbles,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (-1, 1, -1),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (-1, 1, 4),
+            block: (
+                id: Pebbles,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (-1, 1, 6),
+            block: (
+                id: Pebbles,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (-1, 2, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 2, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 2, -5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-1, 2, -1),
+            block: (
+                id: Daffodil,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (-1, 3, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-1, 3, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 3, -5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 4, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 4, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 4, -5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-1, 4, 3),
+            block: (
+                id: PinePlanks,
+            ),
+        ),
+        (
+            position: (-1, 4, 4),
+            block: (
+                id: PinePlanks,
+            ),
+        ),
+        (
+            position: (-1, 4, 5),
+            block: (
+                id: PinePlanks,
+            ),
+        ),
+        (
+            position: (-1, 4, 6),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (-1, 5, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-1, 5, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 5, -5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-1, 6, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-1, 6, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 6, -5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-1, 7, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-1, 7, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 7, -5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 8, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 8, -5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 9, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 9, -5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-1, 10, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 10, -5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 10, -4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 10, -3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 11, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 11, -5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-1, 11, -4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 12, -6),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-1, 12, -5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (-1, 12, -4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 13, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 13, -5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 14, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 14, -5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 15, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 16, -7),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 16, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 17, -7),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 17, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (-1, 18, -6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 0, -10),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (0, 0, -9),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (0, 0, -8),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (0, 0, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (0, 0, -6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (0, 0, -5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (0, 0, -4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (0, 0, -3),
+            block: (
+                id: Clay,
+            ),
+        ),
+        (
+            position: (0, 0, -2),
+            block: (
+                id: Dirt,
+            ),
+        ),
+        (
+            position: (0, 0, -1),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (0, 0, 1),
+            block: (
+                id: Diorite,
+            ),
+        ),
+        (
+            position: (0, 0, 2),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (0, 0, 3),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (0, 0, 4),
+            block: (
+                id: Clay,
+            ),
+        ),
+        (
+            position: (0, 0, 5),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (0, 0, 6),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (0, 0, 7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (0, 1, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (0, 1, -6),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (0, 1, -5),
+            block: (
+                id: Pebbles,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (0, 1, -3),
+            block: (
+                id: Pebbles,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (0, 1, -1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (0, 1, 2),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (0, 2, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (0, 2, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (0, 3, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (0, 4, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (0, 4, 4),
+            block: (
+                id: PinePlanks,
+            ),
+        ),
+        (
+            position: (0, 4, 5),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (0, 5, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (0, 6, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (0, 8, -3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 9, -3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 10, -3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 17, -6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 0, -10),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (1, 0, -9),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (1, 0, -8),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (1, 0, -7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (1, 0, -6),
+            block: (
+                id: Andesite,
+            ),
+        ),
+        (
+            position: (1, 0, -5),
+            block: (
+                id: Andesite,
+            ),
+        ),
+        (
+            position: (1, 0, -4),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (1, 0, -3),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (1, 0, -2),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (1, 0, -1),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (1, 0, 0),
+            block: (
+                id: Diorite,
+            ),
+        ),
+        (
+            position: (1, 0, 1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (1, 0, 2),
+            block: (
+                id: Dirt,
+            ),
+        ),
+        (
+            position: (1, 0, 3),
+            block: (
+                id: Andesite,
+            ),
+        ),
+        (
+            position: (1, 0, 4),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (1, 0, 5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (1, 0, 6),
+            block: (
+                id: Andesite,
+            ),
+        ),
+        (
+            position: (1, 0, 7),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (1, 1, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (1, 1, -6),
+            block: (
+                id: Daffodil,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (1, 1, -1),
+            block: (
+                id: Pebbles,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (1, 1, 4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (1, 1, 5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 2, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (1, 2, 4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (1, 3, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (1, 3, 4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (1, 4, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (1, 5, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (1, 6, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 7, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 8, -3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 0, -10),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (2, 0, -9),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (2, 0, -8),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (2, 0, -7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (2, 0, -6),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (2, 0, -5),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (2, 0, -4),
+            block: (
+                id: Andesite,
+            ),
+        ),
+        (
+            position: (2, 0, -3),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (2, 0, -2),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (2, 0, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (2, 0, 0),
+            block: (
+                id: Andesite,
+            ),
+        ),
+        (
+            position: (2, 0, 1),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (2, 0, 2),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (2, 0, 3),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (2, 0, 4),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (2, 0, 5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (2, 0, 6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (2, 0, 7),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (2, 1, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (2, 1, -6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 1, -5),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 1, 4),
+            block: (
+                id: Pebbles,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (2, 1, 5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (2, 1, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 2, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (2, 2, -6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 2, 5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (2, 3, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (2, 3, -6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 4, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (2, 5, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (2, 6, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (2, 7, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (3, 0, -10),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (3, 0, -9),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (3, 0, -8),
+            block: (
+                id: Clay,
+            ),
+        ),
+        (
+            position: (3, 0, -7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (3, 0, -6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (3, 0, -5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (3, 0, -4),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (3, 0, -3),
+            block: (
+                id: Dirt,
+            ),
+        ),
+        (
+            position: (3, 0, -2),
+            block: (
+                id: Dirt,
+            ),
+        ),
+        (
+            position: (3, 0, -1),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (3, 0, 0),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (3, 0, 1),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (3, 0, 2),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (3, 0, 3),
+            block: (
+                id: Clay,
+            ),
+        ),
+        (
+            position: (3, 0, 4),
+            block: (
+                id: Dirt,
+            ),
+        ),
+        (
+            position: (3, 0, 5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (3, 0, 6),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (3, 0, 7),
+            block: (
+                id: Clay,
+            ),
+        ),
+        (
+            position: (3, 1, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (3, 1, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (3, 1, -5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (3, 1, -4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (3, 1, -3),
+            block: (
+                id: Daffodil,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (3, 1, 0),
+            block: (
+                id: Pebbles,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (3, 1, 2),
+            block: (
+                id: Daffodil,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (3, 1, 3),
+            block: (
+                id: Pebbles,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (3, 1, 4),
+            block: (
+                id: Pebbles,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (3, 2, -7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (3, 2, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (3, 2, -5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (3, 2, -4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (3, 3, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (3, 3, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (3, 3, -5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (3, 3, -4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (3, 4, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (3, 4, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (3, 4, -5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (3, 5, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (3, 5, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (3, 5, -5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (3, 6, -7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (3, 6, -6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (3, 6, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 0, -10),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (4, 0, -9),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (4, 0, -8),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (4, 0, -7),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (4, 0, -6),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (4, 0, -5),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (4, 0, -4),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (4, 0, -3),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (4, 0, -2),
+            block: (
+                id: Diorite,
+            ),
+        ),
+        (
+            position: (4, 0, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (4, 0, 0),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (4, 0, 1),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (4, 0, 2),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (4, 0, 3),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (4, 0, 4),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (4, 0, 5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (4, 0, 6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (4, 0, 7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (4, 1, -3),
+            block: (
+                id: Pebbles,
+                appearance: Flat(Y),
+            ),
+        ),
+        (
+            position: (4, 1, 0),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 1, 1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 1, 2),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 1, 3),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 1, 4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 1, 5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 1, 6),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 1, 7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 2, 0),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 2, 1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 2, 2),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 2, 3),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 2, 4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 2, 5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 2, 6),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 2, 7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 3, 0),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 3, 1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 3, 2),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 3, 3),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 3, 4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 3, 5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 3, 6),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 3, 7),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 4, 0),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 4, 1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 4, 2),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 4, 3),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 4, 4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 4, 5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 4, 6),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 4, 7),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 5, 0),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 5, 2),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (4, 5, 4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 5, 6),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (4, 6, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (4, 7, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 0, -10),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (5, 0, -9),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (5, 0, -8),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (5, 0, -7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (5, 0, -6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (5, 0, -5),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (5, 0, -4),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (5, 0, -3),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (5, 0, -2),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (5, 0, -1),
+            block: (
+                id: Granite,
+            ),
+        ),
+        (
+            position: (5, 0, 0),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (5, 0, 1),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (5, 0, 2),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (5, 0, 3),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (5, 0, 4),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (5, 0, 5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (5, 0, 6),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (5, 0, 7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (5, 1, -4),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (5, 1, -3),
+            block: (
+                id: PinePlanks,
+            ),
+        ),
+        (
+            position: (5, 1, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 1, 7),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 2, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 3, 3),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (5, 4, -2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (5, 4, -1),
+            block: (
+                id: PinePlanks,
+            ),
+        ),
+        (
+            position: (5, 4, 0),
+            block: (
+                id: PinePlanks,
+            ),
+        ),
+        (
+            position: (5, 4, 1),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (5, 4, 2),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (5, 4, 3),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (5, 4, 4),
+            block: (
+                id: PinePlanks,
+            ),
+        ),
+        (
+            position: (5, 4, 5),
+            block: (
+                id: PinePlanks,
+            ),
+        ),
+        (
+            position: (5, 4, 6),
+            block: (
+                id: PinePlanks,
+            ),
+        ),
+        (
+            position: (5, 6, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (5, 6, 1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 0, -10),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, -9),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, -8),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, -7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, -6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, -5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, -4),
+            block: (
+                id: OakPlanks,
+            ),
+        ),
+        (
+            position: (6, 0, -3),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, -2),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, -1),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, 0),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, 1),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, 2),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, 3),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, 4),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, 5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, 6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 0, 7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (6, 1, -1),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (6, 1, 0),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 1, 1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 1, 2),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 1, 3),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (6, 1, 4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 1, 5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 1, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 2, -1),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (6, 2, 0),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (6, 2, 1),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (6, 2, 2),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (6, 2, 3),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 2, 4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (6, 2, 5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 3, -1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 3, 0),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (6, 3, 1),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (6, 3, 2),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 3, 3),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (6, 3, 4),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 3, 5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 4, -1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 4, 0),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 4, 1),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 4, 2),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 4, 3),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 4, 4),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (6, 4, 5),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (6, 5, -1),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (6, 5, 1),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (6, 5, 2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (6, 5, 3),
+            block: (
+                id: MossyCobblestone,
+            ),
+        ),
+        (
+            position: (6, 5, 5),
+            block: (
+                id: Cobblestone,
+            ),
+        ),
+        (
+            position: (6, 6, 1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (7, 0, -10),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (7, 0, -9),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (7, 0, -8),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (7, 0, -7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (7, 0, -6),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (7, 0, -5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (7, 0, -4),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (7, 0, -3),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (7, 0, -2),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (7, 0, -1),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (7, 0, 0),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (7, 0, 1),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (7, 0, 2),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (7, 0, 3),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (7, 0, 4),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (7, 0, 5),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (7, 0, 6),
+            block: (
+                id: Gravel,
+            ),
+        ),
+        (
+            position: (7, 0, 7),
+            block: (
+                id: Grass,
+            ),
+        ),
+        (
+            position: (7, 1, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (7, 1, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (7, 1, 6),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (7, 2, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (7, 2, 4),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (7, 3, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (7, 4, 2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (7, 4, 3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+    ],
+)

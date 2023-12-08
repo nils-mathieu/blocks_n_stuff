@@ -1,0 +1,432 @@
+(
+    min: (-3, 0, -4),
+    max: (3, 12, 2),
+    edits: [
+        (
+            position: (-3, 6, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-3, 7, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-3, 7, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-2, 5, -1),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-2, 5, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-2, 6, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-2, 6, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-2, 6, 1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-2, 7, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-2, 7, 0),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-2, 7, 1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-2, 8, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-2, 8, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 4, 0),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-1, 5, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 5, 0),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-1, 5, 1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 6, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 6, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 6, 0),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-1, 6, 1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 7, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 7, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 7, 0),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (-1, 7, 1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 8, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 8, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 8, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 9, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (-1, 10, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 1, 0),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (0, 2, 0),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (0, 3, 0),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (0, 4, 0),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (0, 5, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 5, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 6, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 6, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 6, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 6, 1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 7, -3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 7, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 7, -1),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (0, 7, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 7, 1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 8, -3),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 8, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 8, -1),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (0, 8, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 8, 1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 9, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 9, -1),
+            block: (
+                id: OakLog,
+            ),
+        ),
+        (
+            position: (0, 9, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 9, 1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 10, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 10, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 10, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 11, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (0, 12, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 4, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 6, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 6, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 7, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 7, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 7, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 8, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 8, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 8, 0),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 9, -2),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 9, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+        (
+            position: (1, 10, -1),
+            block: (
+                id: OakLeaves,
+            ),
+        ),
+    ],
+)

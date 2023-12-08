@@ -10,7 +10,7 @@ use bns_render::Gpu;
 use bns_rng::{DefaultRng, FromRng, Rng};
 use bns_worldgen_std::StandardWorldGenerator;
 
-use glam::{Vec2, Vec3};
+use glam::{Mat4, Quat, Vec2, Vec3};
 use rodio::Source;
 
 use self::debug::DebugThings;
@@ -57,6 +57,9 @@ pub struct Game {
 
     /// The random number generator for the game.
     rng: DefaultRng,
+
+    /// The current in-game time, used to determine the position of the sun.
+    time: Duration,
 }
 
 impl Game {
@@ -96,6 +99,8 @@ impl Game {
             _stream,
 
             rng: DefaultRng::from_entropy(),
+
+            time: Duration::ZERO,
         }
     }
 
@@ -203,6 +208,11 @@ impl Game {
             sky_color = fog_color;
         }
 
+        // Compute the direction of the sun.
+        let sub_day = (self.time.as_millis() % 600000) as f32 / 600000.0;
+        let sun_direction = Quat::from_rotation_y(sub_day * std::f32::consts::TAU)
+            * Vec3::new(0.0, 1.0, -1.5).normalize();
+
         // Initialize the frame.
         let projection = self.player.camera().projection.matrix();
         let view = self
@@ -226,14 +236,26 @@ impl Game {
                 FrameFlags::empty()
             },
             milliseconds: ctx.since_startup().as_millis() as u32,
-            sun_direction: Vec3::new(0.0, 1.0, 1.0).normalize(),
+            sun_direction,
             fog_height: if self.player.is_underwater() {
                 0.2
             } else {
                 2.0
             },
+            light_transform: Mat4::orthographic_lh(-50.0, 50.0, -50.0, 50.0, 1.0, 100.0)
+                * Mat4::look_to_lh(
+                    self.player.position() + sun_direction * 50.0,
+                    -sun_direction,
+                    Vec3::Y,
+                ),
         };
         frame.fog_enabled = self.fog_enabled;
+
+        if ctx.pressing(KeyCode::KeyU) {
+            self.time += ctx.since_last_tick() * 50;
+        } else {
+            self.time += ctx.since_last_tick();
+        }
 
         // Register the world geometry.
         let mut total_quad_count = 0;
@@ -265,7 +287,7 @@ impl Game {
 
         // Outline the block that the player is looking at.
         if let Some(looking_at) = self.player.looking_at() {
-            const PADDING: f32 = 0.01;
+            const PADDING: f32 = 0.0;
 
             utility::push_aabb_lines(
                 &mut frame.lines,
@@ -273,7 +295,7 @@ impl Game {
                 looking_at.world_pos.as_vec3() + Vec3::ONE * (1.0 + PADDING),
                 Color::WHITE,
                 2.0,
-                LineFlags::empty(),
+                LineFlags::WITH_BIAS,
             );
         }
 

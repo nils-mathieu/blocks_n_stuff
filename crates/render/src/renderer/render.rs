@@ -21,6 +21,33 @@ impl Renderer {
                 label: Some("Render Command Encoder"),
             });
 
+        self.quad_pipeline.prepare(&self.gpu, &data.quads);
+
+        // ========================================
+        // Shadow Map
+        // ========================================
+
+        let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Shadow Map Render Pass"),
+            color_attachments: &[],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(1.0),
+                    store: wgpu::StoreOp::Store,
+                }),
+                stencil_ops: None,
+                view: &res.shadow_map,
+            }),
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        });
+
+        rp.set_bind_group(0, &res.frame_uniforms_bind_group, &[]);
+
+        self.quad_pipeline.render_shadows(&mut rp, &data.quads);
+
+        drop(rp);
+
         // ========================================
         // Base Scene
         // ========================================
@@ -50,9 +77,10 @@ impl Renderer {
         // Set the bind groups that are used by most of the pipelines.
         rp.set_bind_group(0, &res.frame_uniforms_bind_group, &[]);
         rp.set_bind_group(2, &res.texture_atlas_bind_group, &[]);
+        rp.set_bind_group(3, &res.shadow_map_bind_group, &[]);
 
         self.skybox_pipeline.render(&self.gpu, &mut rp);
-        self.quad_pipeline.render(&self.gpu, &mut rp, &data.quads);
+        self.quad_pipeline.render(&mut rp, &data.quads);
         self.line_pipeline.render(&self.gpu, &mut rp, &data.lines);
 
         drop(rp);

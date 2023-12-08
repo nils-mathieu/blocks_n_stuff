@@ -11,6 +11,8 @@ bitflags! {
     pub struct LineFlags: u32 {
         /// Whether the line should appear above all geometry in the world.
         const ABOVE = 1 << 0;
+        /// Adds a small bias to the line's depth to prevent z-fighting.
+        const WITH_BIAS = 1 << 1;
     }
 }
 

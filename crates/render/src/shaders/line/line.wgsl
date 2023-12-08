@@ -4,6 +4,7 @@ struct FrameUniforms {
     inverse_projection: mat4x4<f32>,
     view: mat4x4<f32>,
     inverse_view: mat4x4<f32>,
+    light_transform: mat4x4<f32>,
     resolution: vec2<f32>,
     fog_density: f32,
     fog_distance: f32,
@@ -42,6 +43,8 @@ struct Interpolator {
 
 // This flag indicates that the line should be drawn above everything else (i.e. depth = 0.0).
 const FLAG_ABOVE: u32 = 1u;
+// This flag indicates that the line should be drawn with a depth bias.
+const FLAG_DEPTH_BIAS: u32 = 2u;
 
 // Computes the clip-space position of the vertex required to draw a line starting at `start` and
 // finishing at `end`, with a width of `width`.
@@ -91,6 +94,10 @@ fn vs_main(in: Instance, @builtin(vertex_index) vertex_index: u32) -> Interpolat
     // Apply the flags.
     if (in.flags & FLAG_ABOVE) != 0u {
         clip_space.z = 0.0;
+    }
+
+    if (in.flags & FLAG_DEPTH_BIAS) != 0u {
+        clip_space.z -= 0.0001 / clip_space.w;
     }
 
     var out: Interpolator;

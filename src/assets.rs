@@ -196,6 +196,12 @@ impl Sounds {
                 2 => self.break_gravel3.clone(),
                 _ => unreachable!(),
             },
+            BlockId::Glass => match rng.next_u32() % 3 {
+                0 => self.break_glass1.clone(),
+                1 => self.break_glass2.clone(),
+                2 => self.break_glass3.clone(),
+                _ => unreachable!(),
+            },
             _ => match rng.next_u32() % 3 {
                 0 => self.break_stone1.clone(),
                 1 => self.break_stone2.clone(),

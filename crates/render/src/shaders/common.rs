@@ -64,6 +64,8 @@ pub struct FrameUniforms {
     pub view: Mat4,
     /// The inverse of `view`.
     pub inverse_view: Mat4,
+    /// Transforms world-space coordinates to light-space coordinates (the sun).
+    pub light_transform: Mat4,
     /// The resolution of the render target.
     pub resolution: Vec2,
     /// The density of the fog.
@@ -114,6 +116,12 @@ pub struct CommonResources {
     pub linear_sampler: wgpu::Sampler,
     /// The bind group layout used to create textures.
     pub texture_layout: wgpu::BindGroupLayout,
+    /// The bind group layout used to bind the shadow map to the shaders.
+    pub shadow_map_layout: wgpu::BindGroupLayout,
+    /// The bind group used to bind the shadow map to the shaders.
+    pub shadow_map_bind_group: wgpu::BindGroup,
+    /// The shadow map texture.
+    pub shadow_map: wgpu::TextureView,
 }
 
 impl CommonResources {
@@ -136,6 +144,8 @@ impl CommonResources {
         let (depth_buffer, depth_buffer_bind_group) =
             create_depth_buffer(device, &depth_buffer_layout, &linear_sampler, 1, 1);
         let texture_layout = create_texture_layout(device);
+        let shadow_map_layout = create_shadow_map_layout(device);
+        let (shadow_map, shadow_map_bind_group) = create_shadow_map(device, &shadow_map_layout);
 
         Self {
             pixel_sampler,
@@ -149,6 +159,9 @@ impl CommonResources {
             frame_uniforms_buffer,
             linear_sampler,
             texture_layout,
+            shadow_map_bind_group,
+            shadow_map,
+            shadow_map_layout,
         }
     }
 
@@ -412,4 +425,82 @@ fn create_texture_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
             },
         ],
     })
+}
+
+fn create_shadow_map_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("Shadow Map Bind Group Layout"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                count: None,
+                ty: wgpu::BindingType::Texture {
+                    sample_type: wgpu::TextureSampleType::Depth,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    multisampled: false,
+                },
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                count: None,
+                ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Comparison),
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+            },
+        ],
+    })
+}
+
+fn create_shadow_map(
+    device: &wgpu::Device,
+    layout: &wgpu::BindGroupLayout,
+) -> (wgpu::TextureView, wgpu::BindGroup) {
+    let texture = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("Shadow Map"),
+        size: wgpu::Extent3d {
+            width: 8192,
+            height: 8192,
+            depth_or_array_layers: 1,
+        },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Depth32Float,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        view_formats: &[],
+    });
+
+    let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        label: Some("Shadow Map Sampler"),
+        address_mode_u: wgpu::AddressMode::Repeat,
+        address_mode_v: wgpu::AddressMode::Repeat,
+        address_mode_w: wgpu::AddressMode::Repeat,
+        mag_filter: wgpu::FilterMode::Nearest,
+        min_filter: wgpu::FilterMode::Nearest,
+        mipmap_filter: wgpu::FilterMode::Nearest,
+        lod_min_clamp: 0.0,
+        lod_max_clamp: 32.0,
+        compare: Some(wgpu::CompareFunction::LessEqual),
+        anisotropy_clamp: 1,
+        border_color: None,
+    });
+
+    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("Shadow Map Bind Group"),
+        layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&view),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: wgpu::BindingResource::Sampler(&sampler),
+            },
+        ],
+    });
+
+    (view, bind_group)
 }

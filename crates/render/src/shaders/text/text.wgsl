@@ -4,6 +4,7 @@ struct FrameUniforms {
     inverse_projection: mat4x4<f32>,
     view: mat4x4<f32>,
     inverse_view: mat4x4<f32>,
+    light_transform: mat4x4<f32>,
     resolution: vec2<f32>,
     fog_density: f32,
     fog_distance: f32,
