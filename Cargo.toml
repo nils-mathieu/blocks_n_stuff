@@ -56,6 +56,10 @@ members = [
     "crates/app",
 ]
 
+[features]
+default = []
+embedded-assets = ["bns-core/embedded-textures"]
+
 [dependencies]
 bns-core = { path = "crates/core" }
 bns-render = { path = "crates/render" }

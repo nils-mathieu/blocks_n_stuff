@@ -11,7 +11,11 @@ pub async fn load_texture_atlas() -> TextureAtlasConfig<'static> {
     let mut metadata: Option<bns_image::ImageMetadata> = None;
 
     for texture_id in TextureId::all() {
+        #[cfg(not(feature = "embedded-assets"))]
         let mut image = load_image(texture_id.file_name()).await;
+        #[cfg(feature = "embedded-assets")]
+        let mut image =
+            bns_image::Image::load_png(std::io::Cursor::new(texture_id.embeded_texture())).unwrap();
         image.ensure_rgba();
 
         match &metadata {
@@ -60,18 +64,39 @@ pub struct Assets {
     pub ui: Texture,
 }
 
+#[cfg(not(feature = "embedded-assets"))]
+macro_rules! load_texture {
+    ($gpu:expr, $name:literal) => {
+        load_texture($gpu, load_image($name).await)
+    };
+}
+
+#[cfg(feature = "embedded-assets")]
+macro_rules! load_texture {
+    ($gpu:expr, $name:literal) => {
+        load_texture(
+            $gpu,
+            bns_image::Image::load_png(std::io::Cursor::new(include_bytes!(concat!(
+                "../assets/",
+                $name,
+                ".png"
+            ))))
+            .unwrap(),
+        )
+    };
+}
+
 impl Assets {
     /// Loads the assets.
     pub async fn load(gpu: &Gpu) -> Self {
         Self {
-            ui: load_texture(gpu, "ui").await,
+            ui: load_texture!(gpu, "ui"),
         }
     }
 }
 
 /// Loads the provided texture.
-async fn load_texture(gpu: &Gpu, asset_path: &str) -> Texture {
-    let mut image = load_image(asset_path).await;
+fn load_texture(gpu: &Gpu, mut image: bns_image::Image) -> Texture {
     image.ensure_rgba();
     Texture::new(
         gpu,
@@ -87,6 +112,7 @@ async fn load_texture(gpu: &Gpu, asset_path: &str) -> Texture {
 }
 
 /// Loads the image from the asset directory.
+#[cfg(not(feature = "embedded-assets"))]
 async fn load_image(asset_path: &str) -> bns_image::Image {
     #[cfg(target_arch = "wasm32")]
     {
@@ -141,41 +167,55 @@ pub struct Sounds {
     pub break_gravel3: Arc<[u8]>,
 }
 
+#[cfg(not(feature = "embedded-assets"))]
+macro_rules! load_sound {
+    ($name:literal) => {
+        load_sound($name).await
+    };
+}
+
+#[cfg(feature = "embedded-assets")]
+macro_rules! load_sound {
+    ($name:literal) => {
+        include_bytes!(concat!("../assets/", $name)).to_vec()
+    };
+}
+
 impl Sounds {
     /// Loads the sounds asynchronously.
     pub async fn load() -> Self {
         Self {
-            background_music: Arc::from(load_sound("background_music.ogg").await),
-            step_grass1: Arc::from(load_sound("step_grass1.ogg").await),
-            step_grass2: Arc::from(load_sound("step_grass2.ogg").await),
-            step_grass3: Arc::from(load_sound("step_grass3.ogg").await),
-            step_sand1: Arc::from(load_sound("step_sand1.ogg").await),
-            step_sand2: Arc::from(load_sound("step_sand2.ogg").await),
-            step_sand3: Arc::from(load_sound("step_sand3.ogg").await),
-            step_stone1: Arc::from(load_sound("step_stone1.ogg").await),
-            step_stone2: Arc::from(load_sound("step_stone2.ogg").await),
-            step_stone3: Arc::from(load_sound("step_stone3.ogg").await),
-            step_wood1: Arc::from(load_sound("step_wood1.ogg").await),
-            step_wood2: Arc::from(load_sound("step_wood2.ogg").await),
-            step_wood3: Arc::from(load_sound("step_wood3.ogg").await),
-            break_grass1: Arc::from(load_sound("break_grass1.ogg").await),
-            break_grass2: Arc::from(load_sound("break_grass2.ogg").await),
-            break_grass3: Arc::from(load_sound("break_grass3.ogg").await),
-            break_sand1: Arc::from(load_sound("break_sand1.ogg").await),
-            break_sand2: Arc::from(load_sound("break_sand2.ogg").await),
-            break_sand3: Arc::from(load_sound("break_sand3.ogg").await),
-            break_stone1: Arc::from(load_sound("break_stone1.ogg").await),
-            break_stone2: Arc::from(load_sound("break_stone2.ogg").await),
-            break_stone3: Arc::from(load_sound("break_stone3.ogg").await),
-            break_wood1: Arc::from(load_sound("break_wood1.ogg").await),
-            break_wood2: Arc::from(load_sound("break_wood2.ogg").await),
-            break_wood3: Arc::from(load_sound("break_wood3.ogg").await),
-            break_glass1: Arc::from(load_sound("break_glass1.ogg").await),
-            break_glass2: Arc::from(load_sound("break_glass2.ogg").await),
-            break_glass3: Arc::from(load_sound("break_glass3.ogg").await),
-            break_gravel1: Arc::from(load_sound("break_gravel1.ogg").await),
-            break_gravel2: Arc::from(load_sound("break_gravel2.ogg").await),
-            break_gravel3: Arc::from(load_sound("break_gravel3.ogg").await),
+            background_music: Arc::from(load_sound!("background_music.ogg")),
+            step_grass1: Arc::from(load_sound!("step_grass1.ogg")),
+            step_grass2: Arc::from(load_sound!("step_grass2.ogg")),
+            step_grass3: Arc::from(load_sound!("step_grass3.ogg")),
+            step_sand1: Arc::from(load_sound!("step_sand1.ogg")),
+            step_sand2: Arc::from(load_sound!("step_sand2.ogg")),
+            step_sand3: Arc::from(load_sound!("step_sand3.ogg")),
+            step_stone1: Arc::from(load_sound!("step_stone1.ogg")),
+            step_stone2: Arc::from(load_sound!("step_stone2.ogg")),
+            step_stone3: Arc::from(load_sound!("step_stone3.ogg")),
+            step_wood1: Arc::from(load_sound!("step_wood1.ogg")),
+            step_wood2: Arc::from(load_sound!("step_wood2.ogg")),
+            step_wood3: Arc::from(load_sound!("step_wood3.ogg")),
+            break_grass1: Arc::from(load_sound!("break_grass1.ogg")),
+            break_grass2: Arc::from(load_sound!("break_grass2.ogg")),
+            break_grass3: Arc::from(load_sound!("break_grass3.ogg")),
+            break_sand1: Arc::from(load_sound!("break_sand1.ogg")),
+            break_sand2: Arc::from(load_sound!("break_sand2.ogg")),
+            break_sand3: Arc::from(load_sound!("break_sand3.ogg")),
+            break_stone1: Arc::from(load_sound!("break_stone1.ogg")),
+            break_stone2: Arc::from(load_sound!("break_stone2.ogg")),
+            break_stone3: Arc::from(load_sound!("break_stone3.ogg")),
+            break_wood1: Arc::from(load_sound!("break_wood1.ogg")),
+            break_wood2: Arc::from(load_sound!("break_wood2.ogg")),
+            break_wood3: Arc::from(load_sound!("break_wood3.ogg")),
+            break_glass1: Arc::from(load_sound!("break_glass1.ogg")),
+            break_glass2: Arc::from(load_sound!("break_glass2.ogg")),
+            break_glass3: Arc::from(load_sound!("break_glass3.ogg")),
+            break_gravel1: Arc::from(load_sound!("break_gravel1.ogg")),
+            break_gravel2: Arc::from(load_sound!("break_gravel2.ogg")),
+            break_gravel3: Arc::from(load_sound!("break_gravel3.ogg")),
         }
     }
 
@@ -268,6 +308,7 @@ impl Sounds {
 }
 
 /// Loads the sounds from the asset directory.
+#[cfg(not(feature = "embedded-assets"))]
 async fn load_sound(asset_path: &str) -> Vec<u8> {
     #[cfg(target_arch = "wasm32")]
     {
@@ -284,6 +325,7 @@ async fn load_sound(asset_path: &str) -> Vec<u8> {
     }
 }
 
+#[cfg(not(feature = "embedded-assets"))]
 #[cfg(target_arch = "wasm32")]
 mod fetch_api {
     use wasm_bindgen_futures::js_sys::{ArrayBuffer, Uint8Array};
