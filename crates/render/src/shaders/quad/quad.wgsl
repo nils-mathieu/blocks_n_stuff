@@ -234,8 +234,12 @@ fn fs_main(input: Interpolator) -> @location(0) vec4<f32> {
     }
 
     let occlusion = (1.0 - AMBIENT_OCCLUSION_INTENCITY) + AMBIENT_OCCLUSION_INTENCITY * occlusion_mask(input.tex_coords, input.flags);
-    let diffuse = (1.0 - LIGHT_INTENCITY) + LIGHT_INTENCITY * max(0.0, dot(input.normal, frame.sun_direction));
-    let shadow = lookup_shadow(input.light_position) * LIGHT_INTENCITY + (1.0 - LIGHT_INTENCITY);
+    let diffuse = (1.0 - LIGHT_INTENCITY) + LIGHT_INTENCITY * max(0.0, dot(input.normal, -frame.sun_direction));
+
+    var shadow = 1.0;
+    if (frame.flags & 2u) != 0u {
+        shadow = lookup_shadow(input.light_position) * LIGHT_INTENCITY + (1.0 - LIGHT_INTENCITY);
+    }
 
     return vec4<f32>(AMBIENT + albedo.rgb * occlusion * shadow * diffuse, albedo.a);
 }

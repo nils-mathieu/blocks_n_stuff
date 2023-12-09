@@ -505,7 +505,7 @@ impl Player {
 
     /// Re-computes the chunks that are in view of the player.
     #[profiling::function]
-    pub fn compute_chunks_in_view(&mut self) {
+    pub fn compute_chunks_in_view(&mut self, padding: f32) {
         const CHUNK_RADIUS: f32 = (Chunk::SIDE as f32) * 0.8660254; // sqrt(3) / 2
 
         self.chunks_in_view.clear();
@@ -524,7 +524,7 @@ impl Player {
 
                     if self
                         .camera
-                        .is_sphere_in_frustum(relative_chunk_pos_center, CHUNK_RADIUS)
+                        .is_sphere_in_frustum(relative_chunk_pos_center, CHUNK_RADIUS + padding)
                     {
                         self.chunks_in_view.push(center + relative_chunk_pos);
                     }

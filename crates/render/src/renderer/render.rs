@@ -23,30 +23,32 @@ impl Renderer {
 
         self.quad_pipeline.prepare(&self.gpu, &data.quads);
 
-        // ========================================
-        // Shadow Map
-        // ========================================
+        if data.shadows_enabled {
+            // ========================================
+            // Shadow Map
+            // ========================================
 
-        let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("Shadow Map Render Pass"),
-            color_attachments: &[],
-            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                depth_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(1.0),
-                    store: wgpu::StoreOp::Store,
+            let mut rp = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Shadow Map Render Pass"),
+                color_attachments: &[],
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                    view: &res.shadow_map,
                 }),
-                stencil_ops: None,
-                view: &res.shadow_map,
-            }),
-            occlusion_query_set: None,
-            timestamp_writes: None,
-        });
+                occlusion_query_set: None,
+                timestamp_writes: None,
+            });
 
-        rp.set_bind_group(0, &res.frame_uniforms_bind_group, &[]);
+            rp.set_bind_group(0, &res.frame_uniforms_bind_group, &[]);
 
-        self.quad_pipeline.render_shadows(&mut rp, &data.quads);
+            self.quad_pipeline.render_shadows(&mut rp, &data.quads);
 
-        drop(rp);
+            drop(rp);
+        }
 
         // ========================================
         // Base Scene

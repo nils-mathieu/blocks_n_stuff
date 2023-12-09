@@ -65,7 +65,7 @@ fn unpack_color(color: u32) -> vec4<f32> {
 
 // Compute the intensity of the sun for the given pixel.
 fn sun(eye_dir: vec3<f32>) -> f32 {
-    var value = max(0.0, dot(eye_dir, frame.sun_direction));
+    var value = max(0.0, dot(eye_dir, -frame.sun_direction));
     return pow(value, 300.0);
 }
 

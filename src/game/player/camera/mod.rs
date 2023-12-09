@@ -25,6 +25,39 @@ impl Camera {
         }
     }
 
+    /// Returns the four points of the camera's frustum quad at the provided distance from the
+    /// eye position.
+    ///
+    /// Note that the returned points are in local-space of the camera and should be translated by
+    /// the camera's actual position.
+    pub fn frustum_quad(&self, min: f32, max: f32) -> [Vec3; 8] {
+        let tan = (self.projection.fov_y() * 0.5).tan();
+
+        let min_half_height = tan * min;
+        let min_half_width = min_half_height * self.projection.aspect_ratio();
+        let max_half_height = tan * max;
+        let max_half_width = max_half_height * self.projection.aspect_ratio();
+
+        let rotation = self.view.rotation();
+        let forward = rotation * Vec3::Z;
+        let right = rotation * Vec3::X;
+        let up = rotation * Vec3::Y;
+
+        let min_center = forward * min;
+        let max_center = forward * max;
+
+        [
+            min_center + up * min_half_height - right * min_half_width,
+            min_center + up * min_half_height + right * min_half_width,
+            min_center - up * min_half_height + right * min_half_width,
+            min_center - up * min_half_height - right * min_half_width,
+            max_center + up * max_half_height - right * max_half_width,
+            max_center + up * max_half_height + right * max_half_width,
+            max_center - up * max_half_height + right * max_half_width,
+            max_center - up * max_half_height - right * max_half_width,
+        ]
+    }
+
     /// Determines whether the provided sphere is in the camera's frustum.
     ///
     /// # Arguments

@@ -15,6 +15,8 @@ bitflags! {
     pub struct FrameFlags: u32 {
         /// Whether the camera is currently underwater.
         const UNDERWATER = 1 << 0;
+        /// Whether shadows are enabled.
+        const SHADOWS_ENABLED = 1 << 1;
     }
 }
 

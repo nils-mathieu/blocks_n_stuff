@@ -10,17 +10,19 @@ use bns_render::Gpu;
 use bns_rng::{DefaultRng, FromRng, Rng};
 use bns_worldgen_std::StandardWorldGenerator;
 
-use glam::{Mat4, Quat, Vec2, Vec3};
+use glam::{Vec2, Vec3};
 use rodio::Source;
 
 use self::debug::DebugThings;
 use self::player::{LookingAt, Player};
+use self::sun::Sun;
 use crate::assets::{Assets, Sounds};
 use crate::world::World;
 
 pub mod player;
 
 mod debug;
+mod sun;
 mod utility;
 
 /// The amount of time that must have passed before the world cleans up its unused data.
@@ -47,6 +49,8 @@ pub struct Game {
 
     /// Whether or not the fog is enabled.
     fog_enabled: bool,
+    /// Whether or not the shadows are enabled.
+    shadows_enabled: bool,
 
     /// The handle to the output stream that's used to play the music.
     stream_handle: rodio::OutputStreamHandle,
@@ -58,8 +62,8 @@ pub struct Game {
     /// The random number generator for the game.
     rng: DefaultRng,
 
-    /// The current in-game time, used to determine the position of the sun.
-    time: Duration,
+    /// The directional light.
+    sun: Sun,
 }
 
 impl Game {
@@ -94,13 +98,14 @@ impl Game {
             seed,
             debug,
             fog_enabled: true,
+            shadows_enabled: true,
 
             stream_handle,
             _stream,
 
             rng: DefaultRng::from_entropy(),
 
-            time: Duration::ZERO,
+            sun: Sun::new(),
         }
     }
 
@@ -120,6 +125,9 @@ impl Game {
         if ctx.just_pressed(KeyCode::F10) {
             self.fog_enabled = !self.fog_enabled;
         }
+        if ctx.just_pressed(KeyCode::F9) {
+            self.shadows_enabled = !self.shadows_enabled;
+        }
 
         self.since_last_cleanup += ctx.since_last_tick();
         if self.since_last_cleanup >= WORLD_CLEAN_UP_INTERVAL {
@@ -138,7 +146,8 @@ impl Game {
             &mut self.rng,
             ctx,
         );
-        self.player.compute_chunks_in_view();
+        self.player
+            .compute_chunks_in_view(if self.shadows_enabled { 0.0 } else { 16.0 });
 
         for &chunk_pos in self.player.chunks_in_view() {
             self.world.request_chunk(chunk_pos);
@@ -197,6 +206,8 @@ impl Game {
         assets: &'res Assets,
         frame: &mut RenderData<'res>,
     ) {
+        self.sun.tick(ctx);
+
         let mut fog_distance = self.player.render_distance() as f32 * 3.0;
         let mut fog_density = 0.1 / self.player.render_distance() as f32;
         let mut fog_color = Color::rgb(100, 200, 255);
@@ -208,11 +219,6 @@ impl Game {
             sky_color = fog_color;
         }
 
-        // Compute the direction of the sun.
-        let sub_day = (self.time.as_millis() % 600000) as f32 / 600000.0;
-        let sun_direction = Quat::from_rotation_y(sub_day * std::f32::consts::TAU)
-            * Vec3::new(0.0, 1.0, -1.5).normalize();
-
         // Initialize the frame.
         let projection = self.player.camera().projection.matrix();
         let view = self
@@ -220,6 +226,9 @@ impl Game {
             .camera()
             .view
             .matrix(self.player.head_position());
+        let mut frame_flags = FrameFlags::empty();
+        frame_flags.set(FrameFlags::UNDERWATER, self.player.is_underwater());
+        frame_flags.set(FrameFlags::SHADOWS_ENABLED, self.shadows_enabled);
         frame.uniforms = FrameUniforms {
             inverse_projection: projection.inverse(),
             inverse_view: view.inverse(),
@@ -230,32 +239,26 @@ impl Game {
             resolution: Vec2::new(ctx.width() as f32, ctx.height() as f32),
             fog_color,
             sky_color,
-            flags: if self.player.is_underwater() {
-                FrameFlags::UNDERWATER
-            } else {
-                FrameFlags::empty()
-            },
+            flags: frame_flags,
             milliseconds: ctx.since_startup().as_millis() as u32,
-            sun_direction,
+            sun_direction: self.sun.direction(),
             fog_height: if self.player.is_underwater() {
                 0.2
             } else {
                 2.0
             },
-            light_transform: Mat4::orthographic_lh(-50.0, 50.0, -50.0, 50.0, 1.0, 100.0)
-                * Mat4::look_to_lh(
-                    self.player.position() + sun_direction * 50.0,
-                    -sun_direction,
-                    Vec3::Y,
-                ),
+            light_transform: self
+                .sun
+                .matrix(self.player.position(), self.player.camera()),
+            // light_transform: Mat4::orthographic_lh(-50.0, 50.0, -50.0, 50.0, 1.0, 100.0)
+            //     * Mat4::look_to_lh(
+            //         self.player.position() + sun_direction * 50.0,
+            //         -sun_direction,
+            //         Vec3::Y,
+            //     ),
         };
         frame.fog_enabled = self.fog_enabled;
-
-        if ctx.pressing(KeyCode::KeyU) {
-            self.time += ctx.since_last_tick() * 50;
-        } else {
-            self.time += ctx.since_last_tick();
-        }
+        frame.shadows_enabled = self.shadows_enabled;
 
         // Register the world geometry.
         let mut total_quad_count = 0;

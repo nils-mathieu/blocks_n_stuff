@@ -90,6 +90,12 @@ impl Perspective {
         self.near = compute_near_plane(self.nearest_distance, aspect_ratio, self.fov_y);
     }
 
+    /// Returns the aspect ratio of the camera.
+    #[inline]
+    pub fn aspect_ratio(&self) -> f32 {
+        self.aspect_ratio
+    }
+
     /// Returns the projection matrix of the camera.
     #[inline]
     pub fn matrix(&self) -> Mat4 {

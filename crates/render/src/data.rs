@@ -50,6 +50,8 @@ pub struct RenderData<'res> {
 
     /// Whether fog should be enabled.
     pub fog_enabled: bool,
+    /// Whether shadows should be enabled.
+    pub shadows_enabled: bool,
 }
 
 impl<'res> RenderData<'res> {
@@ -61,6 +63,7 @@ impl<'res> RenderData<'res> {
             lines: Vec::new(),
             ui: Vec::new(),
             fog_enabled: true,
+            shadows_enabled: true,
         }
     }
 
@@ -82,6 +85,7 @@ impl<'res> RenderData<'res> {
             lines: self.lines,
             ui,
             fog_enabled: true,
+            shadows_enabled: true,
         }
     }
 }
