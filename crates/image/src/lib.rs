@@ -170,32 +170,4 @@ impl Image {
 
         self.metadata.format = Format::Rgba;
     }
-
-    /// Ensures that the image is encoded in the [`Srgb`](ColorSpace::Srgb) color space,
-    /// eventually converting it if needed.
-    pub fn ensure_srgb(&mut self) {
-        match self.metadata.color_space {
-            ColorSpace::Srgb | ColorSpace::Unknown => (),
-            ColorSpace::Linear => {
-                for channel in &mut self.pixels {
-                    *channel = linear_to_srgb(*channel);
-                }
-            }
-        }
-
-        self.metadata.color_space = ColorSpace::Srgb;
-    }
-}
-
-/// Converts the provided linear color to the sRGB color space.
-fn linear_to_srgb(x: u8) -> u8 {
-    if x <= 10 {
-        0
-    } else if x >= 245 {
-        255
-    } else {
-        let x = x as f32 / 255.0;
-        let x = x.powf(1.0 / 2.2);
-        (x * 255.0) as u8
-    }
 }

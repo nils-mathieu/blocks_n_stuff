@@ -8,15 +8,29 @@ use bns_rng::{DefaultRng, Rng};
 pub async fn load_texture_atlas() -> TextureAtlasConfig<'static> {
     let mut data = Vec::new();
     let mut count = 0;
-    let mut metadata = None;
+    let mut metadata: Option<bns_image::ImageMetadata> = None;
 
     for texture_id in TextureId::all() {
         let mut image = load_image(texture_id.file_name()).await;
-        image.ensure_srgb();
         image.ensure_rgba();
 
         match &metadata {
-            Some(metadata) => assert_eq!(metadata, &image.metadata),
+            Some(metadata) => {
+                if metadata.color_space != image.metadata.color_space {
+                    bns_log::warning!(
+                        "texture {:?} does not have the color space: {:?} != {:?}",
+                        texture_id,
+                        metadata.color_space,
+                        image.metadata.color_space,
+                    );
+
+                    if image.metadata.width != metadata.width
+                        || image.metadata.height != metadata.height
+                    {
+                        panic!("texture atlas: mismatched texture dimensions");
+                    }
+                }
+            }
             None => metadata = Some(image.metadata),
         }
 
@@ -34,7 +48,7 @@ pub async fn load_texture_atlas() -> TextureAtlasConfig<'static> {
         mip_level_count: 1,
         format: match metadata.color_space {
             bns_image::ColorSpace::Srgb => TextureFormat::Rgba8UnormSrgb,
-            bns_image::ColorSpace::Unknown => TextureFormat::Rgba8Unorm,
+            bns_image::ColorSpace::Unknown => TextureFormat::Rgba8UnormSrgb,
             bns_image::ColorSpace::Linear => TextureFormat::Rgba8Unorm,
         },
     }
@@ -58,13 +72,16 @@ impl Assets {
 /// Loads the provided texture.
 async fn load_texture(gpu: &Gpu, asset_path: &str) -> Texture {
     let mut image = load_image(asset_path).await;
-    image.ensure_srgb();
     image.ensure_rgba();
     Texture::new(
         gpu,
         image.metadata.width,
         image.metadata.height,
-        TextureFormat::Rgba8UnormSrgb,
+        match image.metadata.color_space {
+            bns_image::ColorSpace::Srgb => TextureFormat::Rgba8UnormSrgb,
+            bns_image::ColorSpace::Unknown => TextureFormat::Rgba8UnormSrgb,
+            bns_image::ColorSpace::Linear => TextureFormat::Rgba8Unorm,
+        },
         &image.pixels,
     )
 }

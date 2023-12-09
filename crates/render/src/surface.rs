@@ -98,9 +98,19 @@ impl<'w> Surface<'w> {
         bns_log::info!("established a connection with the GPU!");
         bns_log::info!("GPU: {}", adapter.get_info().name);
 
-        let config = surface
+        let mut config = surface
             .get_default_config(&adapter, 0, 0)
             .expect("the selected GPU is not compatible with the surface");
+
+        // If possible, try to use a sRGB format.
+        if let Some(format) = surface
+            .get_capabilities(&adapter)
+            .formats
+            .iter()
+            .find(|f| f.is_srgb())
+        {
+            config.format = *format;
+        }
 
         bns_log::info!("surface format: {:?}", config.format);
         bns_log::info!("present mode: {:?}", config.present_mode);
