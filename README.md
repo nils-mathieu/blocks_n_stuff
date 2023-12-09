@@ -6,7 +6,7 @@ programming.
 A web version of this project is available at https://nils-mathieu.fr/blocks_n_stuff/, but it's a bit buggy. I would definitely recommend using the native version if possible. Prebuilt binaries are available in the [releases] tab, or you can follow
 the instructions below to build it yourself (you only need a basic Rust toolchain!).
 
-See the [FEATURES.md] for a list of features.
+See the [feature list](FEATURES.md) for a list of features.
 
 [releases]: https://github.com/nils-mathieu/blocks_n_stuff/releases
 
