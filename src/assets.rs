@@ -18,7 +18,7 @@ pub async fn load_texture_atlas() -> TextureAtlasConfig<'static> {
             Some(metadata) => {
                 if metadata.color_space != image.metadata.color_space {
                     bns_log::warning!(
-                        "texture {:?} does not have the color space: {:?} != {:?}",
+                        "texture {:?} does not have the same color space: {:?} != {:?}",
                         texture_id,
                         metadata.color_space,
                         image.metadata.color_space,

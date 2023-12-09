@@ -18,7 +18,7 @@ pub struct SurfaceConfig {
 /// Stores information about a [`Surface`].
 #[derive(Clone, Debug)]
 pub struct SurfaceInfo {
-    /// The format of the surface.
+    /// The output format of the surface.
     pub format: TextureFormat,
 }
 
@@ -45,6 +45,10 @@ pub struct Surface<'window> {
     // to be re-configured.
     //
     alpha_mode: wgpu::CompositeAlphaMode,
+
+    /// The original format of the surface, the one that should be used when
+    /// re-configuring the surface.
+    original_format: TextureFormat,
 }
 
 impl<'w> Surface<'w> {
@@ -98,19 +102,9 @@ impl<'w> Surface<'w> {
         bns_log::info!("established a connection with the GPU!");
         bns_log::info!("GPU: {}", adapter.get_info().name);
 
-        let mut config = surface
+        let config = surface
             .get_default_config(&adapter, 0, 0)
             .expect("the selected GPU is not compatible with the surface");
-
-        // If possible, try to use a sRGB format.
-        if let Some(format) = surface
-            .get_capabilities(&adapter)
-            .formats
-            .iter()
-            .find(|f| f.is_srgb())
-        {
-            config.format = *format;
-        }
 
         bns_log::info!("surface format: {:?}", config.format);
         bns_log::info!("present mode: {:?}", config.present_mode);
@@ -126,12 +120,13 @@ impl<'w> Surface<'w> {
                 present_mode: config.present_mode,
             },
             info: SurfaceInfo {
-                format: config.format,
+                format: config.format.add_srgb_suffix(),
             },
             surface,
             config_dirty: false,
 
             alpha_mode: config.alpha_mode,
+            original_format: config.format,
         }
     }
 
@@ -196,12 +191,12 @@ impl<'w> Surface<'w> {
                 &self.gpu.device,
                 &wgpu::SurfaceConfiguration {
                     alpha_mode: self.alpha_mode,
-                    format: self.info.format,
+                    format: self.original_format,
                     width: self.config.width,
                     height: self.config.height,
                     present_mode: self.config.present_mode,
                     usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                    view_formats: Vec::new(),
+                    view_formats: vec![self.original_format.add_srgb_suffix()],
                 },
             );
         }
@@ -216,9 +211,17 @@ impl<'w> Surface<'w> {
             Err(err) => panic!("failed to acquire surface texture: {err}"),
         };
 
-        let view = texture
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        let view = texture.texture.create_view(&wgpu::TextureViewDescriptor {
+            array_layer_count: None,
+            base_array_layer: 0,
+            base_mip_level: 0,
+            dimension: Some(wgpu::TextureViewDimension::D2),
+            format: Some(self.info.format.add_srgb_suffix()),
+            mip_level_count: None,
+            label: None,
+            aspect: wgpu::TextureAspect::All,
+            plane: None,
+        });
 
         Some(Frame { view, texture })
     }
