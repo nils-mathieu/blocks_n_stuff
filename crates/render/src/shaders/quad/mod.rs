@@ -272,7 +272,10 @@ fn create_pipeline(
 ) -> wgpu::RenderPipeline {
     gpu.device
         .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Quad Pipeline"),
+            label: Some(match flavor {
+                PipelineFlavor::Opaque => "Quad Opaque Pipeline",
+                PipelineFlavor::Transparent => "Quad Transparent Pipeline",
+            }),
             layout: Some(layout),
             vertex: wgpu::VertexState {
                 buffers: &[wgpu::VertexBufferLayout {

@@ -17,9 +17,8 @@
   - [x] Physics system.
   - [x] Mincraft survival-like player movement.
   - [x] Mining, placing blocks.
-- [ ] Advanced graphics.
+- [x] Advanced graphics.
   - [x] Shadows.
   - [x] Animated water.
-  - [ ] Ambient particles.
 - [x] Misc
   - [x] Music?

@@ -181,7 +181,7 @@ var shadow_map: texture_depth_2d;
 @group(3) @binding(1)
 var shadow_map_sampler: sampler_comparison;
 
-const LIGHT_INTENCITY: f32 = 0.5;
+const LIGHT_INTENCITY: f32 = 0.8;
 
 const AMBIENT_OCCLUSION_INTENCITY: f32 = 0.5;
 
@@ -196,12 +196,8 @@ fn occlusion_mask(v: vec2<f32>, flags: u32) -> f32 {
     return top * bottom * left * right;
 }
 
+// 1 = no shadow, 0 = full shadow
 fn lookup_shadow(light_pos: vec4<f32>) -> f32 {
-    // Discard fragments that are outside of the shadow map.
-    if light_pos.z / light_pos.w > 1.0 {
-        return 1.0;
-    }
-
     // Compensate for the Y-flip in the shadow map.
     let flip_correction = vec2<f32>(0.5, -0.5);
 
@@ -210,12 +206,18 @@ fn lookup_shadow(light_pos: vec4<f32>) -> f32 {
     let light_local = light_pos.xy * flip_correction * proj_correction + vec2<f32>(0.5, 0.5);
 
     // Actually do the lookup.
-    return textureSampleCompare(
+    let in_shadow = textureSampleCompare(
         shadow_map,
         shadow_map_sampler,
         light_local,
         light_pos.z * proj_correction - 0.001,
     );
+
+    if light_pos.z * proj_correction > 1.0 {
+        return 1.0;
+    } else {
+        return in_shadow;
+    }
 }
 
 @fragment
