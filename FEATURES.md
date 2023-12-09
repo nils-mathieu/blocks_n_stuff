@@ -4,7 +4,7 @@
   - [x] Modular biomes.
   - [x] Base terrain.
   - [x] Structures (trees, big rocks, etc).
-- [x] Basic graphics.
+- [x] Graphics & Rendering.
   - [x] Optimized voxel renderer.
   - [x] Skybox.
   - [x] Reloadable texture atlas.
@@ -13,12 +13,11 @@
   - [x] Underwater fog.
   - [x] Text rendering.
   - [x] Debug UI.
-- [x] Basic gameplay.
+  - [x] Shadows.
+  - [x] Animated water.
+- [x] Gameplay.
   - [x] Physics system.
   - [x] Mincraft survival-like player movement.
   - [x] Mining, placing blocks.
-- [x] Advanced graphics.
-  - [x] Shadows.
-  - [x] Animated water.
 - [x] Misc
   - [x] Music?
