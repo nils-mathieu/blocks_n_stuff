@@ -25,9 +25,9 @@ opt-level = 0
 
 [profile.release]
 panic = "abort"
-# strip = true
-# lto = true
-# codegen-units = 8
+strip = true
+lto = true
+codegen-units = 8
 
 [lints.clippy]
 "print_stdout" = "warn"
